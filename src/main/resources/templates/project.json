@@ -1,0 +1,112 @@
+{
+  "data": {
+    "isSse": false,
+    "modules": [
+      {
+        "title": "mult4_tb.v",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "ZGQK7",
+        "is_binary": false,
+        "directory_shortid": null,
+        "id": "2b7ccbf1-8db8-46dc-a6bb-be677778dew2",
+        "code": "module mult4_tb();\nreg[3:0] a;\nreg[3:0] b;\n\nwire[7:0] p;\ninitial\n\tbegin\n\t\ta = 0;\n\t\tb = 0;\n  \t$monitor(\"%d + %d = %d\\n\",a,b,p);\n\n\tbegin\n\t#10 a = 3;\n\t    b = 2;\n\t#10\n\t    a = 5;\n\t    b = 12;\n\t#10\n\t    a = 14;\n\t    b = 3;\n\t#10\n\t    a = 3;\n\t    b = 6;\n\tend\n\t#10 $finish;\n\tend\nmult4 U1(.a(a), .b(b), .p(p));\n\n\n\nendmodule\n"
+      },
+      {
+        "title": "mult4.v",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "ZGQK8",
+        "is_binary": false,
+        "directory_shortid": null,
+        "id": "2b7ccbf1-8db8-46dc-a6bb-be677778desc",
+        "code": "module mult4(\n\tinput [3:0] a,\n\tinput [3:0] b,\n\toutput reg[7:0] p\n);\n\n\treg [7:0] pv;\n\treg [7:0] ap;\n\tinteger i;\n\n\talways@(*)\n\tbegin\n\t\tpv = 8'b00000000;\n\t\tap = {4'b0000,a};\n\t\tfor(i = 0; i<=3; i=i+1)\n\t\t\tbegin\n\t\t\t\tif(b[i]==1)\n\t\t\t\t\tpv = pv + ap;\n\t\t\t\t\tap = {ap[6:0],1'b0};\n\t\t\tend\n\t\tp = pv;\n\tend\nendmodule\n\n"
+      },
+      {
+        "title": "README.md",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "is_binary": false,
+        "directory_shortid": null,
+        "id": "2b7ccbf1-8db8-46dc-a6bb-be677778dee3",
+        "shortid": "absi3",
+        "code": "# 乘法器\n\n## 设计一个乘法器\n\n需求:\n\n1. test\n\n2. test\n\n3. test\n\n![图片](http://www.ustb.edu.cn/images/logo.png)\n\n"
+      },
+      {
+        "title": "package.json",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "ZGQK6",
+        "isBinary": false,
+        "id": "2b7ccbf1-8db8-46dc-a6bb-be677778dee2",
+        "directoryShortid": null,
+        "code": "{\n  \"name\": \"new\",\n  \"version\": \"1.0.0\",\n  \"description\": \"\",\n  \"keywords\": [],\n  \"homepage\": \"https://codesandbox.io/s/new\",\n  \"main\": \"src/index.js\",\n  \"dependencies\": {\n    \"lodash-es\": \"4.17.11\",\n    \"react\": \"16.8.6\",\n    \"react-dom\": \"16.8.6\",\n    \"react-scripts\": \"3.0.0\",\n    \"react-spring\": \"9.0.0-beta.3\",\n    \"react-use-gesture\": \"5.0.0\"\n  },\n  \"devDependencies\": {},\n  \"scripts\": {\n    \"start\": \"react-scripts start\",\n    \"build\": \"react-scripts build\",\n    \"test\": \"react-scripts test --env=jsdom\",\n    \"eject\": \"react-scripts eject\"\n  }\n}"
+      },
+      {
+        "title": "styles.css",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "gXqgr",
+        "isBinary": false,
+        "id": "ae1c86c4-e476-4217-94c1-37f9c3bafe00",
+        "directoryShortid": "GXOoy",
+        "code": "* {\n  box-sizing: border-box;\n}\n\nhtml,\nbody {\n  overscroll-behavior-y: contain;\n  margin: 0;\n  padding: 0;\n  height: 100%;\n  width: 100%;\n  user-select: none;\n  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, helvetica neue, helvetica, ubuntu, roboto, noto, segoe ui, arial,\n    sans-serif;\n  position: fixed;\n  overflow: hidden;\n}\n\n#root {\n  background: lightblue;\n  position: fixed;\n  overflow: hidden;\n  width: 100%;\n  height: 100%;\n  cursor: url('https://uploads.codesandbox.io/uploads/user/b3e56831-8b98-4fee-b941-0e27f39883ab/Ad1_-cursor.png') 39 39, auto;\n}\n\n#root > div {\n  position: absolute;\n  width: 100vw;\n  height: 100vh;\n  will-change: transform;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n\n#root > div > div {\n  background-color: white;\n  background-size: auto 85%;\n  background-repeat: no-repeat;\n  background-position: center center;\n  width: 45vh;\n  max-width: 300px;\n  height: 85vh;\n  max-height: 570px;\n  will-change: transform;\n  border-radius: 10px;\n  box-shadow: 0 12.5px 100px -10px rgba(50, 50, 73, 0.4), 0 10px 10px -10px rgba(50, 50, 73, 0.3);\n}\n"
+      },
+      {
+        "title": "index.js",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "wRo98",
+        "isBinary": false,
+        "id": "b27bbe98-c24f-45ef-bc12-19680364f647",
+        "directoryShortid": "GXOoy",
+        "code": "import { render } from 'react-dom'\nimport React, { useState } from 'react'\nimport { useSprings, animated, interpolate } from 'react-spring'\nimport { useGesture } from 'react-use-gesture'\nimport './styles.css'\n\nconst cards = [\n  'http://www.ustb.edu.cn/images/content/2019-07/20190715111727666091.jpg',\n  'https://upload.wikimedia.org/wikipedia/en/5/53/RWS_Tarot_16_Tower.jpg',\n  'https://upload.wikimedia.org/wikipedia/en/9/9b/RWS_Tarot_07_Chariot.jpg',\n  'https://upload.wikimedia.org/wikipedia/en/d/db/RWS_Tarot_06_Lovers.jpg',\n  'https://upload.wikimedia.org/wikipedia/en/thumb/8/88/RWS_Tarot_02_High_Priestess.jpg/690px-RWS_Tarot_02_High_Priestess.jpg',\n  'https://upload.wikimedia.org/wikipedia/en/d/de/RWS_Tarot_01_Magician.jpg'\n]\n\n// These two are just helpers, they curate spring data, values that are later being interpolated into css\nconst to = i => ({ x: 0, y: i * -4, scale: 1, rot: -10 + Math.random() * 20, delay: i * 100 })\nconst from = i => ({ x: 0, rot: 0, scale: 1.5, y: -1000 })\n// This is being used down there in the view, it interpolates rotation and scale into a css transform\nconst trans = (r, s) => `perspective(1500px) rotateX(30deg) rotateY(${r / 10}deg) rotateZ(${r}deg) scale(${s})`\n\nfunction Deck() {\n  const [gone] = useState(() => new Set()) // The set flags all the cards that are flicked out\n  const [props, set] = useSprings(cards.length, i => ({ ...to(i), from: from(i) })) // Create a bunch of springs using the helpers above\n  // Create a gesture, we're interested in down-state, delta (current-pos - click-pos), direction and velocity\n  const bind = useGesture(({ args: [index], down, delta: [xDelta], distance, direction: [xDir], velocity }) => {\n    const trigger = velocity > 0.2 // If you flick hard enough it should trigger the card to fly out\n    const dir = xDir < 0 ? -1 : 1 // Direction should either point left or right\n    if (!down && trigger) gone.add(index) // If button/finger's up and trigger velocity is reached, we flag the card ready to fly out\n    set(i => {\n      if (index !== i) return // We're only interested in changing spring-data for the current spring\n      const isGone = gone.has(index)\n      const x = isGone ? (200 + window.innerWidth) * dir : down ? xDelta : 0 // When a card is gone it flys out left or right, otherwise goes back to zero\n      const rot = xDelta / 100 + (isGone ? dir * 10 * velocity : 0) // How much the card tilts, flicking it harder makes it rotate faster\n      const scale = down ? 1.1 : 1 // Active cards lift up a bit\n      return { x, rot, scale, delay: undefined, config: { friction: 50, tension: down ? 800 : isGone ? 200 : 500 } }\n    })\n    if (!down && gone.size === cards.length) setTimeout(() => gone.clear() || set(i => to(i)), 600)\n  })\n  // Now we're just mapping the animated values to our view, that's it. Btw, this component only renders once. :-)\n  return props.map(({ x, y, rot, scale }, i) => (\n    <animated.div key={i} style={{ transform: interpolate([x, y], (x, y) => `translate3d(${x}px,${y}px,0)`) }}>\n      {/* This is the card itself, we're binding our gesture to it (and inject its index so we know which is which) */}\n      <animated.div {...bind(i)} style={{ transform: interpolate([rot, scale], trans), backgroundImage: `url(${cards[i]})` }} />\n    </animated.div>\n  ))\n}\n\nrender(<Deck />, document.getElementById('root'))\n"
+      },
+      {
+        "title": ".prettierrc",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "32Byr",
+        "isBinary": false,
+        "id": "b1a57e4f-4c8b-46ca-845c-7b9b2e5f8839",
+        "directoryShortid": null,
+        "code": "{\n  \"printWidth\": 140,\n  \"tabWidth\": 2,\n  \"useTabs\": false,\n  \"semi\": false,\n  \"singleQuote\": true,\n  \"trailingComma\": \"none\",\n  \"bracketSpacing\": true,\n  \"jsxBracketSameLine\": true\n}"
+      },
+      {
+        "title": "cursor.png",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "SJh-Dj2bN",
+        "isBinary": true,
+        "id": "59cffb67-1183-4447-b8a1-80f61a25ab10",
+        "directoryShortid": "GXOoy",
+        "code": "https://uploads.codesandbox.io/uploads/user/b3e56831-8b98-4fee-b941-0e27f39883ab/Ad1_-cursor.png"
+      },
+      {
+        "title": "index.html",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "BA1N",
+        "isBinary": false,
+        "id": "c1700f32-1a92-4841-a246-93ee326f2d33",
+        "directoryShortid": "rgkK4",
+        "code": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\" />\n    <meta name=\"theme-color\" content=\"#000000\" />\n    <!--\n      manifest.json provides metadata used when your web app is added to the\n      homescreen on Android. See https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/\n    -->\n    <link rel=\"manifest\" href=\"%PUBLIC_URL%/manifest.json\" />\n    <link rel=\"shortcut icon\" href=\"%PUBLIC_URL%/favicon.ico\" />\n    <!--\n      Notice the use of %PUBLIC_URL% in the tags above.\n      It will be replaced with the URL of the `public` folder during the build.\n      Only files inside the `public` folder can be referenced from the HTML.\n\n      Unlike \"/favicon.ico\" or \"favicon.ico\", \"%PUBLIC_URL%/favicon.ico\" will\n      work correctly both with client-side routing and a non-root public URL.\n      Learn how to configure a non-root public URL by running `npm run build`.\n    -->\n    <title>React App</title>\n  </head>\n\n  <body>\n    <noscript> You need to enable JavaScript to run this app. </noscript>\n\n    <div id=\"root\"></div>\n    <!--\n      This HTML file is a template.\n      If you open it directly in the browser, you will see an empty page.\n\n      You can add webfonts, meta tags, or analytics to this file.\n      The build step will place the bundled scripts into the <body> tag.\n\n      To begin the development, run `npm start` or `yarn start`.\n      To create a production bundle, use `npm run build` or `yarn build`.\n    -->\n  </body>\n</html>\n"
+      }
+    ],
+    "git": null,
+    "alias": "乘法器",
+
+    "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+    "tags": [],
+    "description": null,
+    "directories": [
+      {
+        "title": "public",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "rgkK4",
+        "id": "fb2621ab-8cbf-45ce-a3b6-29084c7ab59d",
+        "directoryShortid": null
+      },
+      {
+        "title": "src",
+        "sourceId": "ee975c67-7ac6-459c-a9f3-77a3cbeeb38e",
+        "shortid": "GXOoy",
+        "id": "6942a031-a783-408d-9d7e-c91490bd0e37",
+        "directoryShortid": null
+      }
+    ],
+    "id": "8ov6z",
+    "title": null
+  }
+}
