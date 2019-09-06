@@ -13,35 +13,39 @@ import java.util.*;
 public class GitProcess {
     GitLabApi gitLabApi;
 //    String hostURL = "http://222.28.41.217:8099";
-    String hostURL = "http://gitlab.blazarx.com:6300/";
-    String privateToken = "TEvXW8r5fiUZ-6i2V5hn";
+    String hostURL = "http://202.204.62.155:8099";
+//    String hostURL = "http://gitlab.blazarx.com:6300/";
+//    String privateToken = "TEvXW8r5fiUZ-6i2V5hn";
+    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq";
 
     public static User user;
 
 
-    public GitProcess(){
+    public GitProcess(String task_id){
         this.gitLabApi = new GitLabApi(this.hostURL, this.privateToken);
+        user.setTask_id(task_id);
     }
 
     public GitLabApi getGitLabApi(){
         return this.gitLabApi;
     }
 
-    public Integer createProject(User user)throws GitLabApiException{
+    public Integer createProject()throws GitLabApiException{
         Integer project_id;
         Integer groupId = gitLabApi.getGroupApi().getGroup(user.getTask_id()).getId();
         gitLabApi.getProjectApi().createProject(groupId, user.getUser_id());
 
-        project_id = getProjectId(user);
+        project_id = getProjectId();
         return project_id;
     }
 
-    public Integer getProjectId(User user) {
+    public Integer getProjectId() {
         Integer project_id;
         try{
 //            System.out.println(user);
             project_id = gitLabApi.getProjectApi().getProject(user.getTask_id(), user.getUser_id()).getId();
         } catch (GitLabApiException e){
+            System.out.println(e.toString());
             System.out.println("no this project");
             project_id = null;
         } catch (Exception e){
@@ -71,7 +75,7 @@ public class GitProcess {
             return gitProject;
 
         } catch (GitLabApiException e){
-            System.out.println(e.toString());
+            System.out.println(e.toString()  +  "老师文件获取失败");
             return gitProject;
         } catch (Exception e){
             System.out.println(e.toString());
@@ -82,7 +86,7 @@ public class GitProcess {
     public Integer getProjectId(String task_id, String user_id) {
         Integer project_id;
         try{
-            System.out.println(task_id + "  " + user_id);
+//            System.out.println(task_id + "  " + user_id);
             project_id = gitLabApi.getProjectApi().getProject(task_id, user_id).getId();
         } catch (GitLabApiException e){
             System.out.println("no this project");
@@ -143,12 +147,12 @@ public class GitProcess {
             return gitFiles;
         }
         catch (GitLabApiException e){
-            System.out.println(e.toString());
-            return null;
+            System.out.println(e.toString() + "  无学生文件");
+            return gitFiles;
         }
     }
 
-    public void isFileExist(Integer projectId, GitFile gitFile) throws Exception{
+    public boolean isFileExist(Integer projectId, GitFile gitFile) {
         RepositoryApi repositoryApi = this.gitLabApi.getRepositoryApi();
         RepositoryFileApi repositoryFileApi = this.gitLabApi.getRepositoryFileApi();
         List<GitFile> gitFiles = new LinkedList<GitFile>();
@@ -156,14 +160,17 @@ public class GitProcess {
         try{
             treeItems = repositoryApi.getTree(projectId);
         } catch (Exception e){
-            throw new Exception("获取文件列表失败");
+//            throw new Exception("获取文件列表失败");
+            return false;
         }
         for(int i = 0; i < treeItems.size();i++){
             if(treeItems.get(i).getPath().equals(gitFile.getShortid())){
                 System.out.println(treeItems.get(i).getPath() + "  " + gitFile.getShortid());
-                throw new Exception("fail exist");
+//                throw new Exception("fail exist");
+                return true;
             }
         }
+        return false;
     }
 
     public boolean gitupdateFile(Integer projectId, GitFile gitFile){

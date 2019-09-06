@@ -4,8 +4,7 @@ public class User {
     private String task_id;
     private String user_id;
 
-    public User(String task_id, String user_id){
-        this.task_id = task_id;
+    public User(String user_id){
         this.user_id = user_id;
     }
 

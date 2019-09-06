@@ -5,15 +5,14 @@ import com.example.gitlabdemo.Util.Base64Convert;
 import com.example.gitlabdemo.Util.GitProcess;
 import com.example.gitlabdemo.Util.JudgeUtil;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.tomcat.util.http.ResponseUtil;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -28,30 +27,30 @@ public class StudentController {
     }
 
     @PostMapping(value = "/run", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> run_judge(@RequestBody User user){
-        System.out.println(user.toString());
-        gitProcess = new GitProcess();
-        Integer project_id = gitProcess.getProjectId(user);
-        if (project_id == null) return getResult(new Result("no project\n" +  user.toString()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Result> run_judge(String task_id){
+        gitProcess = new GitProcess(task_id);
+        Integer project_id = gitProcess.getProjectId();
+        if (project_id == null) return getResult(new Result("no project\n" +  GitProcess.user.toString()), HttpStatus.BAD_REQUEST);
 
-        JsonNode jsonObject = JudgeUtil.shell(user);
+        JsonNode jsonObject = JudgeUtil.shell(GitProcess.user);
         if(jsonObject == null){
             return getResult(new Result("error"), HttpStatus.BAD_REQUEST);
         }
         return getResult(new Result(jsonObject), HttpStatus.OK);
     }
 
-    @PostMapping(value = "/getproject", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> getTask_post(@RequestBody User user) {
-        return getTask(user);
-    }
+
 
     @PutMapping(value = "/renameFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> renameFile(User user, String shortid, String title){
-        System.out.println(user.toString());
-        gitProcess = new GitProcess();
-        Integer project_id = gitProcess.getProjectId(user);
-        if (project_id == null) return getResult(new Result("no project\n" +  user.toString()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Result> renameFile(String task_id, @RequestBody JsonNode info){
+        gitProcess = new GitProcess(task_id);
+        System.out.println(info);
+        String shortid = info.path("shortid").asText();
+        String title = info.path("title").asText();
+        System.out.println(shortid + title);
+        System.out.println(GitProcess.user.toString());
+        Integer project_id = gitProcess.getProjectId();
+        if (project_id == null) return getResult(new Result("no project\n" +  GitProcess.user.toString()), HttpStatus.BAD_REQUEST);
 
         RepositoryFile repositoryFile;
         try{
@@ -87,29 +86,30 @@ public class StudentController {
         return getResult(new Result("false"), HttpStatus.BAD_REQUEST);
     }
 
-    @GetMapping("/getproject")
-    public ResponseEntity<Result> getTask(User user) {
-        gitProcess = new GitProcess();
-        System.out.println(user.toString());
+
+    @PostMapping(value = "/getproject", consumes = "application/json; charset=utf-8")
+    public ResponseEntity<Result> getTask(String task_id) {
+        gitProcess = new GitProcess(task_id);
+        System.out.println(GitProcess.user.toString());
         GitProject gitProject = new GitProject();
         Integer project_id;
-        project_id = gitProcess.getProjectId(user);
+        project_id = gitProcess.getProjectId();
         Integer teacher_id;
-        teacher_id = gitProcess.getProjectId(user.getTask_id(), "teacher");
+        teacher_id = gitProcess.getProjectId(GitProcess.user.getTask_id(), "teacher");
         try{
             if (project_id == null) {
-                project_id = gitProcess.createProject(user);
+                project_id = gitProcess.createProject();
                 System.out.println("创建工程成功");
             }
         } catch (GitLabApiException e){
             System.out.println(e.toString());
             return getResult(new Result("创建工程失败"), HttpStatus.BAD_REQUEST);
         }
-
+        gitProject.setSourceId(project_id.toString());
         gitProject.setModules(gitProcess.getRepositoryFiles(project_id));
         gitProject.setTags(new LinkedList<String>());
         gitProject.setDirectories(new LinkedList<GitFolder>());
-        gitProject.setId(user.getTask_id());
+        gitProject.setId(GitProcess.user.getTask_id());
         gitProject = gitProcess.setTeacherInfo(gitProject, teacher_id);
 
         try {
@@ -122,19 +122,17 @@ public class StudentController {
     }
 
     @PutMapping(value = "/createFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> createFile(User user, @RequestBody GitProject modules){
-        gitProcess = new GitProcess();
-        System.out.println(user.toString());
-        Integer project_id = gitProcess.getProjectId(user);
-        if (project_id == null) return getResult(new Result("no project\n" +  user.toString()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Result> createFile(String task_id, @RequestBody GitProject modules){
+        gitProcess = new GitProcess(task_id);
+        System.out.println(GitProcess.user.toString());
+        Integer project_id = gitProcess.getProjectId();
+        if (project_id == null) return getResult(new Result("no project\n" +  GitProcess.user.toString()), HttpStatus.BAD_REQUEST);
 
         for(int i = 0; i < modules.getModules().size();i++){
             if(modules.getModules().get(i).getShortid().equals(Base64Convert.strConvertBase("README.md"))) continue;
             GitFile gitFile = new GitFile(modules.getModules().get(i).getShortid(), modules.getModules().get(i).getCode());
-            try{
-                gitProcess.isFileExist(project_id, gitFile);
-            }catch (Exception e){
-                return getResult(new Result("false"), HttpStatus.BAD_REQUEST);
+            if(gitProcess.isFileExist(project_id, gitFile)){
+                return getResult(new Result("文件已存在"), HttpStatus.BAD_REQUEST);
             }
 
             if (gitProcess.gitcreateFile(project_id, gitFile)){
@@ -148,11 +146,11 @@ public class StudentController {
     }
 
     @PutMapping(value = "/saveFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> saveFile(User user, @RequestBody GitProject modules){
-        gitProcess = new GitProcess();
-        System.out.println(user.toString());
-        Integer project_id = gitProcess.getProjectId(user);
-        if (project_id == null) return getResult(new Result("no project\n" +  user.toString()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Result> saveFile(String task_id, @RequestBody GitProject modules){
+        gitProcess = new GitProcess(task_id);
+        System.out.println(GitProcess.user.toString());
+        Integer project_id = gitProcess.getProjectId();
+        if (project_id == null) return getResult(new Result("no project\n" +  GitProcess.user.toString()), HttpStatus.BAD_REQUEST);
 
         for(int i = 0; i < modules.getModules().size();i++){
             if(modules.getModules().get(i).getShortid().equals(Base64Convert.strConvertBase("README.md"))) continue;
@@ -169,13 +167,13 @@ public class StudentController {
     }
 
     @DeleteMapping("/deleteFile")
-    public ResponseEntity<Result> deleteFile(User user, String shortid){
-        System.out.println(user.toString());
+    public ResponseEntity<Result> deleteFile(String task_id, String shortid){
         if(shortid.equals(Base64Convert.strConvertBase("README.md")))
             return getResult(new Result("不能删除README.md文件"), HttpStatus.BAD_REQUEST);
-        gitProcess = new GitProcess();
-        Integer project_id = gitProcess.getProjectId(user);
-        if (project_id == null) return getResult(new Result("no project\n" +  user.toString()), HttpStatus.BAD_REQUEST);
+        gitProcess = new GitProcess(task_id);
+        System.out.println(GitProcess.user.toString());
+        Integer project_id = gitProcess.getProjectId();
+        if (project_id == null) return getResult(new Result("no project\n" +  GitProcess.user.toString()), HttpStatus.BAD_REQUEST);
 
         GitFile gitFile = new GitFile();
         gitFile.setShortid(Base64Convert.baseConvertStr(shortid));
