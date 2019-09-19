@@ -19,8 +19,8 @@ public class TeacherController {
     GitProcess gitProcess;
 
     @PostMapping(value = "/createTask", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> createTask(String task_id, @RequestBody TaskModel taskModel){
-        gitProcess = new GitProcess(task_id);
+    public ResponseEntity<Result> createTask(@RequestBody TaskModel taskModel){
+        gitProcess = new GitProcess(taskModel.getTask_id());
         System.out.println(taskModel);
         if(gitProcess.gitcreateTask(taskModel)){
             return getResult(new Result(), HttpStatus.OK);

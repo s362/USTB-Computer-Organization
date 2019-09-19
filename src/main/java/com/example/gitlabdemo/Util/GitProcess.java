@@ -16,14 +16,24 @@ public class GitProcess {
     String hostURL = "http://202.204.62.155:8099";
 //    String hostURL = "http://gitlab.blazarx.com:6300/";
 //    String privateToken = "TEvXW8r5fiUZ-6i2V5hn";
+//    String hostURL = "http://140.143.62.131:8099/";
     String privateToken = "Y3FS-iYhSGq4A5GwV6Fq";
 
     public static User user;
 
 
     public GitProcess(String task_id){
-        this.gitLabApi = new GitLabApi(this.hostURL, this.privateToken);
+        try{
+            this.gitLabApi = new GitLabApi(this.hostURL, this.privateToken);
+        } catch (Exception e){
+            e.toString();
+        }
+        System.out.println(task_id);
+        if(user == null){
+            user = new User("41624112");
+        }
         user.setTask_id(task_id);
+//        user.setUser_id("teacher");
     }
 
     public GitLabApi getGitLabApi(){
@@ -215,7 +225,8 @@ public class GitProcess {
     }
 
     public boolean gitcreateTask(TaskModel taskModel) {
-        String path = "t" + taskModel.getTask_id();
+//        System.out.println();
+        String path = taskModel.getTask_id();
         GroupApi groupApi = gitLabApi.getGroupApi();
         Integer project_id;
         try{

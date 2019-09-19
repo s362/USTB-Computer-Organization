@@ -44,7 +44,7 @@ public class MyInterceptorConfig implements HandlerInterceptor {
 
         } catch (Exception e){
             System.out.println(e.toString());
-            return false;
+            return true;
         }
         String user_id;
 
