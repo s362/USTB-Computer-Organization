@@ -18,21 +18,9 @@ import java.util.List;
 public class TeacherController {
     GitProcess gitProcess;
 
-    @PostMapping(value = "/createTask", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> createTask(@RequestBody TaskModel taskModel){
-        gitProcess = new GitProcess(taskModel.getTask_id());
-        System.out.println(taskModel);
-        if(gitProcess.gitcreateTask(taskModel)){
-            return getResult(new Result(), HttpStatus.OK);
-        }
-        else {
-            return getResult(new Result("false"), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-//    @PostMapping("/createTask")
-//    private ResponseEntity<Result> createTask(TaskModel taskModel){
-//        gitProcess = new GitProcess();
+//    @PostMapping(value = "/createTask", consumes = "application/json; charset=utf-8")
+//    public ResponseEntity<Result> createTask(@RequestBody TaskModel taskModel){
+//        gitProcess = new GitProcess(taskModel.getTask_id());
 //        System.out.println(taskModel);
 //        if(gitProcess.gitcreateTask(taskModel)){
 //            return getResult(new Result(), HttpStatus.OK);
@@ -41,9 +29,9 @@ public class TeacherController {
 //            return getResult(new Result("false"), HttpStatus.BAD_REQUEST);
 //        }
 //    }
-
-
-    ResponseEntity<Result> getResult(Result result, HttpStatus httpStatus){
-        return new ResponseEntity<>(result, httpStatus);
-    }
+//
+//
+//    ResponseEntity<Result> getResult(Result result, HttpStatus httpStatus){
+//        return new ResponseEntity<>(result, httpStatus);
+//    }
 }

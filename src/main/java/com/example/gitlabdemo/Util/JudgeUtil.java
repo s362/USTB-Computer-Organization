@@ -4,6 +4,7 @@ import com.example.gitlabdemo.Model.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import javax.validation.constraints.Null;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,8 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class JudgeUtil {
-    static public JsonNode shell(User user) {
-        String command = "sudo docker run bearking/ojide:v7 /home/pythonfile/gitrun " + user.getTask_id() + " " + user.getUser_id();
+    static public JsonNode shell(String task_id, String user_id) {
+        String command = "sudo docker run bearking/ojide:v7 /home/pythonfile/gitrun " + task_id + " " + user_id;
         System.out.println(command);
         try {
             Process p = Runtime.getRuntime().exec(command);

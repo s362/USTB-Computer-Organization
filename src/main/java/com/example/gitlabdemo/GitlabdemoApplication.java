@@ -10,5 +10,4 @@ public class GitlabdemoApplication {
         SpringApplication.run(GitlabdemoApplication.class, args);
 
     }
-
 }

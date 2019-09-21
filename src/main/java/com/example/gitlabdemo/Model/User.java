@@ -1,33 +1,94 @@
 package com.example.gitlabdemo.Model;
 
+import lombok.Data;
+import lombok.ToString;
+
+import javax.persistence.*;
+import java.sql.Date;
+
+@Entity
+@Table(name = "user")
+@Data
+@ToString
 public class User {
-    private String task_id;
-    private String user_id;
+    @Id
+    @GeneratedValue
+    private Long uid;
 
-    public User(String user_id){
-        this.user_id = user_id;
+    @Column(name = "uusername", length = 32)
+    private String uusername;
+
+    @Column(name = "upassword", length = 32)
+    private String upassword;
+
+    @Column(name = "class", length = 32)
+    private String uclass;
+
+    @Column(name = "create_at")
+    private Date createdate;
+
+    @Column(name = "update_at")
+    private Date updatedate;
+
+    @Column(name = "nickname", length = 32)
+    private String nickname;
+
+    @Column(name = "utype")
+    private String utype;
+
+    public Date getCreatedate() {
+        return createdate;
     }
 
-    public String getUser_id() {
-        return user_id;
+    public void setCreatedate(Date createdate) {
+        this.createdate = createdate;
     }
 
-    public void setUser_id(String user_id) {
-        this.user_id = user_id;
+    public Date getUpdatedate() {
+        return updatedate;
     }
 
-    public String getTask_id() {
-        return task_id;
+    public void setUpdatedate(Date updatedate) {
+        this.updatedate = updatedate;
     }
 
-    public void setTask_id(String task_id) {
-        this.task_id = task_id;
+    public String getNickname() {
+        return nickname;
     }
 
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
 
+    public Long getUid() {
+        return uid;
+    }
 
-    @Override
-    public String toString() {
-        return  this.task_id + "  " + this.user_id;
+    public void setUid(Long uid) {
+        this.uid = uid;
+    }
+
+    public String getUusername() {
+        return uusername;
+    }
+
+    public void setUusername(String uusername) {
+        this.uusername = uusername;
+    }
+
+    public String getUpassword() {
+        return upassword;
+    }
+
+    public void setUpassword(String upassword) {
+        this.upassword = upassword;
+    }
+
+    public String getUtype() {
+        return utype;
+    }
+
+    public void setUtype(String utype) {
+        this.utype = utype;
     }
 }
