@@ -24,7 +24,7 @@ public class ShiroConfig {
         Map<String, String> filterChainDefinitionMap = new LinkedHashMap<String, String>();
         // 配置不会被拦截的链接 顺序判断
         filterChainDefinitionMap.put("/api/signin/**", "anon");
-//        filterChainDefinitionMap.put("/**.js", "anon");
+        filterChainDefinitionMap.put("/api/teacher/**", "anon");
 //        filterChainDefinitionMap.put("/druid/**", "anon");
 
         // 添加自己的过滤器并且取名为jwt

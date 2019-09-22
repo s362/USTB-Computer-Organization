@@ -1,7 +1,9 @@
-package com.example.gitlabdemo.Model;
+package com.example.gitlabdemo.Model.GitModel;
 
+import lombok.ToString;
 import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 
+@ToString
 public class GitFile {
     private String title;
     private String sourceId; // commitid

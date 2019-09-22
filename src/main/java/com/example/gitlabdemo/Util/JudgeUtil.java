@@ -1,12 +1,9 @@
 package com.example.gitlabdemo.Util;
 
-import com.example.gitlabdemo.Model.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.validation.constraints.Null;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;

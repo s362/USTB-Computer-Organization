@@ -1,13 +1,14 @@
 package com.example.gitlabdemo.Util;
 
-import com.example.gitlabdemo.Model.*;
-import com.example.gitlabdemo.Model.User;
+import com.example.gitlabdemo.Model.GitModel.GitFile;
+import com.example.gitlabdemo.Model.GitModel.GitProject;
+import com.example.gitlabdemo.Model.GitModel.TaskFile;
+import com.example.gitlabdemo.Model.GitModel.TaskModel;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gitlab4j.api.*;
 import org.gitlab4j.api.models.*;
 
-import java.io.File;
 import java.util.*;
 
 public class GitProcess {
@@ -86,22 +87,6 @@ public class GitProcess {
             return gitProject;
         }
     }
-
-//    public Integer getProjectId(String task_id, String user_id) {
-//        Integer project_id;
-//        try{
-////            System.out.println(task_id + "  " + user_id);
-//            project_id = gitLabApi.getProjectApi().getProject(task_id, user_id).getId();
-//        } catch (GitLabApiException e){
-//            System.out.println("no this project");
-//            project_id = null;
-//        } catch (Exception e){
-//            System.out.println(e.toString());
-//            e.printStackTrace();
-//            project_id = null;
-//        }
-//        return project_id;
-//    }
 
     public String getProjectCommiteId(Integer projectId) throws GitLabApiException{
         return gitLabApi.getRepositoryApi().getBranch(projectId, "master").getCommit().getId();
@@ -216,82 +201,82 @@ public class GitProcess {
         }
     }
 
-//    public boolean gitcreateTask(TaskModel taskModel) {
-////        System.out.println();
-//        String path = taskModel.getTask_id();
-//        GroupApi groupApi = gitLabApi.getGroupApi();
-//        Integer project_id;
-//        try{
-//            groupApi.getGroup(path);
-//            System.out.println("题目已存在，开始更新题目");
-//            try{
-//                project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
-//                gitLabApi.getProjectApi().deleteProject(project_id);
-//                Thread.sleep(2000);
-//                System.out.println("删除原工程成功");
-//
-//            } catch (GitLabApiException erro){
-//                System.out.println("删除源工程失败， 无源工程");
-//            } catch (Exception e){
-//                System.out.println(e.toString());
-//            }
-//        }
-//        catch (GitLabApiException e){
-//            System.out.println("题目不存在，开始新建题目");
-//            try{
-//                groupApi.addGroup(path, path);
-//            } catch (GitLabApiException er){
-//                System.out.println(er.toString());
-//                return false;
-//            }
-//        }
-//
-//        try{
-//            Integer groupId = groupApi.getGroup(path).getId();
-//            System.out.println(groupId);
-//            gitLabApi.getProjectApi().createProject(groupId, "teacher");
-//
-//        }catch (GitLabApiException e){
-//            System.out.println("创建工程失败");
-//            System.out.println(e.toString());
-//            e.printStackTrace();
-//            return false;
-//        }
-//
-//        try{
-//            project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
-//            for(TaskFile taskFile : taskModel.getTaskFiles()){
-//                RepositoryFile repositoryFile = new RepositoryFile();
-//                if(taskFile.getContent() == null){
-//                    repositoryFile.setContent("");
-//                } else {
-//                    repositoryFile.setContent(taskFile.getContent());
-//                }
-//
-//                repositoryFile.setFileName(taskFile.getTitle());
-//                repositoryFile.setFilePath(taskFile.getTitle());
-//                gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
-//            }
-//
-//            RepositoryFile repositoryFile = new RepositoryFile();
-//            repositoryFile.setFilePath("task.config");
-//            repositoryFile.setFileName("task.config");
-//
-//            Map m1 = new HashMap();
-//            m1.put("task_title", taskModel.getTask_title());
-//            m1.put("task_content", taskModel.getTask_content());
-//
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            String taskInfo = objectMapper.writeValueAsString(m1);
-//            repositoryFile.setContent(taskInfo);
-//            gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
-//            System.out.println("创建成功");
-//            return true;
-//
-//        } catch (Exception e){
-//            System.out.println(e.toString());
-//            System.out.println("创建文件失败");
-//            return false;
-//        }
-//    }
+    public boolean gitcreateTask(TaskModel taskModel) {
+        Integer project_id;
+         String path = taskModel.getTask_id();
+         GroupApi groupApi = gitLabApi.getGroupApi();
+
+        try{
+            groupApi.getGroup(path);
+            System.out.println("题目已存在，开始更新题目");
+            try{
+                project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
+                gitLabApi.getProjectApi().deleteProject(project_id);
+                Thread.sleep(2000);
+                System.out.println("删除原工程成功");
+
+            } catch (GitLabApiException erro){
+                System.out.println("删除源工程失败， 无源工程");
+            } catch (Exception e){
+                System.out.println(e.toString());
+            }
+        }
+        catch (GitLabApiException e){
+            System.out.println("题目不存在，开始新建题目");
+            try{
+                groupApi.addGroup(path, path);
+            } catch (GitLabApiException er){
+                System.out.println(er.toString());
+                return false;
+            }
+        }
+
+        try{
+            Integer groupId = groupApi.getGroup(path).getId();
+            System.out.println(groupId);
+            gitLabApi.getProjectApi().createProject(groupId, "teacher");
+
+        }catch (GitLabApiException e){
+            System.out.println("创建工程失败");
+            System.out.println(e.toString());
+            e.printStackTrace();
+            return false;
+        }
+
+        try{
+            project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
+            for(TaskFile taskFile : taskModel.getTaskFiles()){
+                RepositoryFile repositoryFile = new RepositoryFile();
+                if(taskFile.getContent() == null){
+                    repositoryFile.setContent("");
+                } else {
+                    repositoryFile.setContent(taskFile.getContent());
+                }
+
+                repositoryFile.setFileName(taskFile.getTitle());
+                repositoryFile.setFilePath(taskFile.getTitle());
+                gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
+            }
+
+            RepositoryFile repositoryFile = new RepositoryFile();
+            repositoryFile.setFilePath("task.config");
+            repositoryFile.setFileName("task.config");
+
+            Map m1 = new HashMap();
+            m1.put("task_title", taskModel.getTask_title());
+            m1.put("task_content", taskModel.getTask_content());
+
+            ObjectMapper objectMapper = new ObjectMapper();
+            String taskInfo = objectMapper.writeValueAsString(m1);
+            repositoryFile.setContent(taskInfo);
+            gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
+            System.out.println("创建成功");
+            return true;
+
+        } catch (Exception e){
+            System.out.println(e.toString());
+            System.out.println("创建文件失败");
+            return false;
+        }
+    }
 }

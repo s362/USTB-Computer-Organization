@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model;
+package com.example.gitlabdemo.Model.DataModel;
 
 import lombok.Data;
 import lombok.ToString;
@@ -15,7 +15,7 @@ public class User {
     @GeneratedValue
     private Long uid;
 
-    @Column(name = "uusername", length = 32)
+    @Column(name = "uusername", length = 32, unique = true)
     private String uusername;
 
     @Column(name = "upassword", length = 32)

@@ -2,20 +2,17 @@ package com.example.gitlabdemo.Controller;
 
 
 import com.example.gitlabdemo.Model.Result;
-import com.example.gitlabdemo.Model.User;
+import com.example.gitlabdemo.Model.DataModel.User;
 import com.example.gitlabdemo.Service.UserService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.ResultUtil;
 //import com.example.gitlabdemo.Util.TokenUtil;
-import org.apache.ibatis.jdbc.Null;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletResponse;
 import java.sql.Date;
-import java.sql.Time;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController

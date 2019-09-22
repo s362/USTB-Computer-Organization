@@ -1,7 +1,10 @@
-package com.example.gitlabdemo.Model;
+package com.example.gitlabdemo.Model.GitModel;
+
+import lombok.ToString;
 
 import java.util.List;
 
+@ToString
 public class TaskModel {
     String task_id;
     String task_content;
@@ -40,8 +43,4 @@ public class TaskModel {
         this.taskFiles = taskFiles;
     }
 
-    @Override
-    public String toString() {
-        return task_id + "\n" + task_title + "\n" + task_content + "\n" + taskFiles.toString();
-    }
 }

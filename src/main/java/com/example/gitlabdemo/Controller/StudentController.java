@@ -1,6 +1,11 @@
 package com.example.gitlabdemo.Controller;
 
 import com.example.gitlabdemo.Model.*;
+import com.example.gitlabdemo.Model.DataModel.Score;
+import com.example.gitlabdemo.Model.GitModel.GitFile;
+import com.example.gitlabdemo.Model.GitModel.GitFolder;
+import com.example.gitlabdemo.Model.GitModel.GitProject;
+import com.example.gitlabdemo.Service.ScoreService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.Base64Convert;
 import com.example.gitlabdemo.Util.GitProcess;
@@ -9,18 +14,22 @@ import com.example.gitlabdemo.Util.ResultUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
 import java.util.LinkedList;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/student")
 public class StudentController {
+
+    @Autowired
+    ScoreService scoreService;
+
     GitProcess gitProcess;
 
     @PostMapping("/test")
@@ -34,14 +43,31 @@ public class StudentController {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         System.out.println(user_id + "   " + task_id);
 
+        Score score = new Score();
+        score.setSid((long)Integer.parseInt(user_id));
+        score.setTask_id(task_id);
+        Score task_score = new Score();
+        task_score = scoreService.findScoreByUserandTaskid(score);
+
+        if (task_score == null) {
+            int temp = scoreService.saveScore(score);
+            if (temp == -1 )return ResultUtil.getResult(new Result("数据库获取失败"), HttpStatus.BAD_REQUEST);
+            task_score = score;
+        }
+
         gitProcess = new GitProcess();
         Integer project_id = gitProcess.getProjectId(task_id, user_id);
         if (project_id == null) return ResultUtil.getResult(new Result("no project"), HttpStatus.BAD_REQUEST);
 
         JsonNode jsonObject = JudgeUtil.shell(task_id, user_id);
+
         if(jsonObject == null){
             return ResultUtil.getResult(new Result("error"), HttpStatus.BAD_REQUEST);
         }
+        task_score.setTscore(jsonObject.findValue("score").asLong());
+        scoreService.saveScore(task_score);
+
+
         return ResultUtil.getResult(new Result(jsonObject), HttpStatus.OK);
     }
 

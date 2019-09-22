@@ -1,22 +1,26 @@
 package com.example.gitlabdemo;
 
-import com.example.gitlabdemo.Model.GitFile;
-import com.example.gitlabdemo.Model.GitProject;
+import com.example.gitlabdemo.Model.GitModel.GitFile;
+import com.example.gitlabdemo.Model.GitModel.GitProject;
 import com.example.gitlabdemo.Util.GitProcess;
+import com.example.gitlabdemo.Util.FileUtil;
+import com.example.gitlabdemo.Util.OSUtil;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.sql.DataSource;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.LinkedList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 //import redis.clients.jedis.Jedis;
 
 //@RunWith(SpringRunner.class)
 //@SpringBootTest
 public class TempTest {
+    private static final int BUFFER_SIZE = 1024;
     @Autowired
     DataSource dataSource;
     @Test
@@ -49,6 +53,104 @@ public class TempTest {
         System.out.println(gitProject.getModules());
 
     }
+
+    @Test
+    public void unzip(){
+        File srcFile = new File("C:\\Users\\bearking\\Desktop\\归档.zip");
+//        FileUtil.unZip(srcFile, "C:\\Users\\bearking\\Desktop\\lala");
+    }
+
+    @Test
+    public void getFileName() {
+        String path = "C:\\Users\\bearking\\Desktop\\lala"; // 路径
+        File f = new File(path);
+        if (!f.exists()) {
+            System.out.println(path + " not exists");
+            return;
+        }
+        File fa[] = f.listFiles();
+        for (int i = 0; i < fa.length; i++) {
+            File fs = fa[i];
+            if (fs.isDirectory()) {
+                File imageFiles = new File(fs.getPath()+"/images");
+                File codeFiles = new File(fs.getPath()+"/files");
+                System.out.println(fs.getName() + " [目录]");
+            } else {
+                System.out.println(fs.getName());
+            }
+        }
+    }
+    @Test
+    public void getContent() throws Exception{
+        String path = "C:\\Users\\bearking\\Desktop\\lala\\1_wire类型\\files";
+        File f = new File(path);
+        if (!f.exists()) {
+            System.out.println(path + " not exists");
+            return;
+        }
+        File fa[] = f.listFiles();
+        for(int i = 0; i < fa.length; i++){
+            File fs = fa[i];
+            FileInputStream in = new FileInputStream(fs);
+            byte[] filecontent = new byte[(int)fs.length()];
+            in.read(filecontent);
+            String fcontent = new String(filecontent, "UTF-8");
+            System.out.println(fcontent);
+        }
+    }
+
+    @Test
+    public void readRM() throws Exception{
+        String path = "C:\\Users\\bearking\\Desktop\\lala\\1_wire类型\\content.txt";
+        File fs = new File(path);
+        FileInputStream in = new FileInputStream(fs);
+        byte[] filecontent = new byte[(int)fs.length()];
+        in.read(filecontent);
+        String fcontent = new String(filecontent, "UTF-8");
+        System.out.println(fcontent);
+
+    }
+
+    public String readRM_test(String path) throws Exception{
+//        String path = "C:\\Users\\bearking\\Desktop\\lala\\1_wire类型\\content.txt";
+        File fs = new File(path);
+        FileInputStream in = new FileInputStream(fs);
+        byte[] filecontent = new byte[(int)fs.length()];
+        in.read(filecontent);
+        String fcontent = new String(filecontent, "UTF-8");
+//        System.out.println(fcontent);
+        return fcontent;
+    }
+
+
+    @Test
+    public void patternUser() throws Exception{
+        String str = readRM_test("C:\\Users\\bearking\\Desktop\\lala\\1_wire类型\\content.txt");
+        String regex = "\\[(.+?)]";
+//        String str = "<a οnclick=\"showUserName('[session.user.username]','[session.user.password]');\" >linkme</a>" ;
+        Pattern pattern = Pattern.compile(regex);
+        System.out.println(pattern);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            System.out.println(">>>>> replace sequence : " + matcher.group(0) + "   "  +  matcher.group(0).substring(1, matcher.group(0).length()-1));
+            System.out.println(">>>>> index range : (" + matcher.start() + ", " + matcher.end() + ")");
+            System.out.println(">>>>> sub : " + str.substring(matcher.start(), matcher.end()));
+            matcher.appendReplacement(sb, "![avatar](/home/picture/1.png)");
+            System.out.println("-----------------");
+        }
+        matcher.appendTail(sb);
+//        System.out.println(">>>> sb : " + sb.toString());
+        str = sb.toString();
+        System.out.println(str);
+    }
+
+    @Test
+    public void TestOS(){
+        System.out.println(OSUtil.isLinux());
+        System.out.println(OSUtil.isWindows());
+    }
+
 
 //    @Test
 //    public void redisTest(){

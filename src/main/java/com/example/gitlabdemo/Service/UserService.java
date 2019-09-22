@@ -1,6 +1,6 @@
 package com.example.gitlabdemo.Service;
 
-import com.example.gitlabdemo.Model.User;
+import com.example.gitlabdemo.Model.DataModel.User;
 import com.example.gitlabdemo.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
