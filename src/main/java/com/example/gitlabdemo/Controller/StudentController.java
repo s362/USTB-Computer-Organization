@@ -1,11 +1,13 @@
 package com.example.gitlabdemo.Controller;
 
 import com.example.gitlabdemo.Model.*;
+import com.example.gitlabdemo.Model.DataModel.Question;
 import com.example.gitlabdemo.Model.DataModel.Score;
-import com.example.gitlabdemo.Model.GitModel.GitFile;
-import com.example.gitlabdemo.Model.GitModel.GitFolder;
-import com.example.gitlabdemo.Model.GitModel.GitProject;
+import com.example.gitlabdemo.Model.DataModel.Task;
+import com.example.gitlabdemo.Model.GitModel.*;
+import com.example.gitlabdemo.Service.QuestionService;
 import com.example.gitlabdemo.Service.ScoreService;
+import com.example.gitlabdemo.Service.TaskService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.Base64Convert;
 import com.example.gitlabdemo.Util.GitProcess;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedList;
+import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -30,6 +33,12 @@ public class StudentController {
     @Autowired
     ScoreService scoreService;
 
+    @Autowired
+    QuestionService questionService;
+
+    @Autowired
+    TaskService taskService;
+
     GitProcess gitProcess;
 
     @PostMapping("/test")
@@ -38,15 +47,77 @@ public class StudentController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+    @PostMapping("/getQuestionAndTasks")
+    public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        List<Question> questions = questionService.getAllQuestion();
+        List<QuestionAndTask> questionAndTasks = new LinkedList<>();
+        for(int i = 0; i < questions.size(); i++){
+            Question question = questions.get(i);
+            QuestionAndTask questionAndTask = new QuestionAndTask();
+            questionAndTask.setQid(question.getQid());
+            questionAndTask.setQname(question.getQname());
+            questionAndTask.setUpdatedate(question.getUpdatedate());
+            questionAndTask.setCreatedate(question.getCreatedate());
+            questionAndTask.setTaskScores(getTaskScores(Long.parseLong(user_id), question.getQid()));
+            questionAndTasks.add(questionAndTask);
+        }
+
+        Result result = new Result();
+        result.setObject(questionAndTasks);
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    @PostMapping("/getQuestion")
+    public ResponseEntity<Result> getAllQuestion(HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        Result result = new Result();
+        result.setObject(questionService.getAllQuestion());
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    @PostMapping("/getTasks")
+    public ResponseEntity<Result> getAllTasks(Long qid, HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        Result result = new Result();
+        result.setObject(getTaskScores(Long.parseLong(user_id), qid));
+        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
+    private List<TaskScore> getTaskScores(Long uid, Long qid){
+        List<TaskScore> taskScores = new LinkedList<>();
+        List<Task> tasks = taskService.getTaskbyQid(qid);
+        for(int i = 0; i < tasks.size(); i++){
+            Score score = new Score();
+            score.setTask_id("t" + tasks.get(i).getTid());
+            score.setUid(uid);
+            Score _score = scoreService.findScoreByUserandTaskid(score);
+            if (_score == null){
+                _score = score;
+                scoreService.saveScore(_score);
+            }
+            TaskScore taskScore = new TaskScore();
+            taskScore.setTask_id("t" + tasks.get(i).getTid());
+            taskScore.setTname(tasks.get(i).getTname());
+            taskScore.setTscore(_score.getTscore());
+            taskScore.setUpdatedate(tasks.get(0).getUpdatedate());
+            taskScores.add(taskScore);
+        }
+        return taskScores;
+    }
+
+
+
+
     @PostMapping(value = "/run", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> run_judge(String task_id, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         System.out.println(user_id + "   " + task_id);
 
         Score score = new Score();
-        score.setSid((long)Integer.parseInt(user_id));
+        score.setUid((long)Integer.parseInt(user_id));
         score.setTask_id(task_id);
-        Score task_score = new Score();
+        Score task_score;
         task_score = scoreService.findScoreByUserandTaskid(score);
 
         if (task_score == null) {
@@ -66,7 +137,6 @@ public class StudentController {
         }
         task_score.setTscore(jsonObject.findValue("score").asLong());
         scoreService.saveScore(task_score);
-
 
         return ResultUtil.getResult(new Result(jsonObject), HttpStatus.OK);
     }
@@ -140,7 +210,7 @@ public class StudentController {
             }
         } catch (GitLabApiException e){
             System.out.println(e.toString());
-            return ResultUtil.getResult(new Result("创建工程失败"), HttpStatus.BAD_REQUEST);
+            return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
         gitProject.setSourceId(project_id.toString());
         gitProject.setModules(gitProcess.getRepositoryFiles(project_id));

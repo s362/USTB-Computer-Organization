@@ -43,10 +43,17 @@ public class TeacherController {
         Question question = new Question();
         question.setCreatedate(new Date(new java.util.Date().getTime()));
         question.setUpdatedate(new Date(new java.util.Date().getTime()));
+        try{
+            question.setQname(file.getOriginalFilename().split("\\.")[0]);
+        } catch (Exception e){
+            return ResultUtil.getResult(new Result("请上传.zip包"), HttpStatus.BAD_REQUEST);
+        }
+
         String question_id;
         try{
             questionService.saveQuestion(question);
             question_id = question.getQid().toString();
+
             System.out.println(question_id);
         } catch (Exception e){
             return ResultUtil.getResult(new Result(e.toString()), HttpStatus.BAD_REQUEST);
@@ -57,7 +64,7 @@ public class TeacherController {
             filePath = FileUtil.fileUpload(file, question_id);
             System.out.println(filePath);
         } catch (Exception e){
-            e.printStackTrace();
+            questionService.delete(question.getQid());
             return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
 
@@ -65,6 +72,7 @@ public class TeacherController {
             FileUtil.unZip(filePath);
             System.out.println("解压成功");
         } catch (Exception e){
+            questionService.delete(question.getQid());
             return ResultUtil.getResult(new Result("解压失败"), HttpStatus.BAD_REQUEST);
         }
 
@@ -73,13 +81,12 @@ public class TeacherController {
             return ResultUtil.getResult(new Result("文件夹不存在"), HttpStatus.BAD_REQUEST);
         }
         File fa[] = f.listFiles();
-        // 遍历所有的题目
-
         try{
             for(int i = 0; i < fa.length; i++){
                 File fs = fa[i];
                 Task task = new Task();
                 task.setTname(fs.getName());
+                task.setQid(question.getQid());
                 task.setCreatedate(new Date(new java.util.Date().getTime()));
                 task.setUpdatedate(new Date(new java.util.Date().getTime()));
                 taskService.saveTask(task);
@@ -94,7 +101,6 @@ public class TeacherController {
                 System.out.println(fs.getPath());
 
                 FileUtil.createTaskModel(taskModel, task_path);
-//                System.out.println(taskModel);
                 try{
                     gitProcess.gitcreateTask(taskModel);
                 }catch (Exception e){

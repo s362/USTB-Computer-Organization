@@ -26,4 +26,12 @@ public class TaskService {
         Example<Task> example = Example.of(task);
         task = this.taskRepository.findAll(example).get(0);
     }
+
+    public List<Task> getTaskbyQid(Long qid){
+        Task task = new Task();
+        task.setQid(qid);
+
+        Example<Task> example = Example.of(task);
+        return this.taskRepository.findAll(example);
+    }
 }

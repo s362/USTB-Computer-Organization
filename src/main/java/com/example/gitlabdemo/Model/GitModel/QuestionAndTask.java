@@ -1,28 +1,20 @@
-package com.example.gitlabdemo.Model.DataModel;
+package com.example.gitlabdemo.Model.GitModel;
 
-import lombok.Data;
-import lombok.ToString;
+import com.example.gitlabdemo.Model.DataModel.Task;
 
-import javax.persistence.*;
 import java.sql.Date;
+import java.util.List;
 
-@Entity
-@Table(name = "question")
-@Data
-@ToString
-public class Question {
-    @Id
-    @GeneratedValue
-    private Long qid;
+public class QuestionAndTask {
+    Long qid;
 
-    @Column(name = "qname", length = 32, unique = true)
     private String qname;
 
-    @Column(name = "create_at")
     private Date createdate;
 
-    @Column(name = "update_at")
     private Date updatedate;
+
+    List<TaskScore> taskScores;
 
     public Long getQid() {
         return qid;
@@ -56,4 +48,11 @@ public class Question {
         this.updatedate = updatedate;
     }
 
+    public List<TaskScore> getTaskScores() {
+        return taskScores;
+    }
+
+    public void setTaskScores(List<TaskScore> taskScores) {
+        this.taskScores = taskScores;
+    }
 }

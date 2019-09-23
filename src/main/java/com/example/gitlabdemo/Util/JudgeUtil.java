@@ -39,11 +39,13 @@ public class JudgeUtil {
             }
 
             s = reader.readLine();
-            s = s.replace("'", "\"");
+            System.out.println(s);
+            s= s.replace("\"", "\\\"").replace("'","\"");
             System.out.println(s);
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(s);
+            System.out.println(root.findValue("detail").asText());
 
             Map m1 = new HashMap();
             try{
@@ -51,7 +53,7 @@ public class JudgeUtil {
                     m1.put("detail", "");
                 }
                 else {
-                    m1.put("detail", root.findValue("detail").toString());
+                    m1.put("detail", root.findValue("detail").toString().replace("\\\"", "\""));
                 }
 
             } catch (Exception e){
@@ -61,6 +63,8 @@ public class JudgeUtil {
             m1.put("verdict", root.findValue("verdict"));
             m1.put("comment", root.findValue("comment"));
             m1.put("score", root.findValue("score"));
+
+
 
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonStr = mapper.readTree(objectMapper.writeValueAsString(m1));

@@ -23,6 +23,9 @@ public class ScoreService {
     public int saveScore(Score score)  {
         try{
             score.setUpdatedate(new Date(new java.util.Date().getTime()));
+            if (score.getTscore() == null){
+                score.setTscore(0l);
+            }
             this.scoreRepository.save(score);
             Example<Score> example = Example.of(score);
             score = this.scoreRepository.findAll(example).get(0);
@@ -31,14 +34,14 @@ public class ScoreService {
             System.out.println(e.toString());
             return -1;
         }
-
     }
 
     public Score findScoreByUserandTaskid(Score score) {
         Example<Score> example = Example.of(score);
         try {
-            score = this.scoreRepository.findAll(example).get(0);
-            return score;
+            Score temp;
+            temp = this.scoreRepository.findAll(example).get(0);
+            return temp;
         } catch (Exception e){
             return null;
         }

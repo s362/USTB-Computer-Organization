@@ -36,7 +36,7 @@ public class GitProcess {
     public Integer createProject(String task_id, String user_id)throws GitLabApiException{
         Integer project_id;
         Integer groupId = gitLabApi.getGroupApi().getGroup(task_id).getId();
-        gitLabApi.getProjectApi().createProject(user_id);
+        gitLabApi.getProjectApi().createProject(groupId ,user_id);
 
         project_id = getProjectId(task_id, user_id);
         return project_id;
@@ -69,7 +69,7 @@ public class GitProcess {
             gitProject.setTitle(root.findValue("task_title").asText());
             gitProject.setAlias(root.findValue("task_title").asText());
 
-            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("README.md"), root.findValue("task_content").asText());
+            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("README.md"), Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
             gitFile.setId(Base64Convert.strConvertBase(Base64Convert.strConvertBase("README.md")));
             gitFile.setIs_binary(false);
             gitFile.setDirectory_shortid(null);
@@ -143,13 +143,12 @@ public class GitProcess {
 
     public boolean isFileExist(Integer projectId, GitFile gitFile) {
         RepositoryApi repositoryApi = this.gitLabApi.getRepositoryApi();
-//        RepositoryFileApi repositoryFileApi = this.gitLabApi.getRepositoryFileApi();
-//        List<GitFile> gitFiles = new LinkedList<GitFile>();
         List<TreeItem> treeItems;
         try{
             treeItems = repositoryApi.getTree(projectId);
         } catch (Exception e){
-            return true;
+            System.out.println("当前文件为空");
+            return false;
         }
         for(int i = 0; i < treeItems.size();i++){
             if(treeItems.get(i).getPath().equals(gitFile.getShortid())){
