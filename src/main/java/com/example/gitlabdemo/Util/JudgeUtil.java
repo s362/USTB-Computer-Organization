@@ -53,7 +53,9 @@ public class JudgeUtil {
                     m1.put("detail", "");
                 }
                 else {
-                    m1.put("detail", root.findValue("detail").toString());
+                    String detailStr = root.findValue("detail").toString();
+                    detailStr.substring(2, detailStr.length()-2);
+                    m1.put("detail", detailStr);
                 }
 
             } catch (Exception e){
