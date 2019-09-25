@@ -33,6 +33,7 @@ public class LoginController {
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }
             }
+            System.out.println("无此用户");
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
         } catch (Exception e){
             System.out.println(e.toString());
@@ -53,5 +54,10 @@ public class LoginController {
         } else{
             return ResultUtil.getResult(new Result("插入失败", false), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @PostMapping("/401")
+    public ResponseEntity<Result> error(){
+        return ResultUtil.getResult(new Result("登录失败", false), HttpStatus.BAD_REQUEST);
     }
 }

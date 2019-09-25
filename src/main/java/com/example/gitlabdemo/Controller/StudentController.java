@@ -79,9 +79,20 @@ public class StudentController {
     @PostMapping("/getTasks")
     public ResponseEntity<Result> getAllTasks(Long qid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        Result result = new Result();
-        result.setObject(getTaskScores(Long.parseLong(user_id), qid));
-        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+        if (qid == 0l){
+            List<TaskScore> taskScores = new LinkedList<>();
+            List<Question> questions = questionService.getAllQuestion();
+            for(int i = 0; i < questions.size(); i++){
+                taskScores.addAll(getTaskScores(Long.parseLong(user_id), questions.get(i).getQid()));
+            }
+            Result result = new Result();
+            result.setObject(taskScores);
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        } else{
+            Result result = new Result();
+            result.setObject(getTaskScores(Long.parseLong(user_id), qid));
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        }
     }
 
     private List<TaskScore> getTaskScores(Long uid, Long qid){
@@ -207,11 +218,24 @@ public class StudentController {
             if (project_id == null) {
                 project_id = gitProcess.createProject(task_id, user_id);
                 System.out.println("创建工程成功");
+
+                try {
+                    GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
+                    gitProcess.gitcreateFile(project_id, gitFile);
+                    System.out.println("创建学生文件成功");
+                } catch (Exception e){
+                    System.out.println("创建学生文件失败");
+                    System.out.println(e.toString());
+                }
+
             }
         } catch (GitLabApiException e){
             System.out.println(e.toString());
             return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
+
+
+
         gitProject.setSourceId(project_id.toString());
         gitProject.setModules(gitProcess.getRepositoryFiles(project_id));
         gitProject.setTags(new LinkedList<String>());

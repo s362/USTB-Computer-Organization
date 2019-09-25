@@ -10,23 +10,29 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-
 public class JwtFilter extends BasicHttpAuthenticationFilter {
     /**
      * 执行登录认证
      *
      * @param request
      * @param response
-     * @param mappedValue
      * @return
      */
     @Override
-    protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) {
+    protected boolean isLoginAttempt(ServletRequest request, ServletResponse response) {
+        HttpServletRequest req = (HttpServletRequest) request;
+        String authorization = req.getHeader("Authorization");
+        return authorization != null;
+    }
+
+    @Override
+    protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue)  {
         try {
             executeLogin(request, response);
             return true;
         } catch (Exception e) {
             System.out.println("登录失败");
+            response401(request, response);
             return false;
         }
     }
@@ -60,5 +66,14 @@ public class JwtFilter extends BasicHttpAuthenticationFilter {
             return false;
         }
         return super.preHandle(request, response);
+    }
+
+    private void response401(ServletRequest req, ServletResponse resp) {
+        try {
+            HttpServletResponse httpServletResponse = (HttpServletResponse) resp;
+            httpServletResponse.sendRedirect("/401");
+        } catch (Exception e) {
+            System.out.println("跳转失败");
+        }
     }
 }

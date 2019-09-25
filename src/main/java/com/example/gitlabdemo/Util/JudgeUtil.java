@@ -45,6 +45,7 @@ public class JudgeUtil {
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(s);
+            String detailStr = root.findValue("detail").asText();
             System.out.println(root.findValue("detail").asText());
 
             Map m1 = new HashMap();
@@ -53,7 +54,10 @@ public class JudgeUtil {
                     m1.put("detail", "");
                 }
                 else {
-                    m1.put("detail", root.findValue("detail").toString().replace("\\\"", "\""));
+//                    System.out.println();
+//                    detailStr = root.findValue("detail").toString().replace("\\\"", "\"");
+//                    detailStr = detailStr.substring(2, detailStr.length()-2);
+                    m1.put("detail", detailStr);
                 }
 
             } catch (Exception e){

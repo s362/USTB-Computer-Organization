@@ -21,7 +21,11 @@ public class UserService {
 
     public User getByUsernameAndPwd(User user){
         Example<User> example = Example.of(user);
+
         List<User> list = this.userRepository.findAll(example);
+//        System.out.println(this.userRepository.findAll());
+//        System.out.println(user);
+//        System.out.println(list);
         if(!list.isEmpty()){
             return list.get(0);
         }
@@ -42,6 +46,7 @@ public class UserService {
     public int addUser(User user){
         try{
             this.userRepository.save(user);
+//            this.userRepository.flush();
             return 0;
         } catch (Exception e){
             System.out.println(e.toString());

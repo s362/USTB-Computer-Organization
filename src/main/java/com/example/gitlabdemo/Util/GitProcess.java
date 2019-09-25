@@ -68,14 +68,15 @@ public class GitProcess {
             JsonNode root = mapper.readTree(content);
             gitProject.setTitle(root.findValue("task_title").asText());
             gitProject.setAlias(root.findValue("task_title").asText());
+            gitProject.setDescription(Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
 
-            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("README.md"), Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
-            gitFile.setId(Base64Convert.strConvertBase(Base64Convert.strConvertBase("README.md")));
-            gitFile.setIs_binary(false);
-            gitFile.setDirectory_shortid(null);
-            gitFile.setSourceId(repositoryFile.getCommitId());
-            gitFile.setTitle("README.md");
-            gitProject.getModules().add(gitFile);
+//            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("README.md"), Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
+//            gitFile.setId(Base64Convert.strConvertBase(Base64Convert.strConvertBase("README.md")));
+//            gitFile.setIs_binary(false);
+//            gitFile.setDirectory_shortid(null);
+//            gitFile.setSourceId(repositoryFile.getCommitId());
+//            gitFile.setTitle("README.md");
+//            gitProject.getModules().add(gitFile);
             return gitProject;
 
         } catch (GitLabApiException e){

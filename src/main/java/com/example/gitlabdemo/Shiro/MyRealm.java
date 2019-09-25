@@ -1,6 +1,7 @@
 package com.example.gitlabdemo.Shiro;
 
 
+
 import com.example.gitlabdemo.Model.DataModel.User;
 import com.example.gitlabdemo.Service.UserService;
 import org.apache.shiro.authc.AuthenticationException;
@@ -24,7 +25,6 @@ public class MyRealm extends AuthorizingRealm {
 
     @Autowired
     private UserService userService;
-
 
     /**
      * 必须重写此方法，不然Shiro会报错
@@ -54,7 +54,7 @@ public class MyRealm extends AuthorizingRealm {
         // 解密获得username，用于和数据库进行对比
         String username = JwtUtil.getUsername(token);
         if (username == null) {
-            throw new AuthenticationException("token无效");
+            throw new AuthenticationException("token无效,请重新输入");
         }
 
         User userBean = userService.findByUserName(username);
