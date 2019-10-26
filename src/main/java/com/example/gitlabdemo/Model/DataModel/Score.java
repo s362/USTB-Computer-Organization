@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.ToString;
 
 import javax.persistence.*;
-import java.sql.Date;
+import java.util.Date;
 
 @Entity
 @Table(name = "score")
@@ -19,7 +19,7 @@ public class Score {
     private Long uid;
 
     @Column(name = "task_id")
-    private String  task_id;
+    private Long  tid;
 
     @Column(name = "tscore")
     private Long tscore;
@@ -51,12 +51,12 @@ public class Score {
         this.uid = uid;
     }
 
-    public String getTask_id() {
-        return task_id;
+    public Long getTid() {
+        return tid;
     }
 
-    public void setTask_id(String task_id) {
-        this.task_id = task_id;
+    public void setTid(Long tid) {
+        this.tid = tid;
     }
 
     public Long getTscore() {

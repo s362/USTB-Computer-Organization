@@ -8,7 +8,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.sql.Date;
+import java.util.Date;
 
 @Service("scoreService")
 public class ScoreService {
@@ -22,7 +22,7 @@ public class ScoreService {
 
     public int saveScore(Score score)  {
         try{
-            score.setUpdatedate(new Date(new java.util.Date().getTime()));
+            score.setUpdatedate(new Date());
             if (score.getTscore() == null){
                 score.setTscore(0l);
             }

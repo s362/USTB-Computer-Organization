@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Date;
+import java.util.Date;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -21,10 +21,16 @@ public class LoginController {
     @Autowired
     UserService userService;
 
+    /**
+     * 登录验证
+     * @param user 用户名和密码
+     * @return
+     */
     @PostMapping(value = "/", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> login(@RequestBody User user){
         System.out.println(user);
         try{
+//            如果用户名和密码正确，则返回token
             if (userService.getByUsernameAndPwd(user) != null){
                 String token = JwtUtil.sign(user.getUusername(), user.getUpassword());
                 if(token != null){
@@ -41,13 +47,19 @@ public class LoginController {
         }
     }
 
+    /**
+     * 添加用户
+     * @param uusername 用户名
+     * @param upassword 密码
+     * @return
+     */
     @PostMapping("/adduser")
     public ResponseEntity<Result> addUser(String uusername, String upassword){
         User user = new User();
 
         user.setUusername(uusername);
         user.setUpassword(upassword);
-        user.setCreatedate(new Date(new java.util.Date().getTime()));
+        user.setCreatedate(new Date());
         System.out.println(user);
         if(userService.addUser(user) == 0){
             return ResultUtil.getResult(new Result(), HttpStatus.OK);
@@ -56,6 +68,10 @@ public class LoginController {
         }
     }
 
+    /**
+     * 登录错误返回报错信息
+     * @return
+     */
     @PostMapping("/401")
     public ResponseEntity<Result> error(){
         return ResultUtil.getResult(new Result("登录失败", false), HttpStatus.BAD_REQUEST);

@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.ToString;
 
 import javax.persistence.*;
-import java.sql.Date;
+import java.util.Date;
 
 @Entity
 @Table(name = "question")
@@ -15,14 +15,23 @@ public class Question {
     @GeneratedValue
     private Long qid;
 
+//    题目名称
     @Column(name = "qname", length = 32, unique = true)
     private String qname;
 
-    @Column(name = "create_at")
-    private Date createdate;
+    @Column(name = "qcontent", length = 32)
+    private String qcontent;
 
-    @Column(name = "update_at")
-    private Date updatedate;
+    @Column(name = "begin_at")
+    private Date begindate;
+
+//    截止时间
+    @Column(name = "end_at")
+    private Date enddate;
+
+//    布置给的班级id
+    @Column(name = "cid")
+    private Long cid;
 
     public Long getQid() {
         return qid;
@@ -40,20 +49,35 @@ public class Question {
         this.qname = qname;
     }
 
-    public Date getCreatedate() {
-        return createdate;
+    public String getQcontent() {
+        return qcontent;
     }
 
-    public void setCreatedate(Date createdate) {
-        this.createdate = createdate;
+    public void setQcontent(String qcontent) {
+        this.qcontent = qcontent;
     }
 
-    public Date getUpdatedate() {
-        return updatedate;
+    public Date getBegindate() {
+        return begindate;
     }
 
-    public void setUpdatedate(Date updatedate) {
-        this.updatedate = updatedate;
+    public void setBegindate(Date begindate) {
+        this.begindate = begindate;
     }
 
+    public Date getEnddate() {
+        return enddate;
+    }
+
+    public void setEnddate(Date enddate) {
+        this.enddate = enddate;
+    }
+
+    public Long getCid() {
+        return cid;
+    }
+
+    public void setCid(Long cid) {
+        this.cid = cid;
+    }
 }

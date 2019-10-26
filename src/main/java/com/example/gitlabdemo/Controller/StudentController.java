@@ -41,47 +41,72 @@ public class StudentController {
 
     GitProcess gitProcess;
 
+    /**
+     * 用于测试
+     * @param test 任意字符串
+     * @return
+     */
     @PostMapping("/test")
     public ResponseEntity<Result> testConnect(String test){
         System.out.println(test);
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+    /**
+     * 得到所有作业及其下的题目列表
+     * @param httpServletRequest 请求体
+     * @return 作业及题目列表
+     */
     @PostMapping("/getQuestionAndTasks")
-    public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> getQuestionAndTasks(Long cid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        List<Question> questions = questionService.getAllQuestion();
-        List<QuestionAndTask> questionAndTasks = new LinkedList<>();
+        List<Question> questions = questionService.getAllQuestion(cid);
+        List<QuestionModel> questionModels = new LinkedList<>();
         for(int i = 0; i < questions.size(); i++){
             Question question = questions.get(i);
-            QuestionAndTask questionAndTask = new QuestionAndTask();
-            questionAndTask.setQid(question.getQid());
-            questionAndTask.setQname(question.getQname());
-            questionAndTask.setUpdatedate(question.getUpdatedate());
-            questionAndTask.setCreatedate(question.getCreatedate());
-            questionAndTask.setTaskScores(getTaskScores(Long.parseLong(user_id), question.getQid()));
-            questionAndTasks.add(questionAndTask);
+            QuestionModel questionModel = new QuestionModel();
+            questionModel.setQid(question.getQid());
+            questionModel.setQname(question.getQname());
+            questionModel.setBeginDate(question.getBegindate());
+            questionModel.setEndDate(question.getEnddate());
+            questionModel.setTaskScores(getTaskScores(Long.parseLong(user_id), question.getQid()));
+            questionModels.add(questionModel);
         }
 
         Result result = new Result();
-        result.setObject(questionAndTasks);
+        result.setObject(questionModels);
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+    /**
+     * 得到该用户在cid课程下的所有题目
+     * @param cid 课程id
+     * @param httpServletRequest 请求体
+     * @return
+     */
     @PostMapping("/getQuestion")
-    public ResponseEntity<Result> getAllQuestion(HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> getAllQuestion(Long cid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         Result result = new Result();
-        result.setObject(questionService.getAllQuestion());
+        // 返回所有题目
+        result.setObject(questionService.getAllQuestion(cid));
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+    /**
+     * 得到一次作业下的题目列表
+     * @param qid 作业id
+     * @param cid 课程id
+     * @param httpServletRequest 请求体
+     * @return 题目列表
+     */
     @PostMapping("/getTasks")
-    public ResponseEntity<Result> getAllTasks(Long qid, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> getAllTasks(Long qid, Long cid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+//        如果 qid 为0，则返回所有作业及其下的题目列表
         if (qid == 0l){
             List<TaskScore> taskScores = new LinkedList<>();
-            List<Question> questions = questionService.getAllQuestion();
+            List<Question> questions = questionService.getAllQuestion(cid);
             for(int i = 0; i < questions.size(); i++){
                 taskScores.addAll(getTaskScores(Long.parseLong(user_id), questions.get(i).getQid()));
             }
@@ -89,26 +114,40 @@ public class StudentController {
             result.setObject(taskScores);
             return ResultUtil.getResult(result, HttpStatus.OK);
         } else{
+//            否则返回当前作业的所有题目
             Result result = new Result();
             result.setObject(getTaskScores(Long.parseLong(user_id), qid));
             return ResultUtil.getResult(result, HttpStatus.OK);
         }
     }
 
+
+//    得到一次作业下的每个题目的分数
+
+    /**
+     *
+     * @param uid 学生id
+     * @param qid 作业id
+     * @return
+     */
     private List<TaskScore> getTaskScores(Long uid, Long qid){
+        // 作业分数列表
         List<TaskScore> taskScores = new LinkedList<>();
+        // 得到并遍历该次作业下的所有题目
         List<Task> tasks = taskService.getTaskbyQid(qid);
         for(int i = 0; i < tasks.size(); i++){
+            // 得到该用户每到作业题的分数
             Score score = new Score();
-            score.setTask_id("t" + tasks.get(i).getTid());
+            score.setTid(tasks.get(i).getTid());
             score.setUid(uid);
             Score _score = scoreService.findScoreByUserandTaskid(score);
+            // 如果该用户这道题没有做过，则数据库记其为0分；
             if (_score == null){
                 _score = score;
                 scoreService.saveScore(_score);
             }
             TaskScore taskScore = new TaskScore();
-            taskScore.setTask_id("t" + tasks.get(i).getTid());
+            taskScore.setTid(tasks.get(i).getTid());
             taskScore.setTname(tasks.get(i).getTname());
             taskScore.setTscore(_score.getTscore());
             taskScore.setUpdatedate(tasks.get(0).getUpdatedate());
@@ -118,16 +157,21 @@ public class StudentController {
     }
 
 
-
-
+    /**
+     * 运行代码
+     * @param tid 题目id
+     * @param httpServletRequest 请求体
+     * @return
+     */
     @PostMapping(value = "/run", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> run_judge(String task_id, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> run_judge(Long tid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + task_id);
+        String task_id = "t" + tid;
+        System.out.println(user_id + "   t" + tid);
 
         Score score = new Score();
         score.setUid((long)Integer.parseInt(user_id));
-        score.setTask_id(task_id);
+        score.setTid(tid);
         Score task_score;
         task_score = scoreService.findScoreByUserandTaskid(score);
 
@@ -152,11 +196,18 @@ public class StudentController {
         return ResultUtil.getResult(new Result(jsonObject), HttpStatus.OK);
     }
 
-
-
+    /**
+     * 更改文件名
+     * @param tid 题目id
+     * @param info 更改前后文件名称
+     * @param httpServletRequest
+     * @return
+     */
     @PutMapping(value = "/renameFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> renameFile(String task_id, @RequestBody JsonNode info, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> renameFile(Long tid, @RequestBody JsonNode info, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+//        gitlab中的项目名
+        String task_id = "t" + tid;
         System.out.println(user_id + "   " + task_id);
 
         gitProcess = new GitProcess();
@@ -168,6 +219,7 @@ public class StudentController {
         Integer project_id = gitProcess.getProjectId(task_id, user_id);
         if (project_id == null) return ResultUtil.getResult(new Result("no project"), HttpStatus.BAD_REQUEST);
 
+//        获取更改名称前的文件
         RepositoryFile repositoryFile;
         try{
             repositoryFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id, Base64Convert.baseConvertStr(shortid), "master");
@@ -188,10 +240,12 @@ public class StudentController {
 
         gitFile.setShortid(Base64Convert.baseConvertStr(shortid));
 
+//        删除老文件
         if(gitProcess.gitdeleteFile(project_id, gitFile)){
             gitFile.setShortid(Base64Convert.strConvertBase(title));
             gitFile.setCode(repositoryFile.getContent());
             System.out.println("文件删除成功");
+//            创建新文件
             if(gitProcess.gitcreateFile(project_id, gitFile)){
                 String new_shortid = Base64Convert.strConvertBase(title);
                 Result result = new Result();
@@ -202,14 +256,21 @@ public class StudentController {
         return ResultUtil.getResult(new Result("false"), HttpStatus.BAD_REQUEST);
     }
 
-
+    /**
+     * 进入ide界面调用的请求，返回这个题目的所有文件信息和题目信息
+     * @param tid
+     * @param httpServletRequest
+     * @return
+     */
     @PostMapping(value = "/getproject")
-    public ResponseEntity<Result> getTask(String task_id, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<Result> getTask(Long tid, HttpServletRequest httpServletRequest) {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        String task_id = "t" + tid;
         System.out.println(user_id + "   " + task_id);
         gitProcess = new GitProcess();
 
         GitProject gitProject = new GitProject();
+        // 得到学生项目id和老师题目项目id
         Integer project_id;
         project_id = gitProcess.getProjectId(task_id, user_id);
         Integer teacher_id;
@@ -234,10 +295,19 @@ public class StudentController {
             return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
 
-
+//        因为前端要求文件列表不能为空
+//        所以如果学生工程目录下没有文件，则创建top.v文件
+        List<GitFile> gitFiles = gitProcess.getRepositoryFiles(project_id);
+        if(gitFiles.isEmpty()){
+            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
+            gitProcess.gitcreateFile(project_id, gitFile);
+            System.out.println("创建学生文件成功");
+            gitProject.setModules(gitProcess.getRepositoryFiles(project_id));
+        } else{
+            gitProject.setModules(gitFiles);
+        }
 
         gitProject.setSourceId(project_id.toString());
-        gitProject.setModules(gitProcess.getRepositoryFiles(project_id));
         gitProject.setTags(new LinkedList<String>());
         gitProject.setDirectories(new LinkedList<GitFolder>());
         gitProject.setId(task_id);
@@ -253,15 +323,24 @@ public class StudentController {
         return ResultUtil.getResult(new Result(gitProject), HttpStatus.OK);
     }
 
+    /**
+     * 创建新文件
+     * @param tid 题目id
+     * @param modules
+     * @param httpServletRequest
+     * @return
+     */
     @PutMapping(value = "/createFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> createFile(String task_id, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> createFile(Long tid, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        String task_id = "t" + tid;
         System.out.println(user_id + "   " + task_id);
 
         gitProcess = new GitProcess();
         Integer project_id = gitProcess.getProjectId(task_id, user_id);
         if (project_id == null) return ResultUtil.getResult(new Result("no project  "), HttpStatus.BAD_REQUEST);
 
+//        循环判断文件是否已经存在。
         for(int i = 0; i < modules.getModules().size();i++){
             if(modules.getModules().get(i).getShortid().equals(Base64Convert.strConvertBase("README.md"))) continue;
             GitFile gitFile = new GitFile(modules.getModules().get(i).getShortid(), modules.getModules().get(i).getCode());
@@ -279,9 +358,17 @@ public class StudentController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+    /**
+     * 保存文件
+     * @param tid 题目id
+     * @param modules
+     * @param httpServletRequest
+     * @return
+     */
     @PutMapping(value = "/saveFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> saveFile(String task_id, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> saveFile(Long tid, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        String task_id = "t" + tid;
         System.out.println(user_id + "   " + task_id);
 
         gitProcess = new GitProcess();
@@ -302,13 +389,21 @@ public class StudentController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+    /**
+     * 删除文件
+     * @param tid
+     * @param shortid 文件
+     * @param httpServletRequest
+     * @return
+     */
     @DeleteMapping("/deleteFile")
-    public ResponseEntity<Result> deleteFile(String task_id, String shortid, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> deleteFile(Long tid, String shortid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        String task_id = "t" + tid;
         System.out.println(user_id + "   " + task_id);
 
-        if(shortid.equals(Base64Convert.strConvertBase("README.md")))
-            return ResultUtil.getResult(new Result("不能删除README.md文件"), HttpStatus.BAD_REQUEST);
+//        if(shortid.equals(Base64Convert.strConvertBase("README.md")))
+//            return ResultUtil.getResult(new Result("不能删除README.md文件"), HttpStatus.BAD_REQUEST);
         gitProcess = new GitProcess();
 
         Integer project_id = gitProcess.getProjectId(task_id, user_id);

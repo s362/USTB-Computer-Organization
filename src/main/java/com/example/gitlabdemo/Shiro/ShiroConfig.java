@@ -7,7 +7,7 @@ import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.HandlerExceptionResolver;
+//import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import javax.servlet.Filter;
 import java.util.HashMap;
@@ -26,6 +26,9 @@ public class ShiroConfig {
         // 配置不会被拦截的链接 顺序判断
         filterChainDefinitionMap.put("/api/signin/**", "anon");
         filterChainDefinitionMap.put("/api/teacher/**", "anon");
+
+        // 测试时使用，关闭所有拦截
+        filterChainDefinitionMap.put("/api/**", "anon");
         filterChainDefinitionMap.put("/401", "anon");
 
         // 添加自己的过滤器并且取名为jwt

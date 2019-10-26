@@ -5,10 +5,32 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 public class GitTest {
+
+//    @Test
+//    public void getAllproject() throws Exception{
+//        GitProcess gitProcess = new GitProcess();
+//        System.out.println(gitProcess.getGitLabApi().getProjectApi().getOwnedProjects());
+//    }
+
+//    @Test
+//    public void testDate(){
+//        String path = "C:\\Users\\bearking\\Desktop\\lala\\test";
+//        File f = new File(path);
+//        System.out.println(f.getName());
+//        File fa[] = f.listFiles();
+//        System.out.println(fa[0].getParentFile().getPath());
+//        for(int i = 0; i < fa.length; i++) {
+//            System.out.println(fa[i].getName());
+//            fa[i].renameTo(new File(fa[i].getParentFile().getParentFile().getPath() + "\\" + fa[i].getName()));
+//        }
+//        System.out.println(new Date().toString());
+//    }
 
 //    @Test
 //    public void deleteGroup()throws Exception{

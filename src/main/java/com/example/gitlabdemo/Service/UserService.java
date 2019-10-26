@@ -46,7 +46,6 @@ public class UserService {
     public int addUser(User user){
         try{
             this.userRepository.save(user);
-//            this.userRepository.flush();
             return 0;
         } catch (Exception e){
             System.out.println(e.toString());

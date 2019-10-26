@@ -1,7 +1,5 @@
 package com.example.gitlabdemo.Controller;
 
-
-import com.example.gitlabdemo.Model.DataModel.Question;
 import com.example.gitlabdemo.Model.DataModel.Task;
 import com.example.gitlabdemo.Model.GitModel.TaskFile;
 import com.example.gitlabdemo.Model.GitModel.TaskModel;
@@ -21,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.sql.Date;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,42 +35,40 @@ public class TeacherController {
     @Autowired
     private QuestionService questionService;
 
+    /**
+     * 提交压缩文件夹，创建题目
+     * @param file .zip文件
+     * @return
+     */
     @PostMapping(value = "/createTask")
     public ResponseEntity<Result> createTask(@RequestBody MultipartFile file){
         gitProcess = new GitProcess();
-        Question question = new Question();
-        question.setCreatedate(new Date(new java.util.Date().getTime()));
-        question.setUpdatedate(new Date(new java.util.Date().getTime()));
+//        必须为.zip文件
         try{
-            question.setQname(file.getOriginalFilename().split("\\.")[0]);
+            System.out.println(file.getOriginalFilename());
+            String _fileName = file.getOriginalFilename().split("\\.")[0];
+            if(_fileName == "zip"){
+                throw new Exception();
+            }
         } catch (Exception e){
             return ResultUtil.getResult(new Result("请上传.zip包"), HttpStatus.BAD_REQUEST);
         }
 
-        String question_id;
-        try{
-            questionService.saveQuestion(question);
-            question_id = question.getQid().toString();
-
-            System.out.println(question_id);
-        } catch (Exception e){
-            return ResultUtil.getResult(new Result(e.toString()), HttpStatus.BAD_REQUEST);
-        }
         System.out.println("开始文件接收");
         String filePath;
+//        开始文件接收
         try{
-            filePath = FileUtil.fileUpload(file, question_id);
+            filePath = FileUtil.fileUpload(file);
             System.out.println(filePath);
         } catch (Exception e){
-            questionService.delete(question.getQid());
             return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
 
+//        开始解压，解压到 filepath中
         try {
             FileUtil.unZip(filePath);
             System.out.println("解压成功");
         } catch (Exception e){
-            questionService.delete(question.getQid());
             return ResultUtil.getResult(new Result("解压失败"), HttpStatus.BAD_REQUEST);
         }
 
@@ -80,27 +76,29 @@ public class TeacherController {
         if (!f.exists()) {
             return ResultUtil.getResult(new Result("文件夹不存在"), HttpStatus.BAD_REQUEST);
         }
+//        遍历该文件下的所有文件（其下每个文件夹都是一个题目）
         File fa[] = f.listFiles();
         try{
             for(int i = 0; i < fa.length; i++){
                 File fs = fa[i];
                 Task task = new Task();
                 task.setTname(fs.getName());
-                task.setQid(question.getQid());
-                task.setCreatedate(new Date(new java.util.Date().getTime()));
-                task.setUpdatedate(new Date(new java.util.Date().getTime()));
+                task.setCreatedate(new Date());
+                task.setUpdatedate(new Date());
+//                将题目信息存在数据库中，并得到题目id
                 taskService.saveTask(task);
-                String task_id = "t" + task.getTid().toString();
+                Long tid = task.getTid();
                 TaskModel taskModel = new TaskModel();
                 taskModel.setTaskFiles(new LinkedList<TaskFile>());
-                taskModel.setTask_id(task_id);
+                taskModel.setTask_id("t" + tid);
                 taskModel.setTask_title(fs.getName());
 
-                String task_path = OSUtil.isLinux() ? filePath + "/" + task_id : filePath + "\\" + task_id;
+                String task_path = fs.getParentFile().getParentFile().getPath() + (OSUtil.isLinux() ?  "/" + tid : "\\" + tid);
                 fs.renameTo(new File(task_path));
                 System.out.println(fs.getPath());
 
-                FileUtil.createTaskModel(taskModel, task_path);
+                FileUtil.createTaskModel(taskModel, fs.getPath());
+//                在gitlab中创建相应的group与teacher工程
                 try{
                     gitProcess.gitcreateTask(taskModel);
                 }catch (Exception e){
@@ -112,11 +110,11 @@ public class TeacherController {
 
             }
         } catch (Exception e){
-
             System.out.println(e.toString());
             e.printStackTrace();
             return ResultUtil.getResult(new Result(e.toString()), HttpStatus.BAD_REQUEST);
         }
+        f.delete();
 
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }

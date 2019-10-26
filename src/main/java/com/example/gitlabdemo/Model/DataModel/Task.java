@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.ToString;
 
 import javax.persistence.*;
-import java.sql.Date;
+import java.util.Date;
 
 @Entity
 @Table(name = "task")
@@ -24,8 +24,7 @@ public class Task {
     @Column(name = "update_at")
     private Date updatedate;
 
-    @Column(name = "qid")
-    private Long qid;
+
 
     public Long getTid() {
         return tid;

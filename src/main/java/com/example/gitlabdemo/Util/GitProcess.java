@@ -13,12 +13,15 @@ import java.util.*;
 
 public class GitProcess {
     GitLabApi gitLabApi;
-//    String hostURL = "http://222.28.41.217:8099";
-    String hostURL = "http://202.204.62.155:8099";
+//    正式服务器
+//    String hostURL = "http://202.204.62.155:8099";
+//    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq";
+
+//    测试服务器
+    String hostURL = "http://222.28.41.217:8099";
 //    String hostURL = "http://gitlab.blazarx.com:6300/";
-//    String privateToken = "TEvXW8r5fiUZ-6i2V5hn";
-//    String hostURL = "http://140.143.62.131:8099/";
-    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq";
+//    String privateToken = "TEvXW8r5fiUZ-6i2V5hn"; //root
+    String privateToken = "2xGVxqKF6LzMbAg9rCJ4"; //test  name：13021238080@163.com  passwd: qq872940851
 
 
     public GitProcess(){
@@ -33,6 +36,13 @@ public class GitProcess {
         return this.gitLabApi;
     }
 
+    /**
+     * 创建工程
+     * @param task_id
+     * @param user_id
+     * @return
+     * @throws GitLabApiException
+     */
     public Integer createProject(String task_id, String user_id)throws GitLabApiException{
         Integer project_id;
         Integer groupId = gitLabApi.getGroupApi().getGroup(task_id).getId();

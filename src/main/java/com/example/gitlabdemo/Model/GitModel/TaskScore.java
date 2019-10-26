@@ -1,19 +1,19 @@
 package com.example.gitlabdemo.Model.GitModel;
 
-import java.sql.Date;
+import java.util.Date;
 
 public class TaskScore {
-    private String  task_id;
+    private Long tid;
     private String tname;
     private Date updatedate;
     private Long tscore;
 
-    public String getTask_id() {
-        return task_id;
+    public Long getTid() {
+        return tid;
     }
 
-    public void setTask_id(String task_id) {
-        this.task_id = task_id;
+    public void setTid(Long tid) {
+        this.tid = tid;
     }
 
     public String getTname() {

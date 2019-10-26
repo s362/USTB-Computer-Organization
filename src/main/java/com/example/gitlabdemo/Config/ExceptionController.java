@@ -9,17 +9,17 @@ import javax.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class ExceptionController {
     // 捕捉shiro的异常
-    @ExceptionHandler(value = ShiroException.class)
-    public ResponseBean handle401(ShiroException e) {
-        System.out.println("lalal");
-        return new ResponseBean(401, e.getMessage(), null);
-    }
-
-    @ExceptionHandler(value = org.apache.shiro.authc.AuthenticationException.class)
-    public ResponseBean handle401_P(org.apache.shiro.authc.AuthenticationException e) {
-        System.out.println("lalal");
-        return new ResponseBean(401, e.getMessage(), null);
-    }
+//    @ExceptionHandler(value = ShiroException.class)
+//    public ResponseBean handle401(ShiroException e) {
+//        System.out.println("lalal");
+//        return new ResponseBean(401, e.getMessage(), null);
+//    }
+//
+//    @ExceptionHandler(value = org.apache.shiro.authc.AuthenticationException.class)
+//    public ResponseBean handle401_P(org.apache.shiro.authc.AuthenticationException e) {
+//        System.out.println("lalal");
+//        return new ResponseBean(401, e.getMessage(), null);
+//    }
 //
 //    // 捕捉UnauthorizedException
     @ExceptionHandler(Throwable.class)
@@ -28,10 +28,10 @@ public class ExceptionController {
     }
 //
     // 捕捉UnauthorizedException
-    @ExceptionHandler(value = org.apache.shiro.authc.AuthenticationException.class)
-    public ResponseBean handleAu() {
-        return new ResponseBean(401, "Unauthorized", null);
-    }
+//    @ExceptionHandler(value = org.apache.shiro.authc.AuthenticationException.class)
+//    public ResponseBean handleAu() {
+//        return new ResponseBean(401, "Unauthorized", null);
+//    }
 
     // 捕捉其他所有异常
     @ExceptionHandler(Exception.class)

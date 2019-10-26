@@ -2,17 +2,17 @@ package com.example.gitlabdemo.Model.GitModel;
 
 import com.example.gitlabdemo.Model.DataModel.Task;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.List;
 
-public class QuestionAndTask {
+public class QuestionModel {
     Long qid;
 
     private String qname;
 
-    private Date createdate;
+    private Date beginDate;
 
-    private Date updatedate;
+    private Date endDate;
 
     List<TaskScore> taskScores;
 
@@ -32,20 +32,20 @@ public class QuestionAndTask {
         this.qname = qname;
     }
 
-    public Date getCreatedate() {
-        return createdate;
+    public Date getBeginDate() {
+        return beginDate;
     }
 
-    public void setCreatedate(Date createdate) {
-        this.createdate = createdate;
+    public void setBeginDate(Date beginDate) {
+        this.beginDate = beginDate;
     }
 
-    public Date getUpdatedate() {
-        return updatedate;
+    public Date getEndDate() {
+        return endDate;
     }
 
-    public void setUpdatedate(Date updatedate) {
-        this.updatedate = updatedate;
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
     }
 
     public List<TaskScore> getTaskScores() {
