@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model.DataModel;
+package com.example.gitlabdemo.Entity;
 
 import lombok.Data;
 import lombok.ToString;
@@ -19,6 +19,15 @@ public class QuestionAndTask {
 
     @Column(name = "tid")
     private Long tid;
+
+    public QuestionAndTask(){
+
+    }
+
+    public QuestionAndTask(Long qid, Long tid){
+        this.qid = qid;
+        this.tid = tid;
+    }
 
     public Long getQtid() {
         return qtid;

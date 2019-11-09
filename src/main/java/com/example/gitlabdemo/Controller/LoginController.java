@@ -1,12 +1,11 @@
 package com.example.gitlabdemo.Controller;
 
 
-import com.example.gitlabdemo.Model.Result;
-import com.example.gitlabdemo.Model.DataModel.User;
+import com.example.gitlabdemo.Util.Result;
+import com.example.gitlabdemo.Entity.User;
 import com.example.gitlabdemo.Service.UserService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.ResultUtil;
-//import com.example.gitlabdemo.Util.TokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,24 +48,21 @@ public class LoginController {
 
     /**
      * 添加用户
-     * @param uusername 用户名
-     * @param upassword 密码
+     * User
      * @return
      */
     @PostMapping("/adduser")
-    public ResponseEntity<Result> addUser(String uusername, String upassword){
-        User user = new User();
-
-        user.setUusername(uusername);
-        user.setUpassword(upassword);
+    public ResponseEntity<Result> addUser(User user){
         user.setCreatedate(new Date());
         System.out.println(user);
-        if(userService.addUser(user) == 0){
+        try{
+            userService.addUser(user);
             return ResultUtil.getResult(new Result(), HttpStatus.OK);
-        } else{
-            return ResultUtil.getResult(new Result("插入失败", false), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return ResultUtil.getResult(new Result("插入失败" + e.toString(), false), HttpStatus.BAD_REQUEST);
         }
     }
+
 
     /**
      * 登录错误返回报错信息

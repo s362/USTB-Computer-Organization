@@ -1,7 +1,6 @@
 package com.example.gitlabdemo.Service;
 
-import com.example.gitlabdemo.Model.DataModel.Question;
-import com.example.gitlabdemo.Model.DataModel.Score;
+import com.example.gitlabdemo.Entity.Score;
 import com.example.gitlabdemo.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;

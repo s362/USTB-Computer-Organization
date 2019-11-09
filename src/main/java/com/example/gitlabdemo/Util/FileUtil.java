@@ -1,6 +1,6 @@
 package com.example.gitlabdemo.Util;
-import com.example.gitlabdemo.Model.GitModel.TaskFile;
-import com.example.gitlabdemo.Model.GitModel.TaskModel;
+import com.example.gitlabdemo.Model.TaskFile;
+import com.example.gitlabdemo.Model.TaskModel;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -118,15 +118,16 @@ public class FileUtil {
     /**
      * 创建题目对象
      * @param taskModel 引用传递，题目对象
-     * @param path 上传的题目的路径
+     * @param f 题目文件夹
      * @throws Exception
      */
-    public static void createTaskModel(TaskModel taskModel, String path) throws Exception{
+    public static void createTaskModel(TaskModel taskModel, File file) throws Exception{
         System.out.println("isLinux?" + OSUtil.isLinux());
-//        读取content.txt文件内容
+        String path = file.getPath();
+        // 读取content.txt文件内容
         String contentPath = OSUtil.isLinux() ? path + "/content.txt" : path + "\\content.txt";
-//        将图片路径转换为服务器下的绝对路径
-        String contentImg = handleImg(getContent_Line(contentPath), path);
+        // 将图片路径转换为服务器下的绝对路径
+        String contentImg = handleImg(getContent(new File(contentPath)), path);
         taskModel.setTask_content(contentImg);
         taskModel.setTaskFiles(new LinkedList<TaskFile>());
         String files_path = OSUtil.isLinux() ? path + "/files" : path + "\\files";
@@ -134,32 +135,26 @@ public class FileUtil {
         if (!f.exists()) {
             throw new Exception(path + " not exists");
         }
-//        遍历文件夹下的所有文件（包括.v和config.json）
+        // 遍历文件夹下的所有文件（包括.v和config.json）
         File fa[] = f.listFiles();
         for(int i = 0; i < fa.length; i++){
             File fs = fa[i];
-            FileInputStream in = new FileInputStream(fs);
-            byte[] filecontent = new byte[(int)fs.length()];
-            in.read(filecontent);
-            String fcontent = new String(filecontent, "UTF-8");
             TaskFile taskFile = new TaskFile();
             taskFile.setTitle(fs.getName());
-            taskFile.setContent(fcontent);
+            taskFile.setContent(getContent(fs));
             taskModel.getTaskFiles().add(taskFile);
-            in.close();
         }
     }
 
     /**
      * 获取文件内容
-     * @param path
+     * @param f 要读取的文件
      * @return
      * @throws Exception
      */
-    public static String getContent(String path) throws Exception{
-        File f = new File(path);
+    public static String getContent(File f) throws Exception{        ;
         if (!f.exists()) {
-            throw new Exception(path + " not exists");
+            throw new Exception(f.getName() + " not exists");
         }
         FileInputStream in = new FileInputStream(f);
         byte[] filecontent = new byte[(int)f.length()];
@@ -170,37 +165,9 @@ public class FileUtil {
     }
 
     /**
-     * 获取文件内容，并将空格和回车进行替换
-     * TODO
-     * 测试这里如果不替换可不可以
-     * @param path
-     * @return
-     * @throws Exception
-     */
-    public static String getContent_Line(String path) throws Exception{
-        File f = new File(path);
-        if (!f.exists()) {
-            throw new Exception(path + " not exists");
-        }
-        String fcontent = "";
-        InputStreamReader inputReader = new InputStreamReader(new FileInputStream(f));
-        BufferedReader bf = new BufferedReader(inputReader);
-        String str;
-        while ((str = bf.readLine()) != null) {
-            if (str!= ""){
-                str = str.replace(" ", "&nbsp;");
-                fcontent += str + "  <br />  ";
-            }
-        }
-        bf.close();
-        inputReader.close();
-        return fcontent;
-    }
-
-    /**
      * 处理图片，将content中的*#[]#*宏替换成图片路径
      * @param str content内容
-     * @param path 图片路径
+     * @param f 题目文件夹
      * @return
      * @throws Exception
      */
@@ -209,24 +176,20 @@ public class FileUtil {
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
-        System.out.println(path);
-        String qid;
+//        System.out.println(path);
         String tid;
         if(OSUtil.isLinux()) {
             String []strings = path.split("/");
-            qid = strings[strings.length-2];
             tid = strings[strings.length-1];
-            System.out.println(qid + "  " + tid);
         } else {
             String []strings = path.split("\\\\");
-//            qid = strings[strings.length-2];
             tid = strings[strings.length-1];
-            System.out.println(tid);
+//            System.out.println(tid);
         }
 
         while (matcher.find()) {
 
-            String imgName = matcher.group(0).substring(1, matcher.group(0).length()-1);
+            String imgName = matcher.group(0).substring(3, matcher.group(0).length()-3);
             String imgPah = OSUtil.isLinux()? "/OjFiles/" + tid + "/images/" + imgName + ".png" : path + "\\images\\" + imgName + ".png";
             if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
 //            System.out.println(imgPah);
@@ -235,7 +198,8 @@ public class FileUtil {
             matcher.appendReplacement(sb, imgPah);
         }
         matcher.appendTail(sb);
-        return Base64Convert.strConvertBase(sb.toString());
+//        System.out.println(sb.toString());
+        return sb.toString();
     }
 
 

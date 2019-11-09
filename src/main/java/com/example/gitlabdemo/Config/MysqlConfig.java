@@ -1,3 +1,7 @@
+/**
+ * mysql config配置，修改编码格式为utf-8
+ */
+
 package com.example.gitlabdemo.Config;
 
 import org.hibernate.dialect.MySQL5InnoDBDialect;

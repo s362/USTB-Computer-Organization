@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model.DataModel;
+package com.example.gitlabdemo.Entity;
 
 import lombok.Data;
 import lombok.ToString;
@@ -15,10 +15,10 @@ public class User {
     @GeneratedValue
     private Long uid;
 
-    @Column(name = "uusername", length = 32, unique = true)
+    @Column(name = "uusername", length = 32, unique = true, nullable = false)
     private String uusername;
 
-    @Column(name = "upassword", length = 32)
+    @Column(name = "upassword", length = 32, nullable = false)
     private String upassword;
 
     @Column(name = "class", length = 32)
@@ -35,6 +35,13 @@ public class User {
 
     @Column(name = "utype")
     private String utype;
+
+    public User(String uusername, String upassword){
+        this.uusername = uusername;
+        this.upassword = upassword;
+    }
+
+    public User(){}
 
     public Date getCreatedate() {
         return createdate;

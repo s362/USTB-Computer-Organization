@@ -6,11 +6,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 public class GitTest {
+
+//    @Test
+//    public void testTime(){
+//        Date date = new Date();
+//        System.out.println(new Date().getTime());
+//        System.out.println("lala");
+//        System.out.println(new Date().getTime());
+//        System.out.println(Calendar.getInstance().getTimeInMillis());
+//        System.out.println(Calendar.getInstance().getTimeInMillis());
+//    }
 
 //    @Test
 //    public void getAllproject() throws Exception{
@@ -35,7 +46,7 @@ public class GitTest {
 //    @Test
 //    public void deleteGroup()throws Exception{
 //        GitProcess gitProcess = new GitProcess();
-//        for(int i = 2; i < 50; i++){
+//        for(int i = 1; i < 20; i++){
 //            try {
 //                gitProcess.getGitLabApi().getGroupApi().deleteGroup("t" + i);
 //                System.out.println("delete " + i  + " 成功");

@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model.DataModel;
+package com.example.gitlabdemo.Entity;
 
 import lombok.Data;
 import lombok.ToString;
@@ -18,6 +18,9 @@ public class Task {
     @Column(name = "qname", length = 32)
     private String tname;
 
+    @Column(name = "tcontent", length = 16384)
+    private String tcontent;
+
     @Column(name = "create_at")
     private Date createdate;
 
@@ -25,6 +28,13 @@ public class Task {
     private Date updatedate;
 
 
+    public String getTcontent() {
+        return tcontent;
+    }
+
+    public void setTcontent(String tcontent) {
+        this.tcontent = tcontent;
+    }
 
     public Long getTid() {
         return tid;

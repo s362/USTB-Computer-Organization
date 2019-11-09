@@ -1,7 +1,6 @@
-package com.example.gitlabdemo.Model.GitModel;
+package com.example.gitlabdemo.Model;
 
 import lombok.ToString;
-import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
 
 @ToString
 public class GitFile {

@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model.DataModel;
+package com.example.gitlabdemo.Entity;
 
 import lombok.Data;
 import lombok.ToString;
@@ -23,6 +23,14 @@ public class CourseAndStudent {
 
     @Column(name = "join_time")
     private Date joinTime;
+
+    public CourseAndStudent(){
+
+    }
+    public CourseAndStudent(Long cid, Long sid){
+        this.cid = cid;
+        this.sid = sid;
+    }
 
     public Long getCsid() {
         return csid;

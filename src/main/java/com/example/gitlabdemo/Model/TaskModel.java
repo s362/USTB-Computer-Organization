@@ -1,7 +1,7 @@
 /**
  * 题目信息
  */
-package com.example.gitlabdemo.Model.GitModel;
+package com.example.gitlabdemo.Model;
 
 import lombok.ToString;
 

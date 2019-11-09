@@ -1,18 +1,14 @@
 package com.example.gitlabdemo.Controller;
 
+import com.example.gitlabdemo.Entity.Question;
+import com.example.gitlabdemo.Entity.Score;
+import com.example.gitlabdemo.Entity.Task;
 import com.example.gitlabdemo.Model.*;
-import com.example.gitlabdemo.Model.DataModel.Question;
-import com.example.gitlabdemo.Model.DataModel.Score;
-import com.example.gitlabdemo.Model.DataModel.Task;
-import com.example.gitlabdemo.Model.GitModel.*;
 import com.example.gitlabdemo.Service.QuestionService;
 import com.example.gitlabdemo.Service.ScoreService;
 import com.example.gitlabdemo.Service.TaskService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
-import com.example.gitlabdemo.Util.Base64Convert;
-import com.example.gitlabdemo.Util.GitProcess;
-import com.example.gitlabdemo.Util.JudgeUtil;
-import com.example.gitlabdemo.Util.ResultUtil;
+import com.example.gitlabdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
@@ -122,10 +118,8 @@ public class StudentController {
     }
 
 
-//    得到一次作业下的每个题目的分数
-
     /**
-     *
+     * 得到一次作业下的每个题目的分数
      * @param uid 学生id
      * @param qid 作业id
      * @return
@@ -267,32 +261,27 @@ public class StudentController {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         String task_id = "t" + tid;
         System.out.println(user_id + "   " + task_id);
+        Task task = this.taskService.getTaskbyTid(tid);
         gitProcess = new GitProcess();
 
         GitProject gitProject = new GitProject();
-        // 得到学生项目id和老师题目项目id
+        // 得到学生项目id
         Integer project_id;
         project_id = gitProcess.getProjectId(task_id, user_id);
-        Integer teacher_id;
-        teacher_id = gitProcess.getProjectId(task_id, "teacher");
         try{
             if (project_id == null) {
                 project_id = gitProcess.createProject(task_id, user_id);
                 System.out.println("创建工程成功");
-
-                try {
-                    GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
-                    gitProcess.gitcreateFile(project_id, gitFile);
-                    System.out.println("创建学生文件成功");
-                } catch (Exception e){
-                    System.out.println("创建学生文件失败");
-                    System.out.println(e.toString());
-                }
-
+                gitProcess.createTopV(project_id);
             }
-        } catch (GitLabApiException e){
+            else {
+                if(gitProcess.getGitLabApi().getRepositoryApi().getTree(project_id).isEmpty()){
+                    gitProcess.createTopV(project_id);
+                }
+            }
+        } catch (Exception e){
             System.out.println(e.toString());
-            return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
+            return ResultUtil.getResult(new Result("学生工程获取失败，请联系管理员  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
 
 //        因为前端要求文件列表不能为空
@@ -311,7 +300,8 @@ public class StudentController {
         gitProject.setTags(new LinkedList<String>());
         gitProject.setDirectories(new LinkedList<GitFolder>());
         gitProject.setId(task_id);
-        gitProject = gitProcess.setTeacherInfo(gitProject, teacher_id);
+        gitProject.setAlias(task.getTname());
+        gitProject.setDescription(task.getTcontent());
 
         try {
             gitProject.setSourceId(gitProcess.getProjectCommiteId(project_id));

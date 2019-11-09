@@ -1,6 +1,4 @@
-package com.example.gitlabdemo.Model.GitModel;
-
-import com.example.gitlabdemo.Model.DataModel.Task;
+package com.example.gitlabdemo.Model;
 
 import java.util.Date;
 import java.util.List;

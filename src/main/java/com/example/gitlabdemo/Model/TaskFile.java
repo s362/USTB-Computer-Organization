@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model.GitModel;
+package com.example.gitlabdemo.Model;
 
 import lombok.ToString;
 

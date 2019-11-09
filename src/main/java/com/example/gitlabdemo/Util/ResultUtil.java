@@ -1,6 +1,5 @@
 package com.example.gitlabdemo.Util;
 
-import com.example.gitlabdemo.Model.Result;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 

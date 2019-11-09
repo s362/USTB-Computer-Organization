@@ -2,7 +2,7 @@ package com.example.gitlabdemo.Shiro;
 
 
 
-import com.example.gitlabdemo.Model.DataModel.User;
+import com.example.gitlabdemo.Entity.User;
 import com.example.gitlabdemo.Service.UserService;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;

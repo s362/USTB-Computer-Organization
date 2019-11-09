@@ -1,7 +1,7 @@
 package com.example.gitlabdemo.Service;
 
-import com.example.gitlabdemo.Model.DataModel.QuestionAndTask;
-import com.example.gitlabdemo.Model.DataModel.Task;
+import com.example.gitlabdemo.Entity.QuestionAndTask;
+import com.example.gitlabdemo.Entity.Task;
 import com.example.gitlabdemo.Repository.QuestionAndTaskRepository;
 import com.example.gitlabdemo.Repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +25,24 @@ public class TaskService {
         this.questionAndTaskRepository = questionAndTaskRepository;
     }
 
-
+    /**
+     * 保存题目
+     * @param task task对象
+     * @throws Exception
+     */
     public void saveTask(Task task) throws Exception{
         this.taskRepository.save(task);
         Example<Task> example = Example.of(task);
+    }
+
+    /**
+     * 根据题目id返回题目对象
+     * @param tid
+     * @return
+     */
+    public Task getTaskbyTid(Long tid){
+        Task task = taskRepository.getOne(tid);
+        return task;
     }
 
     /**
@@ -50,7 +64,6 @@ public class TaskService {
             Example<Task> example = Example.of(task);
             tasks.add(this.taskRepository.findOne(example).get());
         }
-
         return tasks;
     }
 }

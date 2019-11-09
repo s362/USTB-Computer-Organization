@@ -1,11 +1,8 @@
 package com.example.gitlabdemo.Util;
 
-import com.example.gitlabdemo.Model.GitModel.GitFile;
-import com.example.gitlabdemo.Model.GitModel.GitProject;
-import com.example.gitlabdemo.Model.GitModel.TaskFile;
-import com.example.gitlabdemo.Model.GitModel.TaskModel;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.gitlabdemo.Model.GitFile;
+import com.example.gitlabdemo.Model.TaskFile;
+import com.example.gitlabdemo.Model.TaskModel;
 import org.gitlab4j.api.*;
 import org.gitlab4j.api.models.*;
 
@@ -21,7 +18,7 @@ public class GitProcess {
     String hostURL = "http://222.28.41.217:8099";
 //    String hostURL = "http://gitlab.blazarx.com:6300/";
 //    String privateToken = "TEvXW8r5fiUZ-6i2V5hn"; //root
-    String privateToken = "2xGVxqKF6LzMbAg9rCJ4"; //test  name：13021238080@163.com  passwd: qq872940851
+    String privateToken = "2sZox6z9Vs5ucSHph_Ac"; //test  name：13021238080@163.com  passwd: qq872940851
 
 
     public GitProcess(){
@@ -70,34 +67,34 @@ public class GitProcess {
         return project_id;
     }
 
-    public GitProject setTeacherInfo(GitProject gitProject, Integer teacher_id){
-        try{
-            RepositoryFile repositoryFile = gitLabApi.getRepositoryFileApi().getFile(teacher_id, "task.config", "master");
-            String content = Base64Convert.baseConvertStr(repositoryFile.getContent());
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(content);
-            gitProject.setTitle(root.findValue("task_title").asText());
-            gitProject.setAlias(root.findValue("task_title").asText());
-            gitProject.setDescription(Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
-
-//            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("README.md"), Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
-//            gitFile.setId(Base64Convert.strConvertBase(Base64Convert.strConvertBase("README.md")));
-//            gitFile.setIs_binary(false);
-//            gitFile.setDirectory_shortid(null);
-//            gitFile.setSourceId(repositoryFile.getCommitId());
-//            gitFile.setTitle("README.md");
-//            gitProject.getModules().add(gitFile);
-            return gitProject;
-
-        } catch (GitLabApiException e){
-            System.out.println(e.toString()  +  "老师文件获取失败");
-            return gitProject;
-        } catch (Exception e){
-            System.out.println(e.toString());
-            e.printStackTrace();
-            return gitProject;
-        }
-    }
+//    public GitProject setTeacherInfo(GitProject gitProject, Integer teacher_id){
+//        try{
+//            RepositoryFile repositoryFile = gitLabApi.getRepositoryFileApi().getFile(teacher_id, "task.config", "master");
+//            String content = Base64Convert.baseConvertStr(repositoryFile.getContent());
+//            ObjectMapper mapper = new ObjectMapper();
+//            JsonNode root = mapper.readTree(content);
+//            gitProject.setTitle(root.findValue("task_title").asText());
+//            gitProject.setAlias(root.findValue("task_title").asText());
+//            gitProject.setDescription(Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
+//
+////            GitFile gitFile = new GitFile(Base64Convert.strConvertBase("README.md"), Base64Convert.baseConvertStr(root.findValue("task_content").asText()));
+////            gitFile.setId(Base64Convert.strConvertBase(Base64Convert.strConvertBase("README.md")));
+////            gitFile.setIs_binary(false);
+////            gitFile.setDirectory_shortid(null);
+////            gitFile.setSourceId(repositoryFile.getCommitId());
+////            gitFile.setTitle("README.md");
+////            gitProject.getModules().add(gitFile);
+//            return gitProject;
+//
+//        } catch (GitLabApiException e){
+//            System.out.println(e.toString()  +  "老师文件获取失败");
+//            return gitProject;
+//        } catch (Exception e){
+//            System.out.println(e.toString());
+//            e.printStackTrace();
+//            return gitProject;
+//        }
+//    }
 
     public String getProjectCommiteId(Integer projectId) throws GitLabApiException{
         return gitLabApi.getRepositoryApi().getBranch(projectId, "master").getCommit().getId();
@@ -211,10 +208,15 @@ public class GitProcess {
         }
     }
 
+    /**
+     * 在gitlab中创建题目
+     * @param taskModel 题目对象
+     * @return
+     */
     public boolean gitcreateTask(TaskModel taskModel) {
         Integer project_id;
-         String path = taskModel.getTask_id();
-         GroupApi groupApi = gitLabApi.getGroupApi();
+        String path = taskModel.getTask_id();
+        GroupApi groupApi = gitLabApi.getGroupApi();
 
         try{
             groupApi.getGroup(path);
@@ -262,24 +264,23 @@ public class GitProcess {
                 } else {
                     repositoryFile.setContent(taskFile.getContent());
                 }
-
                 repositoryFile.setFileName(taskFile.getTitle());
                 repositoryFile.setFilePath(taskFile.getTitle());
                 gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
             }
 
-            RepositoryFile repositoryFile = new RepositoryFile();
-            repositoryFile.setFilePath("task.config");
-            repositoryFile.setFileName("task.config");
-
-            Map m1 = new HashMap();
-            m1.put("task_title", taskModel.getTask_title());
-            m1.put("task_content", taskModel.getTask_content());
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            String taskInfo = objectMapper.writeValueAsString(m1);
-            repositoryFile.setContent(taskInfo);
-            gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
+//            RepositoryFile repositoryFile = new RepositoryFile();
+//            repositoryFile.setFilePath("task.config");
+//            repositoryFile.setFileName("task.config");
+//
+//            Map m1 = new HashMap();
+//            m1.put("task_title", taskModel.getTask_title());
+//            m1.put("task_content", taskModel.getTask_content());
+//
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            String taskInfo = objectMapper.writeValueAsString(m1);
+//            repositoryFile.setContent(taskInfo);
+//            gitLabApi.getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
             System.out.println("创建成功");
             return true;
 
@@ -288,5 +289,11 @@ public class GitProcess {
             System.out.println("创建文件失败");
             return false;
         }
+    }
+
+    public void createTopV(Integer project_id) throws Exception{
+        GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
+        this.gitcreateFile(project_id, gitFile);
+        System.out.println("创建学生文件成功");
     }
 }
