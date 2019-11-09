@@ -1,5 +1,8 @@
 package com.example.gitlabdemo.Model;
 
+import lombok.ToString;
+
+@ToString
 public class TaskFile {
     String title;
     String content;
@@ -20,8 +23,4 @@ public class TaskFile {
         this.content = content;
     }
 
-    @Override
-    public String toString() {
-        return title + "   " + content;
-    }
 }

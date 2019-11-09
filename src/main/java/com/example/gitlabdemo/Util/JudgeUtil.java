@@ -1,19 +1,17 @@
 package com.example.gitlabdemo.Util;
 
-import com.example.gitlabdemo.Model.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
 public class JudgeUtil {
-    static public JsonNode shell(User user) {
-        String command = "sudo docker run bearking/ojide:v7 /home/pythonfile/gitrun " + user.getTask_id() + " " + user.getUser_id();
+    static public JsonNode shell(String task_id, String user_id) {
+        String command = "sudo docker run bearking/ojide:v7 /home/pythonfile/gitrun " + task_id + " " + user_id;
         System.out.println(command);
         try {
             Process p = Runtime.getRuntime().exec(command);
@@ -41,11 +39,14 @@ public class JudgeUtil {
             }
 
             s = reader.readLine();
-            s = s.replace("'", "\"");
+            System.out.println(s);
+            s= s.replace("\"", "\\\"").replace("'","\"");
             System.out.println(s);
 
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(s);
+            String detailStr = root.findValue("detail").asText();
+            System.out.println(root.findValue("detail").asText());
 
             Map m1 = new HashMap();
             try{
@@ -53,8 +54,14 @@ public class JudgeUtil {
                     m1.put("detail", "");
                 }
                 else {
+<<<<<<< HEAD
                     String detailStr = root.findValue("detail").toString();
                     detailStr.substring(2, detailStr.length()-2);
+=======
+//                    System.out.println();
+//                    detailStr = root.findValue("detail").toString().replace("\\\"", "\"");
+//                    detailStr = detailStr.substring(2, detailStr.length()-2);
+>>>>>>> testSession
                     m1.put("detail", detailStr);
                 }
 
@@ -65,6 +72,8 @@ public class JudgeUtil {
             m1.put("verdict", root.findValue("verdict"));
             m1.put("comment", root.findValue("comment"));
             m1.put("score", root.findValue("score"));
+
+
 
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonStr = mapper.readTree(objectMapper.writeValueAsString(m1));

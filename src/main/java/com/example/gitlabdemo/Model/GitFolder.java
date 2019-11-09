@@ -1,5 +1,8 @@
 package com.example.gitlabdemo.Model;
 
+import lombok.ToString;
+
+@ToString
 public class GitFolder {
     private String title;
     private String sourceId;

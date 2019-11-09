@@ -1,7 +1,8 @@
 package com.example.gitlabdemo.Model;
 
-import org.springframework.boot.autoconfigure.info.ProjectInfoProperties;
+import lombok.ToString;
 
+@ToString
 public class GitFile {
     private String title;
     private String sourceId; // commitid
@@ -86,8 +87,4 @@ public class GitFile {
         this.code = code;
     }
 
-    @Override
-    public String toString() {
-        return shortid.toString();
-    }
 }

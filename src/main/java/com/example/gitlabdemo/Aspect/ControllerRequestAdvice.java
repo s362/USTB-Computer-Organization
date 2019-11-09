@@ -40,7 +40,6 @@ public class ControllerRequestAdvice {
 
     /**
      * 处理请求前处理
-     *
      * @param joinPoint 连接点
      */
     @Before("log()")

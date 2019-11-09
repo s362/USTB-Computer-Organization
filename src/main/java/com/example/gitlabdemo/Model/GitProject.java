@@ -1,7 +1,10 @@
 package com.example.gitlabdemo.Model;
 
+import lombok.ToString;
+
 import java.util.List;
 
+@ToString
 public class GitProject {
     private List<GitFile> modules;
     private String git;
@@ -85,13 +88,4 @@ public class GitProject {
         this.title = title;
     }
 
-    @Override
-    public String toString() {
-        String module = new String("modules");
-
-        for(int i = 0; i < modules.size();i++){
-            module += modules.get(i).getShortid() + "   ";
-        }
-        return module;
-    }
 }

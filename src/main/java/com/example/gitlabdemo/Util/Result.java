@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model;
+package com.example.gitlabdemo.Util;
 
 public class Result {
     private boolean success = true;

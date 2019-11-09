@@ -1,11 +1,21 @@
+/**
+ * 题目信息
+ */
 package com.example.gitlabdemo.Model;
+
+import lombok.ToString;
 
 import java.util.List;
 
+@ToString
 public class TaskModel {
+    // gitlab下的项目名
     String task_id;
+    // 题目内容（读取content.txt中的内容）
     String task_content;
+    // 题目标题
     String task_title;
+    // 题目下的所有文件
     List<TaskFile> taskFiles;
 
     public String getTask_id() {
@@ -40,8 +50,4 @@ public class TaskModel {
         this.taskFiles = taskFiles;
     }
 
-    @Override
-    public String toString() {
-        return task_id + "\n" + task_title + "\n" + task_content + "\n" + taskFiles.toString();
-    }
 }

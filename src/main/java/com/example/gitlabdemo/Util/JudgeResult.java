@@ -1,4 +1,4 @@
-package com.example.gitlabdemo.Model;
+package com.example.gitlabdemo.Util;
 
 public class JudgeResult {
     String verdict;
