@@ -2,7 +2,7 @@ package com.example.gitlabdemo.Shiro;
 
 
 
-import com.example.gitlabdemo.Entity.User;
+import com.example.gitlabdemo.Model.LoginUser;
 import com.example.gitlabdemo.Service.UserService;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
@@ -40,7 +40,8 @@ public class MyRealm extends AuthorizingRealm {
     @Override
     protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principals) {
         String username = JwtUtil.getUsername(principals.toString());
-        User user = userService.findByUserName(username);
+//        Long utpye = JwtUtil.getUserType(token);
+//        LoginUser loginUser = userService.findByUserName(username);
         SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo();
         return simpleAuthorizationInfo;
     }
@@ -53,16 +54,18 @@ public class MyRealm extends AuthorizingRealm {
         String token = (String) auth.getCredentials();
         // 解密获得username，用于和数据库进行对比
         String username = JwtUtil.getUsername(token);
+        Long utpye = JwtUtil.getUserType(token);
+        System.out.println(username + "  " + utpye.toString());
         if (username == null) {
             throw new AuthenticationException("token无效,请重新输入");
         }
 
-        User userBean = userService.findByUserName(username);
-        if (userBean == null) {
+        LoginUser loginUser = userService.findByUserName(username, utpye);
+        if (loginUser == null) {
             System.out.println("用户不存在!");
             throw new AuthenticationException("用户不存在!");
         }
-        if (!JwtUtil.verify(token, username, userBean.getUpassword())) {
+        if (!JwtUtil.verify(token, username, loginUser.getUpassword())) {
             System.out.println("用户名或密码错误");
             throw new AuthenticationException("用户名或密码错误");
         }

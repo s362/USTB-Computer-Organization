@@ -1,7 +1,7 @@
 package com.example.gitlabdemo.Service;
 
 import com.example.gitlabdemo.Entity.Score;
-import com.example.gitlabdemo.Repository.ScoreRepository;
+import com.example.gitlabdemo.Repository.ScoreRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
@@ -11,12 +11,12 @@ import java.util.Date;
 
 @Service("scoreService")
 public class ScoreService {
-    private final ScoreRepository scoreRepository;
+    private final ScoreRepo scoreRepo;
 
     @Autowired
-    public ScoreService(ScoreRepository scoreRepository){
-        Assert.notNull(scoreRepository, "taskRepository must not be null!");
-        this.scoreRepository = scoreRepository;
+    public ScoreService(ScoreRepo scoreRepo){
+        Assert.notNull(scoreRepo, "taskRepository must not be null!");
+        this.scoreRepo = scoreRepo;
     }
 
     public int saveScore(Score score)  {
@@ -25,9 +25,9 @@ public class ScoreService {
             if (score.getTscore() == null){
                 score.setTscore(0l);
             }
-            this.scoreRepository.save(score);
+            this.scoreRepo.save(score);
             Example<Score> example = Example.of(score);
-            score = this.scoreRepository.findAll(example).get(0);
+            score = this.scoreRepo.findAll(example).get(0);
             return 0;
         } catch (Exception e){
             System.out.println(e.toString());
@@ -39,7 +39,7 @@ public class ScoreService {
         Example<Score> example = Example.of(score);
         try {
             Score temp;
-            temp = this.scoreRepository.findAll(example).get(0);
+            temp = this.scoreRepo.findAll(example).get(0);
             return temp;
         } catch (Exception e){
             return null;

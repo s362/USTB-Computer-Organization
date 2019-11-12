@@ -54,14 +54,6 @@ public class JudgeUtil {
                     m1.put("detail", "");
                 }
                 else {
-<<<<<<< HEAD
-                    String detailStr = root.findValue("detail").toString();
-                    detailStr.substring(2, detailStr.length()-2);
-=======
-//                    System.out.println();
-//                    detailStr = root.findValue("detail").toString().replace("\\\"", "\"");
-//                    detailStr = detailStr.substring(2, detailStr.length()-2);
->>>>>>> testSession
                     m1.put("detail", detailStr);
                 }
 

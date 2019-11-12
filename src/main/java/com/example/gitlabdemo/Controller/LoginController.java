@@ -1,17 +1,22 @@
 package com.example.gitlabdemo.Controller;
 
 
+import com.example.gitlabdemo.Entity.Teacher;
+import com.example.gitlabdemo.Model.LoginUser;
 import com.example.gitlabdemo.Util.Result;
-import com.example.gitlabdemo.Entity.User;
+import com.example.gitlabdemo.Entity.Student;
 import com.example.gitlabdemo.Service.UserService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.ResultUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -22,47 +27,39 @@ public class LoginController {
 
     /**
      * 登录验证
-     * @param user 用户名和密码
+     * @param loginUser 用户名和密码
      * @return
      */
     @PostMapping(value = "/", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> login(@RequestBody User user){
-        System.out.println(user);
+    public ResponseEntity<Result> login(@RequestBody LoginUser loginUser){
+        System.out.println(loginUser);
         try{
 //            如果用户名和密码正确，则返回token
-            if (userService.getByUsernameAndPwd(user) != null){
-                String token = JwtUtil.sign(user.getUusername(), user.getUpassword());
+            if (userService.getByUsernameAndPwd(loginUser)){
+                String token = JwtUtil.sign(loginUser);
+                Teacher teacher= new Teacher(loginUser.getUusername(), loginUser.getUpassword());
+                teacher = userService.getByTeachernameAndPwd(teacher);
                 if(token != null){
                     Result result = new Result();
-                    result.setObject(token);
+                    Map m1 = new HashMap();
+                    m1.put("jwt", token);
+                    if(loginUser.getUtype() == 1){
+                        m1.put("utype", teacher.getUtype());
+                    } else{
+                        m1.put("utype", 1);
+                    }
+
+                    result.setObject(m1);
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }
             }
-            System.out.println("无此用户");
+//            System.out.println("无此用户");
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
         } catch (Exception e){
             System.out.println(e.toString());
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
         }
     }
-
-    /**
-     * 添加用户
-     * User
-     * @return
-     */
-    @PostMapping("/adduser")
-    public ResponseEntity<Result> addUser(User user){
-        user.setCreatedate(new Date());
-        System.out.println(user);
-        try{
-            userService.addUser(user);
-            return ResultUtil.getResult(new Result(), HttpStatus.OK);
-        } catch (Exception e){
-            return ResultUtil.getResult(new Result("插入失败" + e.toString(), false), HttpStatus.BAD_REQUEST);
-        }
-    }
-
 
     /**
      * 登录错误返回报错信息

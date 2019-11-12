@@ -2,8 +2,8 @@ package com.example.gitlabdemo.Service;
 
 import com.example.gitlabdemo.Entity.QuestionAndTask;
 import com.example.gitlabdemo.Entity.Task;
-import com.example.gitlabdemo.Repository.QuestionAndTaskRepository;
-import com.example.gitlabdemo.Repository.TaskRepository;
+import com.example.gitlabdemo.Repository.QuestionAndTaskRepo;
+import com.example.gitlabdemo.Repository.TaskRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
@@ -14,15 +14,15 @@ import java.util.List;
 
 @Service("taskService")
 public class TaskService {
-    private final TaskRepository taskRepository;
-    private final QuestionAndTaskRepository questionAndTaskRepository;
+    private final TaskRepo taskRepo;
+    private final QuestionAndTaskRepo questionAndTaskRepo;
 
     @Autowired
-    public TaskService(TaskRepository taskRepository,  QuestionAndTaskRepository questionAndTaskRepository){
-        Assert.notNull(taskRepository, "taskRepository must not be null!");
-        Assert.notNull(questionAndTaskRepository, "taskRepository must not be null!");
-        this.taskRepository = taskRepository;
-        this.questionAndTaskRepository = questionAndTaskRepository;
+    public TaskService(TaskRepo taskRepo, QuestionAndTaskRepo questionAndTaskRepo){
+        Assert.notNull(taskRepo, "taskRepo must not be null!");
+        Assert.notNull(questionAndTaskRepo, "taskRepo must not be null!");
+        this.taskRepo = taskRepo;
+        this.questionAndTaskRepo = questionAndTaskRepo;
     }
 
     /**
@@ -31,7 +31,7 @@ public class TaskService {
      * @throws Exception
      */
     public void saveTask(Task task) throws Exception{
-        this.taskRepository.save(task);
+        this.taskRepo.save(task);
         Example<Task> example = Example.of(task);
     }
 
@@ -41,7 +41,7 @@ public class TaskService {
      * @return
      */
     public Task getTaskbyTid(Long tid){
-        Task task = taskRepository.getOne(tid);
+        Task task = taskRepo.getOne(tid);
         return task;
     }
 
@@ -55,14 +55,14 @@ public class TaskService {
         questionAndTask.setQid(qid);
         List<QuestionAndTask> questionAndTasks;
         Example<QuestionAndTask> exampleQT = Example.of(questionAndTask);
-        questionAndTasks = this.questionAndTaskRepository.findAll(exampleQT);
+        questionAndTasks = this.questionAndTaskRepo.findAll(exampleQT);
 
         List<Task> tasks = new LinkedList<>();
         for(QuestionAndTask _questAndTask : questionAndTasks){
             Task task = new Task();
             task.setTid(_questAndTask.getTid());
             Example<Task> example = Example.of(task);
-            tasks.add(this.taskRepository.findOne(example).get());
+            tasks.add(this.taskRepo.findOne(example).get());
         }
         return tasks;
     }

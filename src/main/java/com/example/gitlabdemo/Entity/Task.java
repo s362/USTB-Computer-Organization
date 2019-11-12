@@ -27,6 +27,16 @@ public class Task {
     @Column(name = "update_at")
     private Date updatedate;
 
+    @Column(name = "cid")
+    private Long cid;
+
+    public Long getCid() {
+        return cid;
+    }
+
+    public void setCid(Long cid) {
+        this.cid = cid;
+    }
 
     public String getTcontent() {
         return tcontent;

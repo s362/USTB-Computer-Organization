@@ -1,9 +1,10 @@
 package com.example.gitlabdemo.Controller;
 
-import com.example.gitlabdemo.Entity.Course;
-import com.example.gitlabdemo.Entity.Task;
+import com.example.gitlabdemo.Entity.*;
 import com.example.gitlabdemo.Model.TaskFile;
 import com.example.gitlabdemo.Model.TaskModel;
+import com.example.gitlabdemo.Service.UserService;
+import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.Result;
 import com.example.gitlabdemo.Service.CourseService;
 import com.example.gitlabdemo.Service.QuestionService;
@@ -19,15 +20,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.POST;
 import java.io.File;
 import java.util.Date;
 import java.util.LinkedList;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/api/teacher")
+@RequestMapping("/api")
 public class TeacherController {
     GitProcess gitProcess;
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private TaskService taskService;
@@ -38,16 +42,18 @@ public class TeacherController {
     @Autowired
     private CourseService courseService;
 
-//    @Autowired
-//    private Cou
+//    @GetMapping(value = "/teachers")
+//    public ResponseEntity<Result> getAllTeachers(){
+//
+//    }
 
     /**
-     * 提交压缩文件夹，创建题目
+     * 批量创建题目
      * @param file .zip文件
      * @return
      */
-    @PostMapping(value = "/createTask")
-    public ResponseEntity<Result> createTask(@RequestBody MultipartFile file){
+    @RequestMapping(value = "/createTasks", method = RequestMethod.PUT)
+    public ResponseEntity<Result> createTasks(@RequestBody MultipartFile file){
         gitProcess = new GitProcess();
         // 必须为.zip文件
         try{
@@ -130,16 +136,26 @@ public class TeacherController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
-
     /**
-     * 创建新班级
-     * @param httpServletRequest
+     * 添加学生,如果学生已经存在，则给学生再增加一门课程
+     * @param student
      * @return
      */
-    @PostMapping(value = "/createCourse")
-    public ResponseEntity<Result> createCourse(HttpServletRequest httpServletRequest){
-        Course course = new Course();
-
-        return  ResultUtil.getResult(new Result(), HttpStatus.OK);
+    @PostMapping(value = "/addStudent")
+    public ResponseEntity<Result> addStudent(Student student, Long cid){
+        Student currentStudent = userService.findStudentByName(student.getUusername());
+        if(currentStudent == null){
+            try {
+                userService.addStudent(student);
+                userService.addStudentToCourse(student, cid);
+                return ResultUtil.getResult(new Result(), HttpStatus.OK);
+            } catch (Exception e){
+                return ResultUtil.getResult(new Result("false", false), HttpStatus.OK);
+            }
+        } else{
+            userService.addStudentToCourse(student, cid);
+            return ResultUtil.getResult(new Result(), HttpStatus.OK);
+        }
     }
+
 }

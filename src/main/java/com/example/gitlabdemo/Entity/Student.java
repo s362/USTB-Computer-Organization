@@ -7,10 +7,10 @@ import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "user")
+@Table(name = "student")
 @Data
 @ToString
-public class User {
+public class Student {
     @Id
     @GeneratedValue
     private Long uid;
@@ -21,27 +21,25 @@ public class User {
     @Column(name = "upassword", length = 32, nullable = false)
     private String upassword;
 
-    @Column(name = "class", length = 32)
-    private String uclass;
-
     @Column(name = "create_at")
     private Date createdate;
 
-    @Column(name = "update_at")
-    private Date updatedate;
-
-    @Column(name = "nickname", length = 32)
+    @Column(name = "nickname", length = 32, nullable = false)
     private String nickname;
 
-    @Column(name = "utype")
-    private String utype;
 
-    public User(String uusername, String upassword){
+    public Student(String uusername, String upassword){
         this.uusername = uusername;
         this.upassword = upassword;
     }
 
-    public User(){}
+    public Student(String uusername, String upassword, String nickname){
+        this.uusername = uusername;
+        this.upassword = upassword;
+        this.nickname = nickname;
+    }
+
+    public Student(){}
 
     public Date getCreatedate() {
         return createdate;
@@ -49,14 +47,6 @@ public class User {
 
     public void setCreatedate(Date createdate) {
         this.createdate = createdate;
-    }
-
-    public Date getUpdatedate() {
-        return updatedate;
-    }
-
-    public void setUpdatedate(Date updatedate) {
-        this.updatedate = updatedate;
     }
 
     public String getNickname() {
@@ -91,11 +81,4 @@ public class User {
         this.upassword = upassword;
     }
 
-    public String getUtype() {
-        return utype;
-    }
-
-    public void setUtype(String utype) {
-        this.utype = utype;
-    }
 }

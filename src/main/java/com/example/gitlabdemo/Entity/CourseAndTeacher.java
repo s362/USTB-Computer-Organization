@@ -2,26 +2,22 @@ package com.example.gitlabdemo.Entity;
 
 import lombok.Data;
 import lombok.ToString;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import javax.persistence.*;
 import java.util.Date;
 
 @Entity
-@Table(name = "courseandstudent")
+@Table(name = "courseandteacher")
 @Data
 @ToString
-public class CourseAndStudent {
+public class CourseAndTeacher {
     @Id
     @GeneratedValue
     private Long csid;
 
-    // 学生id
-    @Column(name = "sid")
-    private Long sid;
-
-    // 课程分组的id
-    @Column(name = "cgid")
-    private Long cgid;
+    @Column(name = "uid")
+    private Long uid;
 
     @Column(name = "cid")
     private Long cid;
@@ -32,37 +28,21 @@ public class CourseAndStudent {
     @Column(name = "join_time")
     private Date joinTime;
 
-    public Long getCid() {
-        return cid;
+    public CourseAndTeacher(){
+
     }
 
-    public void setCid(Long cid) {
+    public CourseAndTeacher(Long cid, Long uid){
         this.cid = cid;
-    }
-
-    public CourseAndStudent(){
-
-    }
-
-    public CourseAndStudent(Long cgid, Long sid){
-        this.cgid = cgid;
-        this.sid = sid;
-    }
-
-    public Long getCgid() {
-        return cgid;
-    }
-
-    public void setCgid(Long cgid) {
-        this.cgid = cgid;
-    }
-
-    public void setUtype(Long utype) {
-        this.utype = utype;
+        this.uid = uid;
     }
 
     public Long getUtype() {
         return utype;
+    }
+
+    public void setUtype(Long utype) {
+        this.utype = utype;
     }
 
     public Long getCsid() {
@@ -73,12 +53,20 @@ public class CourseAndStudent {
         this.csid = csid;
     }
 
-    public Long getSid() {
-        return sid;
+    public Long getUid() {
+        return uid;
     }
 
-    public void setSid(Long sid) {
-        this.sid = sid;
+    public void setUid(Long uid) {
+        this.uid = uid;
+    }
+
+    public Long getCid() {
+        return cid;
+    }
+
+    public void setCid(Long cid) {
+        this.cid = cid;
     }
 
     public Date getJoinTime() {
@@ -88,4 +76,6 @@ public class CourseAndStudent {
     public void setJoinTime(Date joinTime) {
         this.joinTime = joinTime;
     }
+
+
 }

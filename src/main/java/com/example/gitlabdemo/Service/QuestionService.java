@@ -2,9 +2,9 @@ package com.example.gitlabdemo.Service;
 
 import com.example.gitlabdemo.Entity.Question;
 import com.example.gitlabdemo.Entity.QuestionAndTask;
-import com.example.gitlabdemo.Repository.CourseAndStudentRepository;
-import com.example.gitlabdemo.Repository.QuestionAndTaskRepository;
-import com.example.gitlabdemo.Repository.QuestionRepository;
+import com.example.gitlabdemo.Repository.CourseAndStudentRepo;
+import com.example.gitlabdemo.Repository.QuestionAndTaskRepo;
+import com.example.gitlabdemo.Repository.QuestionRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
@@ -14,24 +14,24 @@ import java.util.List;
 
 @Service("questionService")
 public class QuestionService {
-    private final QuestionRepository questionRepository;
-    private final CourseAndStudentRepository courseAndStudentRepository;
-    private final QuestionAndTaskRepository questionAndTaskRepository;
+    private final QuestionRepo questionRepo;
+    private final CourseAndStudentRepo courseAndStudentRepo;
+    private final QuestionAndTaskRepo questionAndTaskRepo;
 
     @Autowired
-    public QuestionService(QuestionRepository questionRepository, CourseAndStudentRepository courseAndStudentRepository, QuestionAndTaskRepository questionAndTaskRepository) {
-        Assert.notNull(questionRepository, "taskRepository must not be null!");
-        Assert.notNull(courseAndStudentRepository, "taskRepository must not be null!");
-        Assert.notNull(questionRepository, "QuestionAndTaskRepository must not be null!");
-        this.questionRepository = questionRepository;
-        this.questionAndTaskRepository = questionAndTaskRepository;
-        this.courseAndStudentRepository = courseAndStudentRepository;
+    public QuestionService(QuestionRepo questionRepo, CourseAndStudentRepo courseAndStudentRepo, QuestionAndTaskRepo questionAndTaskRepo) {
+        Assert.notNull(questionRepo, "taskRepository must not be null!");
+        Assert.notNull(courseAndStudentRepo, "taskRepository must not be null!");
+        Assert.notNull(questionRepo, "QuestionAndTaskRepo must not be null!");
+        this.questionRepo = questionRepo;
+        this.questionAndTaskRepo = questionAndTaskRepo;
+        this.courseAndStudentRepo = courseAndStudentRepo;
     }
 
 
     // 保存作业
     public void saveQuestion(Question question)  {
-        this.questionRepository.save(question);
+        this.questionRepo.save(question);
         Example<Question> example = Example.of(question);
     }
 
@@ -40,7 +40,7 @@ public class QuestionService {
         Question question = new Question();
         question.setCid(cid);
         Example<Question> example = Example.of(question);
-        return questionRepository.findAll(example);
+        return questionRepo.findAll(example);
     }
 
     /**
@@ -48,7 +48,7 @@ public class QuestionService {
      * @param qid
      */
     public void delete(Long qid){
-        this.questionRepository.deleteById(qid);
+        this.questionRepo.deleteById(qid);
     }
 
     /**
@@ -56,6 +56,6 @@ public class QuestionService {
      * @param questionAndTask
      */
     public void setQuestionAndTask(QuestionAndTask questionAndTask){
-        this.questionAndTaskRepository.save(questionAndTask);
+        this.questionAndTaskRepo.save(questionAndTask);
     }
 }
