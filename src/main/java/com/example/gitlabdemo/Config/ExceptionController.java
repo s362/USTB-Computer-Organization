@@ -1,7 +1,10 @@
 package com.example.gitlabdemo.Config;
 
+import com.example.gitlabdemo.Util.Result;
+import com.example.gitlabdemo.Util.ResultUtil;
 import org.apache.shiro.ShiroException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,8 +26,8 @@ public class ExceptionController {
 //
 //    // 捕捉UnauthorizedException
     @ExceptionHandler(Throwable.class)
-    public ResponseBean handle401() {
-        return new ResponseBean(401, "Unauthorized", null);
+    public ResponseEntity<Result> handle401() {
+        return ResultUtil.getResult(new Result("无权限"), HttpStatus.BAD_REQUEST);
     }
 //
     // 捕捉UnauthorizedException
@@ -35,10 +38,10 @@ public class ExceptionController {
 
     // 捕捉其他所有异常
     @ExceptionHandler(Exception.class)
-    public ResponseBean globalException(HttpServletRequest request, Throwable ex) {
+    public ResponseEntity<Result> globalException(HttpServletRequest request, Throwable ex) {
         System.out.println(ex.toString());
         ex.printStackTrace();
-        return new ResponseBean(getStatus(request).value(), ex.getMessage(), null);
+        return ResultUtil.getResult(new Result("" + getStatus(request).value() + "  " + ex.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
     private HttpStatus getStatus(HttpServletRequest request) {

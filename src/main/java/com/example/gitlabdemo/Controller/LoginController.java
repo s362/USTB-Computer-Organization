@@ -36,19 +36,17 @@ public class LoginController {
         try{
 //            如果用户名和密码正确，则返回token
             if (userService.getByUsernameAndPwd(loginUser)){
-                String token = JwtUtil.sign(loginUser);
-                Teacher teacher= new Teacher(loginUser.getUusername(), loginUser.getUpassword());
-                teacher = userService.getByTeachernameAndPwd(teacher);
+                String token;
+                if(loginUser.getUtype() != 0){
+                    loginUser.setUtype(userService.findTeacherByName(loginUser.getUusername()).getUtype());
+                }
+                token = JwtUtil.sign(loginUser);
+
                 if(token != null){
                     Result result = new Result();
                     Map m1 = new HashMap();
                     m1.put("jwt", token);
-                    if(loginUser.getUtype() == 1){
-                        m1.put("utype", teacher.getUtype());
-                    } else{
-                        m1.put("utype", 1);
-                    }
-
+                    m1.put("utype", loginUser.getUtype());
                     result.setObject(m1);
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }

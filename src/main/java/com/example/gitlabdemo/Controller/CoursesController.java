@@ -9,12 +9,14 @@ import com.example.gitlabdemo.Service.UserService;
 import com.example.gitlabdemo.Shiro.JwtUtil;
 import com.example.gitlabdemo.Util.Result;
 import com.example.gitlabdemo.Util.ResultUtil;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Date;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -33,7 +35,8 @@ public class CoursesController {
     @RequestMapping(value = "/courses", method = RequestMethod.GET)
     public ResponseEntity<Result> getCourses(HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        Long utype = JwtUtil.getUserType(httpServletRequest.getHeader("utype"));
+        Long utype = JwtUtil.getUserType(httpServletRequest.getHeader("Authorization"));
+        System.out.println(user_id + utype);
         if(utype > 1){
             Teacher teacher = this.userService.findTeacherByName(user_id);
             return ResultUtil.getResult(new Result(this.courseService.getAllCourses(teacher)), HttpStatus.OK);
@@ -65,6 +68,7 @@ public class CoursesController {
         }
         Course course = new Course();
         course.setCname(cname);
+        course.setCreatedate(new Date());
         try{
             courseService.saveCourse(course);
             // admin 是每一个课程的老师
@@ -77,12 +81,12 @@ public class CoursesController {
 
     /**
      * 添加课程分组
-     * @param cid
-     * @param cgname
      * @return
      */
-    @PostMapping(value = "/coursegroups")
-    public ResponseEntity<Result> addCourseGroup(Long cid, String cgname){
+    @RequestMapping(value = "/coursegroups", method = RequestMethod.POST, produces = "application/json")
+    public ResponseEntity<Result> addCourseGroup(@RequestBody JsonNode info){
+        String cgname = info.get("cgname").asText();
+        Long cid = info.get("cid").asLong();
         CourseGroup courseGroup = new CourseGroup(cid, cgname);
         try{
             this.courseService.addCourseGroup(courseGroup);
@@ -97,8 +101,8 @@ public class CoursesController {
      * @param cgid
      * @return
      */
-    @DeleteMapping(value = "/coursegroups")
-    public ResponseEntity<Result> deleteCourseGroup(Long cgid){
+    @RequestMapping(value = "/coursegroups/{cgid}", method = RequestMethod.DELETE)
+    public ResponseEntity<Result> deleteCourseGroup(@PathVariable Long cgid){
         CourseGroup courseGroup = new CourseGroup();
         courseGroup.setCgid(cgid);
         try{
@@ -108,5 +112,4 @@ public class CoursesController {
             return ResultUtil.getResult(new Result("添加失败", false), HttpStatus.OK);
         }
     }
-
 }

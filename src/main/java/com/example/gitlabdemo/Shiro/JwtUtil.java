@@ -62,7 +62,7 @@ public class JwtUtil {
     public static Long getUserType(String token) {
         try {
             DecodedJWT jwt = JWT.decode(token.split(" ")[1]);
-            return Long.parseLong(jwt.getClaim("utype").asString());
+            return jwt.getClaim("utype").asLong();
         } catch (JWTDecodeException e) {
             System.out.println(e.toString());
             return null;
