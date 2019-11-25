@@ -51,8 +51,8 @@ public class FileUtil {
 
     public static void createTaskModel(TaskModel taskModel, String path) throws Exception{
         System.out.println("isLinux?" + OSUtil.isLinux());
-        String contentPath = OSUtil.isLinux() ? path + "/content.txt" : path + "\\content.txt";
-        taskModel.setTask_content(handleImg(getContent_Line(contentPath), path));
+        String contentPath = OSUtil.isLinux() ? path + "/content.md" : path + "\\content.md";
+        taskModel.setTask_content(handleImg(getContent(contentPath), path));
         taskModel.setTaskFiles(new LinkedList<TaskFile>());
         String files_path = OSUtil.isLinux() ? path + "/files" : path + "\\files";
         File f = new File(files_path);
@@ -97,10 +97,7 @@ public class FileUtil {
         BufferedReader bf = new BufferedReader(inputReader);
         String str;
         while ((str = bf.readLine()) != null) {
-            if (str!= ""){
-                str = str.replace(" ", "&nbsp;");
-                fcontent += str + "  <br />  ";
-            }
+            fcontent += str + "  <br />  ";
         }
         bf.close();
         inputReader.close();
@@ -108,7 +105,7 @@ public class FileUtil {
     }
 
     public static String  handleImg(String str, String path) throws Exception{
-        String regex = "\\[(.+?)]";
+        String regex = "!\\[]\\((.+?)\\)";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
@@ -128,8 +125,7 @@ public class FileUtil {
         }
 
         while (matcher.find()) {
-
-            String imgName = matcher.group(0).substring(1, matcher.group(0).length()-1);
+            String imgName = matcher.group(0).substring(11, matcher.group(0).length()-5);
             String imgPah = OSUtil.isLinux()? "/OjFiles/" + qid + "/" + taskid + "/images/" + imgName + ".png" : path + "\\images\\" + imgName + ".png";
             if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
 //            System.out.println(imgPah);
@@ -139,7 +135,6 @@ public class FileUtil {
         }
         matcher.appendTail(sb);
         return Base64Convert.strConvertBase(sb.toString());
-//        return sb.toString();
     }
 
     public static void unZip(String path) throws RuntimeException{

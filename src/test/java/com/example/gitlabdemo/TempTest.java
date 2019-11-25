@@ -2,6 +2,7 @@ package com.example.gitlabdemo;
 
 import com.example.gitlabdemo.Model.GitModel.GitFile;
 import com.example.gitlabdemo.Model.GitModel.GitProject;
+import com.example.gitlabdemo.Util.Base64Convert;
 import com.example.gitlabdemo.Util.GitProcess;
 import com.example.gitlabdemo.Util.FileUtil;
 import com.example.gitlabdemo.Util.OSUtil;
@@ -24,15 +25,25 @@ public class TempTest {
 //    @Autowired
 //    DataSource dataSource;
 //    @Test
-//    public void contextLoads() {
-//        try{
-//            System.out.println(dataSource.getConnection());
-//            System.out.println("lala");
-//        } catch (Exception e){
-//            System.out.println(e.toString());
-//            e.printStackTrace();
-//            System.out.println("falsle");
+//    public void handleImg() throws Exception{
+//        String str = FileUtil.getContent("C:\\Users\\bearking\\Desktop\\相关文件\\ide作业备份\\第五周作业\\01_vector介绍\\content.md");
+//        String regex = "!\\[]\\((.+?)\\)";
+//        Pattern pattern = Pattern.compile(regex);
+//        Matcher matcher = pattern.matcher(str);
+//        StringBuffer sb = new StringBuffer();
+//
+//        while (matcher.find()) {
+//            String imgName = matcher.group(0).substring(11, matcher.group(0).length()-5);
+//            String imgPah = OSUtil.isLinux()? "/OjFiles/"  + "/"  + "/images/" + imgName + ".png"  : "\\images\\" + imgName + ".png";
+//            System.out.println(imgPah);
+//            if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
+//    //            System.out.println(imgPah);
+//            imgPah =  "<div align=center><img src=" + "\"" + "https://ide.eustb.com" + imgPah + "\"" + " width = \"80%\"></div>";
+//            System.out.println(imgPah);
+//            matcher.appendReplacement(sb, imgPah);
 //        }
+//        matcher.appendTail(sb);
+//        System.out.println(sb.toString());
 //    }
 //
 //    @Test

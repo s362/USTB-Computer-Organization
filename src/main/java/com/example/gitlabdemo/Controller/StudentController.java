@@ -146,6 +146,10 @@ public class StudentController {
         if(jsonObject == null){
             return ResultUtil.getResult(new Result("error"), HttpStatus.BAD_REQUEST);
         }
+//        else if(jsonObject.hasNonNull("message")){
+//            return ResultUtil.getResult(new Result(jsonObject.findValue("message").asText()), HttpStatus.BAD_REQUEST);
+//        }
+
         task_score.setTscore(jsonObject.findValue("score").asLong());
         scoreService.saveScore(task_score);
 
@@ -218,7 +222,6 @@ public class StudentController {
             if (project_id == null) {
                 project_id = gitProcess.createProject(task_id, user_id);
                 System.out.println("创建工程成功");
-
                 try {
                     GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
                     gitProcess.gitcreateFile(project_id, gitFile);
@@ -227,14 +230,20 @@ public class StudentController {
                     System.out.println("创建学生文件失败");
                     System.out.println(e.toString());
                 }
-
+            }
+            /**
+             * TODO
+             * 如果工程获取后为空
+             */
+            if(gitProcess.getRepositoryFiles(project_id).isEmpty()){
+                GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
+                gitProcess.gitcreateFile(project_id, gitFile);
+                System.out.println("创建学生文件成功");
             }
         } catch (GitLabApiException e){
             System.out.println(e.toString());
             return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
-
-
 
         gitProject.setSourceId(project_id.toString());
         gitProject.setModules(gitProcess.getRepositoryFiles(project_id));

@@ -2,29 +2,33 @@ package com.example.gitlabdemo.Util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Example;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class JudgeUtil {
     static public JsonNode shell(String task_id, String user_id) {
-        String command = "sudo docker run bearking/ojide:v7 /home/pythonfile/gitrun " + task_id + " " + user_id;
+        String command = "sudo docker run ustb/merge:v1 /home/docker/ide/gitrun " + task_id + " " + user_id;
         System.out.println(command);
+
         try {
             Process p = Runtime.getRuntime().exec(command);
             InputStream is = p.getInputStream();
-
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-
             p.waitFor();
-            InputStream er = p.getErrorStream();
-            BufferedReader erreader = new BufferedReader(new InputStreamReader(er));
 
-            String s = null;
             if (p.exitValue() != 0) {
+                String s;
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+
+                InputStream er = p.getErrorStream();
+                BufferedReader erreader = new BufferedReader(new InputStreamReader(er));
                 System.out.println("非正常终止");
 
                 System.out.println("错误信息");
@@ -37,13 +41,46 @@ public class JudgeUtil {
                 }
                 return null;
             }
+            JsonNode jsonStr;
+
+            jsonStr = dealOutput(is, "UTF-8");
+//                jsonStr = dealOutput(is, "ISO-8859-1");
+//            }
+            if(jsonStr == null){
+                throw new Exception("转换失败");
+            }
+
+            return jsonStr;
+
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    static public JsonNode dealOutput(InputStream is, String charset){
+        try {
+            String s = null;
+            ObjectMapper mapper = new ObjectMapper();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is, charset));
 
             s = reader.readLine();
-            System.out.println(s);
-            s= s.replace("\"", "\\\"").replace("'","\"");
-            System.out.println(s);
+            s= s.replace("\"", "\\\"").replace("'","\"").replace("\\x", "");
 
-            ObjectMapper mapper = new ObjectMapper();
+            // 去掉 ：n： 格式的字符
+//            String regex = ":\\d+:";
+//            Pattern pattern = Pattern.compile(regex);
+//            Matcher matcher = pattern.matcher(s);
+//            StringBuffer sb = new StringBuffer();
+//
+//            while (matcher.find()) {
+//                String mao = " " + matcher.group(0).substring(1, matcher.group(0).length());
+//                matcher.appendReplacement(sb, mao);
+//            }
+//            matcher.appendTail(sb);
+//            s = sb.toString();
+//            System.out.println(s);
+
             JsonNode root = mapper.readTree(s);
             String detailStr = root.findValue("detail").asText();
             System.out.println(root.findValue("detail").asText());
@@ -54,9 +91,6 @@ public class JudgeUtil {
                     m1.put("detail", "");
                 }
                 else {
-//                    System.out.println();
-//                    detailStr = root.findValue("detail").toString().replace("\\\"", "\"");
-//                    detailStr = detailStr.substring(2, detailStr.length()-2);
                     m1.put("detail", detailStr);
                 }
 
@@ -69,14 +103,11 @@ public class JudgeUtil {
             m1.put("score", root.findValue("score"));
 
 
-
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonStr = mapper.readTree(objectMapper.writeValueAsString(m1));
             System.out.println(jsonStr);
             return jsonStr;
-
-        }
-        catch (Exception e){
+        } catch (Exception e){
             e.printStackTrace();
             return null;
         }
