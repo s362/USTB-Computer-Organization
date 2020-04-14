@@ -18,6 +18,7 @@ public class FileUtil {
     public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\lala\\";
     private static final int BUFFER_SIZE = 1024;
 
+//    接受上传的文件
     public static String fileUpload(MultipartFile file, String question_id) throws Exception{
         String path;
         File dest;
@@ -50,6 +51,7 @@ public class FileUtil {
         }
     }
 
+//    将上传的文件转换为TaskModel对象
     public static void createTaskModel(TaskModel taskModel, String path) throws Exception{
         System.out.println("isLinux?" + OSUtil.isLinux());
         String contentPath = OSUtil.isLinux() ? path + "/content.md" : path + "\\content.md";
@@ -75,6 +77,7 @@ public class FileUtil {
         }
     }
 
+//    获取文件内容
     public static String getContent(String path) throws Exception{
         File f = new File(path);
         if (!f.exists()) {
@@ -88,6 +91,7 @@ public class FileUtil {
         return fcontent;
     }
 
+//    获取文件内容，对回车转换为<br /> ，当时不太懂markdown格式，现在这个已经被弃用。
     public static String getContent_Line(String path) throws Exception{
         File f = new File(path);
         if (!f.exists()) {
@@ -105,6 +109,8 @@ public class FileUtil {
         return fcontent;
     }
 
+//    处理题目描述中的图片信息
+//    因为后端储存题目描述用的是json，所以这里把字符进行了base64加密，便于存储。
     public static String  handleImg(String str, String path) throws Exception{
         String regex = "!\\[]\\((.+?)\\)";
         Pattern pattern = Pattern.compile(regex);
@@ -138,6 +144,7 @@ public class FileUtil {
         return Base64Convert.strConvertBase(sb.toString());
     }
 
+//    解压zip文件
     public static void unZip(String path) throws RuntimeException{
         File srcFile = new File(path + ".zip");
 //         文件不存在，抛出异常

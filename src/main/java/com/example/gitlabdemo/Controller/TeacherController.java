@@ -1,13 +1,16 @@
 package com.example.gitlabdemo.Controller;
 
-
 import com.example.gitlabdemo.Model.DataModel.Question;
+import com.example.gitlabdemo.Model.DataModel.Score;
 import com.example.gitlabdemo.Model.DataModel.Task;
+import com.example.gitlabdemo.Model.DataModel.User;
 import com.example.gitlabdemo.Model.GitModel.TaskFile;
 import com.example.gitlabdemo.Model.GitModel.TaskModel;
 import com.example.gitlabdemo.Model.Result;
 import com.example.gitlabdemo.Service.QuestionService;
+import com.example.gitlabdemo.Service.ScoreService;
 import com.example.gitlabdemo.Service.TaskService;
+import com.example.gitlabdemo.Service.UserService;
 import com.example.gitlabdemo.Util.GitProcess;
 import com.example.gitlabdemo.Util.OSUtil;
 import com.example.gitlabdemo.Util.ResultUtil;
@@ -21,8 +24,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.sql.Date;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.SortedMap;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -31,11 +36,18 @@ public class TeacherController {
     GitProcess gitProcess;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
+    private ScoreService scoreService;
+
+    @Autowired
     private TaskService taskService;
 
     @Autowired
     private QuestionService questionService;
 
+//    创建题目
     @PostMapping(value = "/createTask")
     public ResponseEntity<Result> createTask(@RequestBody MultipartFile file){
         gitProcess = new GitProcess();
@@ -119,4 +131,19 @@ public class TeacherController {
 
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
+
+//    @GetMapping(value = "/getGrade")
+//    public ResponseEntity<Result> getGrade(){
+//        List<User> users = userService.findAll();
+//        List<Score> resultScore = new ArrayList<>();
+//        Score score = new Score();
+//        score.setUid(0l);
+//        for(User user : users){
+//            List<Score> scores = scoreService.findScoreByUser(user.getUid());
+//            for(Score score : scores){
+//
+//            }
+//        }
+//        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+//    }
 }

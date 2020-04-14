@@ -41,12 +41,14 @@ public class StudentController {
 
     GitProcess gitProcess;
 
+//    后台测试类，用于测试后端是否上线
     @PostMapping("/test")
     public ResponseEntity<Result> testConnect(String test){
         System.out.println(test);
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+//    获取用户的所有题目和所有作业。
     @PostMapping("/getQuestionAndTasks")
     public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -68,6 +70,7 @@ public class StudentController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+//    返回所有作业
     @PostMapping("/getQuestion")
     public ResponseEntity<Result> getAllQuestion(HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -76,6 +79,7 @@ public class StudentController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+//    返回所有题目
     @PostMapping("/getTasks")
     public ResponseEntity<Result> getAllTasks(Long qid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -95,6 +99,7 @@ public class StudentController {
         }
     }
 
+//    获取所有题目分数
     private List<TaskScore> getTaskScores(Long uid, Long qid){
         List<TaskScore> taskScores = new LinkedList<>();
         List<Task> tasks = taskService.getTaskbyQid(qid);
@@ -119,7 +124,7 @@ public class StudentController {
 
 
 
-
+//    进行测评，调用python脚本。调用过程封装在了JudgeUtil中。
     @PostMapping(value = "/run", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> run_judge(String task_id, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -157,7 +162,7 @@ public class StudentController {
     }
 
 
-
+//    修改IDE文件名称
     @PutMapping(value = "/renameFile", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> renameFile(String task_id, @RequestBody JsonNode info, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -206,7 +211,8 @@ public class StudentController {
         return ResultUtil.getResult(new Result("false"), HttpStatus.BAD_REQUEST);
     }
 
-
+//    获取题目信息，包括之前写的代码，题目描述
+//    如果是第一次访问，则会自动创建一个新文件
     @PostMapping(value = "/getproject")
     public ResponseEntity<Result> getTask(String task_id, HttpServletRequest httpServletRequest) {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -262,6 +268,7 @@ public class StudentController {
         return ResultUtil.getResult(new Result(gitProject), HttpStatus.OK);
     }
 
+//    IDE创建文件
     @PutMapping(value = "/createFile", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> createFile(String task_id, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -288,6 +295,7 @@ public class StudentController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+//    IDE保存文件
     @PutMapping(value = "/saveFile", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> saveFile(String task_id, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -311,6 +319,7 @@ public class StudentController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
+//    IDE删除文件，因为前端限制必须有一个文件存在，所以如果删除了最后一个文件，则会自动创建一个新文件。
     @DeleteMapping("/deleteFile")
     public ResponseEntity<Result> deleteFile(String task_id, String shortid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));

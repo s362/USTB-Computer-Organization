@@ -19,13 +19,13 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
+    public List<User> findAll(){
+        return userRepository.findAll();
+    }
+
     public User getByUsernameAndPwd(User user){
         Example<User> example = Example.of(user);
-
         List<User> list = this.userRepository.findAll(example);
-//        System.out.println(this.userRepository.findAll());
-//        System.out.println(user);
-//        System.out.println(list);
         if(!list.isEmpty()){
             return list.get(0);
         }

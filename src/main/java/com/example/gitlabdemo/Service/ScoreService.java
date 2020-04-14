@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.sql.Date;
+import java.util.List;
 
 @Service("scoreService")
 public class ScoreService {
@@ -18,6 +19,18 @@ public class ScoreService {
     public ScoreService(ScoreRepository scoreRepository){
         Assert.notNull(scoreRepository, "taskRepository must not be null!");
         this.scoreRepository = scoreRepository;
+    }
+
+    public List<Score> findScoreByUser(Long uid){
+        Score score = new Score();
+        score.setUid(uid);
+        Example<Score> example = Example.of(score);
+        try {
+            Score temp;
+            return this.scoreRepository.findAll(example);
+        } catch (Exception e){
+            return null;
+        }
     }
 
     public int saveScore(Score score)  {

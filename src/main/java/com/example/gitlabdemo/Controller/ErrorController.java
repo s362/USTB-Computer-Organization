@@ -14,7 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 public class ErrorController  {
 
-
     @RequestMapping(path = "/401")
     public ResponseEntity<Result> unauthorized() {
         System.out.println("返回400");

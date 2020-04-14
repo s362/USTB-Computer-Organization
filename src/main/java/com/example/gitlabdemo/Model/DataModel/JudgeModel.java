@@ -1,5 +1,6 @@
 package com.example.gitlabdemo.Model.DataModel;
 
+//获取python评测结果
 public class JudgeModel {
     Long score;
     String detail;

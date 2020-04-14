@@ -21,6 +21,7 @@ public class LoginController {
     @Autowired
     UserService userService;
 
+//    登录验证,正确就返回jwt，错误返回报错信息
     @PostMapping(value = "/", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> login(@RequestBody User user){
         System.out.println(user);
@@ -41,6 +42,7 @@ public class LoginController {
         }
     }
 
+//    添加用户
     @PostMapping("/adduser")
     public ResponseEntity<Result> addUser(String uusername, String upassword){
         User user = new User();
@@ -56,6 +58,7 @@ public class LoginController {
         }
     }
 
+//    错误返回
     @PostMapping("/401")
     public ResponseEntity<Result> error(){
         return ResultUtil.getResult(new Result("登录失败", false), HttpStatus.BAD_REQUEST);
