@@ -1,4 +1,4 @@
-package com.example.gitlabdemo;
+package com.example.ustbdemo;
 
 //import redis.clients.jedis.Jedis;
 

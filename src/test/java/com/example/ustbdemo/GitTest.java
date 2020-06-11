@@ -1,8 +1,10 @@
-package com.example.gitlabdemo;
+package com.example.ustbdemo;
 
+import com.example.ustbdemo.Util.GitProcess;
+import org.gitlab4j.api.models.Group;
 import org.junit.Test;
 
-import java.io.File;
+
 
 public class GitTest {
 //    @Test
@@ -18,8 +20,17 @@ public class GitTest {
 //        gitProcess.getGitLabApi().getProjectApi().deleteProject(7483);
 //    }
 
-    @Test
-    public void createFold() throws Exception{
+//    @Test
+//    public void deleteAllGroup() throws Exception{
+//        GitProcess gitProcess = new GitProcess();
+//        for (Group group : gitProcess.getGitLabApi().getGroupApi().getGroups()){
+//            System.out.println(group.getName());
+//            gitProcess.getGitLabApi().getGroupApi().deleteGroup(group.getId());
+//        }
+//    }
+
+//    @Test
+//    public void createFold() throws Exception{
 //        GitProcess gitProcess = new GitProcess();
 //        RepositoryFile repositoryFile = new RepositoryFile();
 //        repositoryFile.setFilePath("example/task.config");
@@ -33,7 +44,7 @@ public class GitTest {
 //        System.out.println(gitProcess.getGitLabApi().getRepositoryApi().getTree(7481));;
 //        System.out.println(gitProcess.getGitLabApi().getProjectApi().getProject(7481));
 //        System.out.println(gitProcess.getGitLabApi().getRepositoryApi().getTree(7481, "example", "master"));
-    }
+//    }
 
 //    @Test
 //    public void getVoidProject() throws Exception{

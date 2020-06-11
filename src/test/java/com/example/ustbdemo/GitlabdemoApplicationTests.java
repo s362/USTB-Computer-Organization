@@ -1,4 +1,4 @@
-package com.example.gitlabdemo;
+package com.example.ustbdemo;
 
 //@RunWith(SpringRunner.class)
 //@SpringBootTest

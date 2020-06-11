@@ -7,10 +7,10 @@ import javax.persistence.*;
 import javax.xml.stream.events.Namespace;
 
 @Entity
-@Table(name = "taskchoose")
+@Table(name = "assemble_choose")
 @Data
 @ToString
-public class TaskChoose {
+public class Assemble_Choose {
     @Id
     @GeneratedValue
     private Long tcid; // 题目id
@@ -18,8 +18,8 @@ public class TaskChoose {
     @Column(name = "tid")
     private Long tid;
 
-    @Column(name = "taid")
-    private Long taid;
+    @Column(name = "discri")
+    private String  discri;
 
     @Column(name = "options", length = 10000)
     private String options;
@@ -27,12 +27,20 @@ public class TaskChoose {
     @Column(name = "answers", length = 255)
     private String answers;
 
-    public TaskChoose(){};
+    public Assemble_Choose(){};
 
-    public TaskChoose(Long tid, String options, String answers){
-        this.tid = tid;
+    public Assemble_Choose(String discri, String options, String answers){
+        this.discri = discri;
         this.options = options;
         this.answers = answers;
+    }
+
+    public String getDiscri() {
+        return discri;
+    }
+
+    public void setDiscri(String discri) {
+        this.discri = discri;
     }
 
     public Long getTid() {
@@ -43,13 +51,7 @@ public class TaskChoose {
         this.tid = tid;
     }
 
-    public Long getTaid() {
-        return taid;
-    }
 
-    public void setTaid(Long taid) {
-        this.taid = taid;
-    }
 
     public Long getTcid() {
         return tcid;

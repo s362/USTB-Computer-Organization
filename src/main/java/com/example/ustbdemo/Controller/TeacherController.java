@@ -1,5 +1,6 @@
 package com.example.ustbdemo.Controller;
 
+import com.example.ustbdemo.Model.DataModel.Assemble_Choose;
 import com.example.ustbdemo.Model.DataModel.Question;
 import com.example.ustbdemo.Model.DataModel.Question_Task;
 import com.example.ustbdemo.Model.DataModel.Task;
@@ -96,8 +97,8 @@ public class TeacherController {
         for(int i = 0; i < 3; i++){
             MultipartFile multipartFile = multipartFiles[i];
             try{
-                filePath = FileUtil.fileUpload(multipartFile, filetyes[i], task.getTid());
-                if(filePath == null) continue;;
+                filePath = FileUtil.fileUpload(multipartFile, filetyes[i], task);
+                if(filePath == null) continue;
 
                 List<TaskFile> taskFiles;
                 switch (i){
@@ -142,12 +143,13 @@ public class TeacherController {
     }
 
 
+//    创建汇编题目
     @PostMapping(value = "/createAssembleTask")
     public ResponseEntity<Result> createAssembleTask(Task task, Long inputType, String taskCode, @RequestBody MultipartFile taskFile, String chooseTask){
 //        获取 gitProscess对象
         gitProcess = new GitProcess();
         task.setTtype(1L);
-
+//        保存题目
         try{
             taskService.saveTask(task);
         } catch (Exception e){
@@ -157,50 +159,59 @@ public class TeacherController {
         String filePath;
         String task_id = GitProcess.tidToTaskid(task.getTid());
         TaskModel taskModel = new TaskModel(task_id);
+//        根据输入方式，选择不同的方式
         try{
             if (inputType == 0){
                 taskModel.getTaskFiles().add(new TaskFile("code.asm", taskCode));
             } else{
-                filePath = FileUtil.fileUpload(taskFile, "taskFile", task.getTid());
+                filePath = FileUtil.fileUpload(taskFile, "taskFile", task);
                 FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath);
             }
+            System.out.println("文件接收成功");
         } catch (Exception e){
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
             return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
+
+//        创建git工程
         try{
             gitProcess.gitcreateTask(taskModel);
+            System.out.println("创建git工程成功");
         } catch (Exception e){
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
             return ResultUtil.getResult(new Result("创建题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
 
+//        读取选择题
         ObjectMapper mapper = new ObjectMapper();
         try{
             JsonNode root = mapper.readTree(chooseTask);
-            if(root.isArray()){
-                for(JsonNode chooseNode : root){
-                    Assemble_Choose assemble_choose = new Assemble_Choose();
-                    String optionsStr = "";
-                    for (JsonNode optionNode : root.path("options")){
-                        optionsStr += optionNode.asText() + "###";
-                    }
-                    String answerStr = "";
-                    for(JsonNode answerNode : root.path("answers")){
-                        answerStr += answerNode.asText() + "###";
-                    }
-                    assemble_choose.setTid(task.getTid());
-                    assemble_choose.setOptions(optionsStr);
-                    assemble_choose.setOptions(answerStr);
-                    taskService.saveAssembleChoose(assemble_choose);
+            for(JsonNode chooseNode : root.path("chooseTask")){
+                Assemble_Choose assemble_choose = new Assemble_Choose();
+                String optionsStr = "";
+                for (JsonNode optionNode : chooseNode.path("options")){
+                    optionsStr += optionNode.asText() + "###";
                 }
+                String answerStr = "";
+                for(JsonNode answerNode : chooseNode.path("answers")){
+                    answerStr += answerNode.asText() + "###";
+                }
+                assemble_choose.setTid(task.getTid());
+                assemble_choose.setOptions(optionsStr.substring(0, optionsStr.length()-3));
+                assemble_choose.setAnswers(answerStr.substring(0, answerStr.length()-3));
+                assemble_choose.setDiscri(chooseNode.path("discri").asText());
+                taskService.saveAssembleChoose(assemble_choose);
             }
+            System.out.println("创建选择题成功");
+
         } catch (Exception e){
+            System.out.println("创建选择题失败");
+            e.printStackTrace();
             taskService.deletTaskByTid(task.getTid());
         }
-
+        System.out.println("创建题目成功");
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 

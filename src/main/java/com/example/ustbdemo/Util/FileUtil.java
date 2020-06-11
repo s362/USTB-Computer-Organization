@@ -22,9 +22,9 @@ public class FileUtil {
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id
-    public static String fileUpload(MultipartFile file, String filetype, Long tid) throws Exception{
+    public static String fileUpload(MultipartFile file, String filetype, Task task) throws Exception{
         File dirFile, destFile;
-        String dirpath = OSUtil.isLinux() ?  FILE_PATH_LINUX + tid.toString() + "/" + filetype + "/": FILE_PATH_WIN + tid.toString() + "\\" + filetype + "\\";
+        String dirpath = OSUtil.isLinux() ?  FILE_PATH_LINUX + task.getTid().toString() + "/" + filetype + "/": FILE_PATH_WIN + task.getTid().toString() + "\\" + filetype + "\\";
         dirFile = new File(dirpath);
         if(!dirFile.getParentFile().exists()) dirFile.getParentFile().mkdir();
         dirFile.mkdir();
@@ -46,6 +46,13 @@ public class FileUtil {
             e.printStackTrace();
             throw new Exception("传输文件失败");
         }
+        switch (filetype){
+            case "taskFile": task.setTaskFilePath(destFile.getPath()); break;
+            case "testFile": task.setTestFilePath(destFile.getPath()); break;
+            case "exampleFile": task.setExampleFilePath(destFile.getPath()); break;
+            default : task.setTaskFilePath(destFile.getPath()); break;
+        }
+
         String finalPath;
         if(filename.endsWith(".zip")){
             finalPath = OSUtil.isLinux() ? dirFile.getPath() + "/unzip/" : dirFile.getPath() + "\\unzip\\";

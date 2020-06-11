@@ -68,8 +68,10 @@ public class LoginController {
     public ResponseEntity<Result> initial(){
         User user1 = new User("test1", "test1", 2l);
         User user2 = new User("test2", "test2", 2l);
+        User user3 = new User("41624112", "41624112", 2l);
         userService.addUser(user1);
         userService.addUser(user2);
+        userService.addUser(user3);
         Simulation simulation = new Simulation("理想5级流水线cpu");
         Simulation simulation1 = new Simulation("数据重定向五级流水线cpu");
         Simulation simulation2 = new Simulation("重定向+暂停五级流水线cpu");

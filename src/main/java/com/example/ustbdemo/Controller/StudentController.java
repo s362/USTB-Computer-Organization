@@ -1,8 +1,7 @@
 package com.example.ustbdemo.Controller;
 
-import com.example.ustbdemo.Model.DataModel.Question;
-import com.example.ustbdemo.Model.DataModel.Score;
-import com.example.ustbdemo.Model.DataModel.Task;
+import com.example.ustbdemo.Model.DataModel.*;
+import com.example.ustbdemo.Model.UtilModel.ChooseModel;
 import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Service.QuestionService;
 import com.example.ustbdemo.Service.ScoreService;
@@ -23,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,39 +68,39 @@ public class StudentController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
-//    返回所有作业
-//    @PostMapping("/getQuestion")
-//    public ResponseEntity<Result> getAllQuestion(HttpServletRequest httpServletRequest){
-////        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-//        Result result = new Result();
-//        result.setObject(questionService.getAllQuestion());
-//        return ResultUtil.getResult(result, HttpStatus.OK);
-//    }
+    @PostMapping("/getChooseByTid")
+    public ResponseEntity<Result> getChooseByTaid(Long tid, HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
 
-//    返回所有题目
-//    @PostMapping("/getTasks")
-//    public ResponseEntity<Result> getAllTasks(Long qid, HttpServletRequest httpServletRequest){
-//        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-//        if (qid == 0L){
-//            List<TaskScore> taskScores = new LinkedList<>();
-//            List<Question> questions = questionService.getAllQuestion();
-//            for(int i = 0; i < questions.size(); i++){
-//                taskScores.addAll(getTaskScores(Long.parseLong(user_id), questions.get(i).getQid()));
-//            }
-//            Result result = new Result();
-//            result.setObject(taskScores);
-//            return ResultUtil.getResult(result, HttpStatus.OK);
-//        } else{
-//            Result result = new Result();
-//            result.setObject(getTaskScores(Long.parseLong(user_id), qid));
-//            return ResultUtil.getResult(result, HttpStatus.OK);
-//        }
-//    }
+        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChooseByTid(tid);
+        List<ChooseModel> chooseModels = new LinkedList<>();
+        for (Assemble_Choose assemble_choose : assemble_chooses){
+            ChooseModel chooseModel = new ChooseModel();
+            chooseModel.setTcid(assemble_choose.getTcid());
+            chooseModel.setDiscri(assemble_choose.getDiscri());
+            chooseModel.setOptions(Arrays.asList(assemble_choose.getOptions().split("###")));
+        }
+        chooseModels = getAssembleChooseScores(Long.parseLong(user_id), chooseModels);
+        Result result = new Result();
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+//    获取选择题分数
+    private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
+        for(ChooseModel chooseModel : chooseModels){
+            Assemble_Choose_Score assemble_choose_score = scoreService.findAssembleChooseScoreByUserandTid(uid, chooseModel.getTcid());
+            if (assemble_choose_score == null){
+                assemble_choose_score = new Assemble_Choose_Score(uid, chooseModel.getTcid(), new Date());
+                scoreService.saveAssembleChooseScore(assemble_choose_score);
+            }
+            chooseModel.setScore(assemble_choose_score.getAcscore());
+        }
+        return chooseModels;
+    }
 
 //    获取所有题目分数
     private List<TaskScore> getTaskScores(Long uid, Long qid){
         List<TaskScore> taskScores = new LinkedList<>();
-
         List<Task> tasks = taskService.getTaskbyQid(qid);
         for(int i = 0; i < tasks.size(); i++){
             Score _score = scoreService.findScoreByUserandTid(uid, tasks.get(i).getTid());

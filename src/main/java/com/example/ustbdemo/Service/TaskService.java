@@ -19,33 +19,26 @@ public class TaskService {
     private final TaskQuestionRepository taskQuestionRepository;
     private final SimulationRepository simulationRepository;
     private final InstructionRepository instructionRepository;
-    private final TaskAssembleRepository taskAssembleRepository;
-    private final TaskVerilogRepository taskVerilogRepository;
-    private final TaskChooseRepository taskChooseRepository;
+    private final AssembleChooseRepository assembleChooseRepository;
 
     @Autowired
     public TaskService(TaskRepository taskRepository, ScoreRepository scoreRepository,
                        TaskQuestionRepository taskQuestionRepository, SimulationRepository simulationRepository,
                        InstructionRepository instructionRepository,
-                       TaskAssembleRepository taskAssembleRepository,
-                       TaskVerilogRepository taskVerilogRepository,
-                       TaskChooseRepository taskChooseRepository){
+                       AssembleChooseRepository assembleChooseRepository){
         Assert.notNull(taskRepository, "taskRepository must not be null!");
         Assert.notNull(scoreRepository, "taskRepository must not be null!");
         Assert.notNull(taskQuestionRepository, "taskRepository must not be null!");
         Assert.notNull(instructionRepository, "taskRepository must not be null!");
         Assert.notNull(simulationRepository, "taskRepository must not be null!");
-        Assert.notNull(taskAssembleRepository, "taskRepository must not be null!");
-        Assert.notNull(taskVerilogRepository, "taskRepository must not be null!");
-        Assert.notNull(taskChooseRepository, "taskRepository must not be null!");
+        Assert.notNull(assembleChooseRepository, "taskRepository must not be null!");
         this.taskRepository = taskRepository;
         this.scoreRepository = scoreRepository;
         this.taskQuestionRepository = taskQuestionRepository;
         this.instructionRepository = instructionRepository;
         this.simulationRepository = simulationRepository;
-        this.taskAssembleRepository = taskAssembleRepository;
-        this.taskVerilogRepository = taskVerilogRepository;
-        this.taskChooseRepository = taskChooseRepository;
+        this.assembleChooseRepository = assembleChooseRepository;
+
     }
 
     public List<Simulation> getAllSimulation(){
@@ -68,16 +61,8 @@ public class TaskService {
         this.taskRepository.save(task);
     }
 
-    public void saveTaskChoose(TaskChoose taskChoose){
-        this.taskChooseRepository.save(taskChoose);
-    }
-
-    public void saveTaskAssemble(TaskAssemble taskAssemble){
-        this.taskAssembleRepository.save(taskAssemble);
-    }
-
-    public void saveTaskVerilog(TaskVerilog taskVerilog){
-        this.taskVerilogRepository.save(taskVerilog);
+    public void saveAssembleChoose(Assemble_Choose assemble_choose){
+        this.assembleChooseRepository.save(assemble_choose);
     }
 
 
@@ -89,7 +74,8 @@ public class TaskService {
         List<Task> tasks = new LinkedList<>();
         for(Question_Task questionTask : question_tasks){
             try{
-                tasks.add(this.taskRepository.getOne(questionTask.getTid()));
+                Task tempT = this.taskRepository.findById(questionTask.getTid()).get();
+                if(tempT != null) tasks.add(tempT);
             } catch (EntityNotFoundException e){
                 System.out.println("不存在该题号");
                 taskQuestionRepository.deleteById(questionTask.getQtid());
@@ -99,14 +85,25 @@ public class TaskService {
         return tasks;
     }
 
+    public List<Assemble_Choose> getAssebleChooseByTid(Long tid){
+        Assemble_Choose assemble_choose = new Assemble_Choose();
+        assemble_choose.setTid(tid);
+        Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
+        try {
+            return this.assembleChooseRepository.findAll(exampleAssemble);
+
+        } catch (Exception e){
+            return new LinkedList<>();
+        }
+    }
+
 //    根据题目id删除题目，并且删除所有学生该题目记录
     public void deletTaskByTid(Long tid){
         Score score = new Score();
         score.setTid(tid);
+        Task task = this.taskRepository.findById(tid).get();
 
-        Task task = this.taskRepository.getOne(tid);
-
-//        删除所有选择题
+//        如果是汇编题的话，删除所有选择题
         if (task.getTtype() == 1L){
             Assemble_Choose assemble_choose = new Assemble_Choose();
             assemble_choose.setTid(tid);
@@ -133,6 +130,4 @@ public class TaskService {
             e.printStackTrace();
         }
     }
-
-
 }

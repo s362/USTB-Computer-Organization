@@ -216,7 +216,6 @@ public class GitProcess {
         if(taskModel.getConfigJson() != null){
             createRepository(taskModel.getConfigJson(), taskModel.getConfigJson().getTitle(), project_id);
         }
-        System.out.println("创建成功");
         return true;
     }
 
