@@ -1,20 +1,39 @@
 package com.example.gitlabdemo;
 
-import com.example.gitlabdemo.Util.Base64Convert;
-import com.example.gitlabdemo.Util.GitProcess;
-import com.example.gitlabdemo.Util.OSUtil;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class GitTest {
+//    @Test
+//    public void testFile(){
+//        String dirNmae =  "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\";
+////        File file = new File("")
+//    }
+
+
+//    @Test
+//    public void deleteProject() throws  Exception{
+//        GitProcess gitProcess = new GitProcess();
+//        gitProcess.getGitLabApi().getProjectApi().deleteProject(7483);
+//    }
+
+    @Test
+    public void createFold() throws Exception{
+//        GitProcess gitProcess = new GitProcess();
+//        RepositoryFile repositoryFile = new RepositoryFile();
+//        repositoryFile.setFilePath("example/task.config");
+//        repositoryFile.setFileName("task.config");
+//        repositoryFile.setContent("lalala");
+//        gitProcess.getGitLabApi().getRepositoryFileApi().createFile(7479, repositoryFile, "master", "update");
+//        GitProcess gitProcess = new GitProcess();
+//        RepositoryFile repositoryFile =  gitProcess.getGitLabApi().getRepositoryFileApi().getFile(7481, "example/b.v", "master");
+//        System.out.println(repositoryFile.getFileName());
+//        gitProcess.getGitLabApi().getProjectApi().getProject(7481);
+//        System.out.println(gitProcess.getGitLabApi().getRepositoryApi().getTree(7481));;
+//        System.out.println(gitProcess.getGitLabApi().getProjectApi().getProject(7481));
+//        System.out.println(gitProcess.getGitLabApi().getRepositoryApi().getTree(7481, "example", "master"));
+    }
 
 //    @Test
 //    public void getVoidProject() throws Exception{
@@ -28,7 +47,6 @@ public class GitTest {
 //        } else {
 //            System.out.println(56565);
 //        }
-//
 //    }
 
 //    @Test
@@ -122,15 +140,15 @@ public class GitTest {
 //        JsonNode jsonStr = mapper.readTree(objectMapper.writeValueAsString(m1));
 //        System.out.println(jsonStr);    }
 
-    @Test
-    public void deleteProject() throws  Exception{
-        GitProcess gitProcess = new GitProcess();
-        int []ids = new int[]{6843,6844,6848,6849,6853,6854};
-        for(int i = 0; i < 6; i++){
-            gitProcess.getGitLabApi().getGroupApi().deleteGroup("t" + ids[i]);
-            System.out.println("delete "  + ids[i] + "success");
-        }
-
-    }
+//    @Test
+//    public void deleteProject() throws  Exception{
+//        GitProcess gitProcess = new GitProcess();
+//        int []ids = new int[]{6843,6844,6848,6849,6853,6854};
+//        for(int i = 0; i < 6; i++){
+//            gitProcess.getGitLabApi().getGroupApi().deleteGroup("t" + ids[i]);
+//            System.out.println("delete "  + ids[i] + "success");
+//        }
+//
+//    }
 
 }

@@ -1,21 +1,5 @@
 package com.example.gitlabdemo;
 
-import com.example.gitlabdemo.Model.GitModel.GitFile;
-import com.example.gitlabdemo.Model.GitModel.GitProject;
-import com.example.gitlabdemo.Util.Base64Convert;
-import com.example.gitlabdemo.Util.GitProcess;
-import com.example.gitlabdemo.Util.FileUtil;
-import com.example.gitlabdemo.Util.OSUtil;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.sql.DataSource;
-import java.io.File;
-import java.io.FileInputStream;
-import java.util.LinkedList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 //import redis.clients.jedis.Jedis;
 
 //@RunWith(SpringRunner.class)
