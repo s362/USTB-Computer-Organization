@@ -211,7 +211,6 @@ public class GitProcess {
         Integer project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
 //      添加老师上传的文件
         createRepositorys(taskModel.getTaskFiles(), "taskFile", project_id);
-        createRepositorys(taskModel.getTestFiels(), "testFile", project_id);
         createRepositorys(taskModel.getExampleFiles(), "exampleFile", project_id);
         if(taskModel.getConfigJson() != null){
             createRepository(taskModel.getConfigJson(), taskModel.getConfigJson().getTitle(), project_id);

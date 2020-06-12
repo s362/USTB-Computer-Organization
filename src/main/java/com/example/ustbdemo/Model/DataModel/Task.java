@@ -24,17 +24,17 @@ public class Task {
     @Column(name = "tdis", length = 10000)
     private String tdis;
 
-    @Column(name = "simuid")
-    private Long simuid;
+    @Column(name = "simuid1")
+    private Long simuid1;
+
+    @Column(name = "simuid2")
+    private Long simuid2;
 
     @Column(name = "instrid")
     private Long instrid;
 
     @Column(name = "taskFilePath")
     private String taskFilePath;
-
-    @Column(name = "testFilePath")
-    private String testFilePath;
 
     @Column(name = "exampleFilePath")
     private String exampleFilePath;
@@ -53,12 +53,28 @@ public class Task {
         this.ttype = ttype;
     }
 
-    public Long getSimuid() {
-        return simuid;
+    public String getExampleFilePath() {
+        return exampleFilePath;
     }
 
-    public void setSimuid(Long simuid) {
-        this.simuid = simuid;
+    public void setExampleFilePath(String exampleFilePath) {
+        this.exampleFilePath = exampleFilePath;
+    }
+
+    public Long getSimuid1() {
+        return simuid1;
+    }
+
+    public void setSimuid1(Long simuid1) {
+        this.simuid1 = simuid1;
+    }
+
+    public Long getSimuid2() {
+        return simuid2;
+    }
+
+    public void setSimuid2(Long simuid2) {
+        this.simuid2 = simuid2;
     }
 
     public Long getInstrid() {
@@ -75,22 +91,6 @@ public class Task {
 
     public void setTaskFilePath(String taskFilePath) {
         this.taskFilePath = taskFilePath;
-    }
-
-    public String getTestFilePath() {
-        return testFilePath;
-    }
-
-    public void setTestFilePath(String testFilePath) {
-        this.testFilePath = testFilePath;
-    }
-
-    public String getExampleFilePath() {
-        return exampleFilePath;
-    }
-
-    public void setExampleFilePath(String exampleFilePath) {
-        this.exampleFilePath = exampleFilePath;
     }
 
     public String getSimuPicPath1() {

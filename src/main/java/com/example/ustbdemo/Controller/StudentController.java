@@ -7,12 +7,10 @@ import com.example.ustbdemo.Service.QuestionService;
 import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Shiro.JwtUtil;
-import com.example.ustbdemo.Util.Base64Convert;
-import com.example.ustbdemo.Util.GitProcess;
-import com.example.ustbdemo.Util.JudgeUtil;
-import com.example.ustbdemo.Util.ResultUtil;
+import com.example.ustbdemo.Util.*;
 import com.example.ustbdemo.Model.GitModel.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.models.TreeItem;
@@ -69,7 +67,7 @@ public class StudentController {
     }
 
     @PostMapping("/getChooseByTid")
-    public ResponseEntity<Result> getChooseByTaid(Long tid, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> getChooseByTid(Long tid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
 
         List<Assemble_Choose> assemble_chooses = taskService.getAssebleChooseByTid(tid);
@@ -79,10 +77,32 @@ public class StudentController {
             chooseModel.setTcid(assemble_choose.getTcid());
             chooseModel.setDiscri(assemble_choose.getDiscri());
             chooseModel.setOptions(Arrays.asList(assemble_choose.getOptions().split("###")));
+            chooseModels.add(chooseModel);
         }
         chooseModels = getAssembleChooseScores(Long.parseLong(user_id), chooseModels);
-        Result result = new Result();
+        Result result = new Result(chooseModels);
         return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+//    @PostMapping("/runAssembleChoose")
+//    public ResponseEntity<Result> getChooseByTid(Long tcid, HttpServletRequest httpServletRequest){
+//        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+//        return ResultUtil.getResult(result, HttpStatus.OK);
+//    }
+
+    @PostMapping("/runSimulation")
+    public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        try {
+            String content = FileUtil.getContent(Simulation.EXAMPLE_SIMULATION_RESULT);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonStr = mapper.readTree(content);
+            Result result = new Result();
+            result.setObject(jsonStr);
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        } catch (Exception e){
+            return ResultUtil.getResult(new Result(false), HttpStatus.BAD_REQUEST);
+        }
     }
 
 //    获取选择题分数
@@ -196,6 +216,71 @@ public class StudentController {
         return ResultUtil.getResult(new Result("false"), HttpStatus.BAD_REQUEST);
     }
 
+
+    //    获取题目信息，包括之前写的代码，题目描述
+//    如果是第一次访问，则会自动创建一个新文件
+    @PostMapping(value = "/getAssembleTask")
+    public ResponseEntity<Result> getAssembleTask(Long tid, HttpServletRequest httpServletRequest) {
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        String task_id = GitProcess.tidToTaskid(tid);
+        Task task = taskService.getTaskByTid(tid);
+        if(task.getTtype() != 1L) return ResultUtil.getResult(new Result("不是汇编题目"), HttpStatus.BAD_REQUEST);
+
+        gitProcess = new GitProcess();
+        Integer project_id;
+        project_id = gitProcess.getProjectId(task_id, user_id);
+        Integer teacher_id;
+        teacher_id = gitProcess.getProjectId(task_id, "teacher");
+        AssembleProject assembleProject = new AssembleProject();
+        try{
+            if (project_id == null) {
+                project_id = gitProcess.createProject(task_id, user_id);
+                System.out.println("创建工程成功");
+            }
+            if(gitProcess.getRepositoryFiles(project_id).isEmpty()){
+                System.out.println("学生文件为空");
+                try {
+                    List<TreeItem> treeItems = gitProcess.getGitLabApi().getRepositoryApi().getTree(teacher_id, "exampleFile", "master");
+
+                    System.out.println("有exampleFile");
+                    if(treeItems.isEmpty()) throw new Exception();
+                    TreeItem treeItem = treeItems.get(0);
+                    RepositoryFile repositoryFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(teacher_id, treeItem.getPath(), "master");
+                    repositoryFile.setFilePath("top");
+                    repositoryFile.setFileName("top");
+                    gitProcess.getGitLabApi().getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
+
+                } catch (Exception e){
+//                        没有 example文件
+                    System.out.println("无example文件，创建空的top.v文件");
+                    GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top"), "");
+                    gitProcess.gitcreateFile(project_id, gitFile);
+                }
+                System.out.println("创建学生文件成功");
+            }
+        } catch (GitLabApiException e){
+            System.out.println(e.toString());
+            return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+
+
+
+        assembleProject.setTid(tid);
+        try {
+            assembleProject.setExampleCode(gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id,"top","master").getContent());
+            assembleProject.setExampleCode(Base64Convert.baseConvertStr(assembleProject.getExampleCode()));
+        }catch (Exception e){
+//            e.printStackTrace();
+            assembleProject.setExampleCode("");
+        }
+        assembleProject.setSimuPicPath1(PathUtil.toUrlPath(task.getSimuPicPath1()));
+        assembleProject.setSimuPicPath2(PathUtil.toUrlPath(task.getSimuPicPath2()));
+        Instruction instruction = this.taskService.getInstructionByinstrid(task.getInstrid());
+        assembleProject.setInstrPath(PathUtil.toUrlPath(instruction.getInstrFilePath()));
+        return ResultUtil.getResult(new Result(assembleProject), HttpStatus.OK);
+    }
+
+
 //    获取题目信息，包括之前写的代码，题目描述
 //    如果是第一次访问，则会自动创建一个新文件
     @PostMapping(value = "/getproject")
@@ -221,7 +306,7 @@ public class StudentController {
             if(gitProcess.getRepositoryFiles(project_id).isEmpty()){
                 System.out.println("学生文件为空");
                 try {
-                    List<TreeItem> treeItems = gitProcess.getGitLabApi().getRepositoryApi().getTree(teacher_id, "example", "master");
+                    List<TreeItem> treeItems = gitProcess.getGitLabApi().getRepositoryApi().getTree(teacher_id, "exampleFile", "master");
                     System.out.println("有example文件");
                     if(treeItems.isEmpty()) throw new Exception();
                     for(TreeItem treeItem : treeItems){

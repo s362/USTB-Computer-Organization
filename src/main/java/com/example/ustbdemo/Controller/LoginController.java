@@ -66,8 +66,8 @@ public class LoginController {
 
     @PostMapping("/initial")
     public ResponseEntity<Result> initial(){
-        User user1 = new User("test1", "test1", 2l);
-        User user2 = new User("test2", "test2", 2l);
+        User user1 = new User("41624110", "41624110", 2l);
+        User user2 = new User("41624111", "41624111", 2l);
         User user3 = new User("41624112", "41624112", 2l);
         userService.addUser(user1);
         userService.addUser(user2);
@@ -81,12 +81,10 @@ public class LoginController {
         this.taskService.addSimulation(simulation2);
         this.taskService.addSimulation(simulation3);
 
-        Instruction instruction = new Instruction("指令说明书V1.0");
-        Instruction instruction1 = new Instruction("指令说明书V2.0");
-        Instruction instruction2 = new Instruction("其他");
+        Instruction instruction = new Instruction("指令说明书V1.0", Instruction.EXAMPLE_INSTRUCTION_FILEPATH);
+//        Instruction instruction2 = new Instruction("其他");
         this.taskService.addInstruction(instruction);
-        this.taskService.addInstruction(instruction1);
-        this.taskService.addInstruction(instruction2);
+//        this.taskService.addInstruction(instruction2);
         return ResultUtil.getResult(new Result(), HttpStatus.BAD_REQUEST);
     }
 }

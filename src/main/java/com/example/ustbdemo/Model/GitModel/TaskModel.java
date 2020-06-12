@@ -8,7 +8,6 @@ import java.util.List;
 @ToString
 public class TaskModel {
     String task_id;
-    List<TaskFile> testFiels;
     List<TaskFile> taskFiles;
     List<TaskFile> exampleFiles;
     TaskFile configJson;
@@ -17,7 +16,6 @@ public class TaskModel {
 
     public TaskModel(String task_id){
         this.task_id = task_id;
-        testFiels = new LinkedList<>();
         taskFiles = new LinkedList<>();
         exampleFiles = new LinkedList<>();
     }
@@ -28,14 +26,6 @@ public class TaskModel {
 
     public void setConfigJson(TaskFile configJson) {
         this.configJson = configJson;
-    }
-
-    public List<TaskFile> getTestFiels() {
-        return testFiels;
-    }
-
-    public void setTestFiels(List<TaskFile> testFiels) {
-        this.testFiels = testFiels;
     }
 
     public List<TaskFile> getExampleFiles() {
@@ -53,7 +43,6 @@ public class TaskModel {
     public void setTask_id(String task_id) {
         this.task_id = task_id;
     }
-
 
     public List<TaskFile> getTaskFiles() {
         return taskFiles;

@@ -1,5 +1,7 @@
 package com.example.ustbdemo.Model.DataModel;
 
+import com.example.ustbdemo.Util.FileUtil;
+import com.example.ustbdemo.Util.OSUtil;
 import lombok.Data;
 import lombok.ToString;
 
@@ -17,10 +19,31 @@ public class Instruction {
     @Column(name = "instrname", length = 100)
     private String instrname;
 
+    @Column(name = "instrFilePath", length = 100)
+    private String instrFilePath;
+
+    public static final String EXAMPLE_INSTRUCTION_FILEPATH = OSUtil.isLinux() ?
+            FileUtil.STATIC_PATH_LINUX + "exampleInstructionFile.doc" : FileUtil.STATIC_PATH_WIN + "exampleInstructionFile.doc";
+    ;
+
+
     public Instruction(){};
 
     public Instruction(String instrname){
         this.instrname = instrname;
+    }
+
+    public Instruction(String instrname, String instrFilePath){
+        this.instrname = instrname;
+        this.instrFilePath = instrFilePath;
+    }
+
+    public String getInstrFilePath() {
+        return instrFilePath;
+    }
+
+    public void setInstrFilePath(String instrFilePath) {
+        this.instrFilePath = instrFilePath;
     }
 
     public Long getInstrid() {

@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -18,20 +19,26 @@ import java.util.zip.ZipFile;
 
 public class FileUtil {
     public static final String FILE_PATH_LINUX = "/home/ustbDemo/taskFiles/";
-    public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\";
+    public static final String STATIC_PATH_LINUX = "/home/ustbDemo/static/";
+    public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\taskFiles\\";
+    public static final String STATIC_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\staticFiles\\";
+    public static final String EXAMPLE_SIMUPIC = OSUtil.isLinux()? STATIC_PATH_LINUX + "example_simu.jpg" : STATIC_PATH_WIN + "example_simu.jpg";
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id
-    public static String fileUpload(MultipartFile file, String filetype, Task task) throws Exception{
+    public static String fileUpload(MultipartFile file, Task task, String fileType) throws Exception{
         File dirFile, destFile;
-        String dirpath = OSUtil.isLinux() ?  FILE_PATH_LINUX + task.getTid().toString() + "/" + filetype + "/": FILE_PATH_WIN + task.getTid().toString() + "\\" + filetype + "\\";
+        String dirpath = "";
+        dirpath = OSUtil.isLinux() ?  FILE_PATH_LINUX + task.getTid().toString() + "/" + fileType : FILE_PATH_WIN + task.getTid().toString() + "\\" + fileType;
+
         dirFile = new File(dirpath);
+        if(!dirFile.getParentFile().getParentFile().exists()) dirFile.getParentFile().getParentFile().mkdir();
         if(!dirFile.getParentFile().exists()) dirFile.getParentFile().mkdir();
         dirFile.mkdir();
 
 //        如果文件是空的
-        if (file == null) {
-            System.out.println("未上传" + filetype + "文件");
+        if (file == null || file.isEmpty()) {
+            System.out.println("未上传" + "文件");
             return null;
         }
         String filename = file.getOriginalFilename();
@@ -46,12 +53,10 @@ public class FileUtil {
             e.printStackTrace();
             throw new Exception("传输文件失败");
         }
-        switch (filetype){
-            case "taskFile": task.setTaskFilePath(destFile.getPath()); break;
-            case "testFile": task.setTestFilePath(destFile.getPath()); break;
-            case "exampleFile": task.setExampleFilePath(destFile.getPath()); break;
-            default : task.setTaskFilePath(destFile.getPath()); break;
-        }
+        if (fileType.equals("exampleFile"))
+            task.setExampleFilePath(destFile.getPath());
+        else
+            task.setTaskFilePath(destFile.getPath());
 
         String finalPath;
         if(filename.endsWith(".zip")){
@@ -63,10 +68,31 @@ public class FileUtil {
         return finalPath;
     }
 
+    public static String saveStaticUploadFile(MultipartFile file){
+        if(file == null || file.isEmpty()) return null;
+        UUID uuid = UUID.randomUUID();
+        String uuidName = uuid.toString();
+        String fileNameEx = file.getOriginalFilename();
+        if(fileNameEx.lastIndexOf(".") != -1){
+            fileNameEx = fileNameEx.substring(fileNameEx.lastIndexOf("."), fileNameEx.length());
+            uuidName += fileNameEx;
+        }
+        String filePath = OSUtil.isLinux()? STATIC_PATH_LINUX + uuidName : STATIC_PATH_WIN + uuidName;
+        File destFile = new File(filePath);
+        try {
+            file.transferTo(destFile);
+            return destFile.getPath();
+        } catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+
     public static void setTaskModelFiles(List<TaskFile> taskFileList, String files_path) throws  Exception{
         File f = new File(files_path);
         if (!f.exists()) {
-//            throw new Exception(files_path + " not exists");
             return;
         }
         if(f.isDirectory()){
@@ -90,6 +116,62 @@ public class FileUtil {
         taskFile.setContent(fcontent);
         in.close();
         return taskFile;
+    }
+
+    public static String setMdContent(Long tid, String mdPath) throws Exception{
+        TaskFile taskFile = getTaskFile(new File(mdPath));
+        System.out.println("处理 md 文件");
+        return handleImg(tid, taskFile.getContent());
+    }
+
+    public static void moveTaskImg(Long tid, String imgPath){
+        File file = new File(imgPath);
+        file.renameTo(new File(OSUtil.isLinux()? STATIC_PATH_LINUX + tid : STATIC_PATH_WIN + tid));
+    }
+
+    public static String getContent(String path) throws Exception{
+        File f = new File(path);
+        if (!f.exists()) {
+            throw new Exception(path + " not exists");
+        }
+        FileInputStream in = new FileInputStream(f);
+        byte[] filecontent = new byte[(int)f.length()];
+        in.read(filecontent);
+        String fcontent = new String(filecontent, "UTF-8");
+        in.close();
+        return fcontent;
+    }
+
+    public static String saveStaticLocalFile(File file){
+        UUID uuid = UUID.randomUUID();
+        String uuidName = uuid.toString();
+        String fileNameEx = file.getName();
+        if(fileNameEx.lastIndexOf(".") != -1){
+            fileNameEx = fileNameEx.substring(fileNameEx.lastIndexOf("."), fileNameEx.length());
+            uuidName += fileNameEx;
+        }
+        String filePath = OSUtil.isLinux()? STATIC_PATH_LINUX + uuidName : STATIC_PATH_WIN + uuidName;
+        file.renameTo(new File(filePath));
+        System.out.println(uuidName);
+        return uuidName;
+    }
+    //    处理题目描述中的图片信息
+//    因为后端储存题目描述用的是json，所以这里把字符进行了base64加密，便于存储。
+    public static String  handleImg(Long tid, String str) throws Exception{
+        String regex = "!\\[]\\((.+?)\\)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        StringBuffer sb = new StringBuffer();
+
+        while (matcher.find()) {
+            String imgName = matcher.group(0).substring(11, matcher.group(0).length()-1);
+            String imgPah = OSUtil.isLinux()? STATIC_PATH_LINUX + tid + "/" + imgName : STATIC_PATH_WIN + tid + "\\" + imgName;
+            if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
+            imgPah =  "<div align=center><img src=" + "\"" + "https://123.56.0.67" + imgPah + "\"" + " width = \"80%\"></div>";
+            matcher.appendReplacement(sb, imgPah);
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
 //    解压zip文件
@@ -179,6 +261,8 @@ public class FileUtil {
     public static void deleteFileByTid(Long tid){
         String filePath = OSUtil.isLinux() ?  FILE_PATH_LINUX + tid.toString(): FILE_PATH_WIN + tid.toString();
         deleteDirectory(filePath);
+        String imgPath = OSUtil.isLinux() ?  STATIC_PATH_LINUX + tid.toString(): STATIC_PATH_WIN + tid.toString();
+        deleteDirectory(imgPath);
         System.out.println("deleteFileByTid  " + filePath + "   ");
     }
 

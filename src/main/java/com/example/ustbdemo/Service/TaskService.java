@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.persistence.EntityNotFoundException;
+import javax.persistence.criteria.CriteriaBuilder;
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -65,6 +67,37 @@ public class TaskService {
         this.assembleChooseRepository.save(assemble_choose);
     }
 
+    public void saveInstruction(Instruction instruction){
+        this.instructionRepository.save(instruction);
+    }
+
+
+    public List<Task> getAllTasks(){
+        return this.taskRepository.findAll();
+    }
+
+    public Task getTaskByTid(Long tid){
+        System.out.println(tid);
+        try{
+            return this.taskRepository.findById(tid).get();
+        } catch (Exception e){
+            return  null;
+        }
+
+    }
+
+    public Instruction getInstructionByinstrid(Long instrid){
+//        Instruction instruction = new Instruction();
+//        instruction.setInstrid(instrid);
+//        Example<Instruction> example = Example.of(instruction);
+//        return this.instructionRepository.findOne(example).get();
+        try{
+            return this.instructionRepository.findById(instrid).get();
+        } catch (Exception e){
+            return null;
+        }
+    }
+
 
     public List<Task> getTaskbyQid(Long qid){
         Question_Task question_task = new Question_Task();
@@ -91,7 +124,6 @@ public class TaskService {
         Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
         try {
             return this.assembleChooseRepository.findAll(exampleAssemble);
-
         } catch (Exception e){
             return new LinkedList<>();
         }
@@ -99,10 +131,7 @@ public class TaskService {
 
 //    根据题目id删除题目，并且删除所有学生该题目记录
     public void deletTaskByTid(Long tid){
-        Score score = new Score();
-        score.setTid(tid);
         Task task = this.taskRepository.findById(tid).get();
-
 //        如果是汇编题的话，删除所有选择题
         if (task.getTtype() == 1L){
             Assemble_Choose assemble_choose = new Assemble_Choose();
@@ -116,15 +145,37 @@ public class TaskService {
             } catch (Exception e){
                 e.printStackTrace();
             }
+            if(task.getSimuPicPath1() != Simulation.EXAMPLE_SIMULATION_PICPATH){
+                System.out.println(task.getSimuPicPath1());
+                FileUtil.deleteDirectory(task.getSimuPicPath1());
+            }
+            if(task.getSimuPicPath2() != Simulation.EXAMPLE_SIMULATION_PICPATH){
+                FileUtil.deleteDirectory(task.getSimuPicPath2());
+            }
         }
 
         this.taskRepository.deleteById(tid);
         FileUtil.deleteFileByTid(tid);
+//        删除跟这道题有关的所有分数
+        Score score = new Score();
+        score.setTid(tid);
         Example<Score> example = Example.of(score);
         try {
             List<Score> scores = this.scoreRepository.findAll(example);
             for(Score score1:scores){
                 this.scoreRepository.deleteById(score1.getSid());
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+//        删除所有作业里的这个题
+        Question_Task question_task = new Question_Task();
+        question_task.setTid(tid);
+        Example<Question_Task> exampleQuesTask = Example.of(question_task);
+        try {
+            List<Question_Task> question_tasks = this.taskQuestionRepository.findAll(exampleQuesTask);
+            for(Question_Task question_task1:question_tasks){
+                this.scoreRepository.deleteById(question_task1.getQtid());
             }
         } catch (Exception e){
             e.printStackTrace();
