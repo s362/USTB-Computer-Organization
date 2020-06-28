@@ -7,11 +7,18 @@ import com.example.ustbdemo.Model.DataModel.User;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
 import com.example.ustbdemo.Shiro.JwtUtil;
+import com.example.ustbdemo.Util.FileUtil;
+import com.example.ustbdemo.Util.GitProcess;
+import com.example.ustbdemo.Util.OSUtil;
 import com.example.ustbdemo.Util.ResultUtil;
+import org.gitlab4j.api.models.Group;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
+import java.io.ObjectStreamClass;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -65,7 +72,14 @@ public class LoginController {
     }
 
     @PostMapping("/initial")
-    public ResponseEntity<Result> initial(){
+    public ResponseEntity<Result> initial() throws Exception{
+        initialFile();
+        taskService.initialRepository();
+        try {
+            deleteAllGitGroup();
+        } catch (Exception e) {
+            System.out.println("删除所有工程失败" + e.toString());
+        }
         User user1 = new User("41624110", "41624110", 2l);
         User user2 = new User("41624111", "41624111", 2l);
         User user3 = new User("41624112", "41624112", 2l);
@@ -82,9 +96,39 @@ public class LoginController {
         this.taskService.addSimulation(simulation3);
 
         Instruction instruction = new Instruction("指令说明书V1.0", Instruction.EXAMPLE_INSTRUCTION_FILEPATH);
-//        Instruction instruction2 = new Instruction("其他");
         this.taskService.addInstruction(instruction);
-//        this.taskService.addInstruction(instruction2);
-        return ResultUtil.getResult(new Result(), HttpStatus.BAD_REQUEST);
+        return ResultUtil.getResult(new Result("初始化成功", true), HttpStatus.BAD_REQUEST);
     }
+
+    private void deleteAllGitGroup() throws Exception{
+        GitProcess gitProcess = new GitProcess();
+        for (Group group : gitProcess.getGitLabApi().getGroupApi().getGroups()){
+            System.out.println(group.getName());
+            gitProcess.getGitLabApi().getGroupApi().deleteGroup(group.getId());
+        }
+    }
+
+    private void initialFile(){
+        File static_file = new File(OSUtil.isLinux() ? FileUtil.STATIC_PATH_LINUX : FileUtil.STATIC_PATH_WIN);
+        if(static_file.exists()){
+            FileUtil.deleteDirectory(static_file.getPath());
+        }
+        if(!static_file.getParentFile().exists()) static_file.getParentFile().mkdir();
+        static_file.mkdir();
+
+        File task_file = new File(OSUtil.isLinux() ? FileUtil.FILE_PATH_LINUX : FileUtil.FILE_PATH_WIN);
+        if(task_file.exists()){
+            FileUtil.deleteDirectory(task_file.getPath());
+        }
+        if(!task_file.getParentFile().exists()) task_file.getParentFile().mkdir();
+        task_file.mkdir();
+
+        String initialNames[] = {"exampleSimulationPic.png", "exampleSimuResult.json", "exampleInstructionFile.doc", "exampleTaskFile.zip"};
+
+        for(int i = 0; i < 4; i++){
+            String exampleInstructionOrignPath = (OSUtil.isLinux()? FileUtil.INITIAL_PATH_LINUX : FileUtil.INITIAL_PATH_WIN) + initialNames[i];
+            String exampleInstructionAfterPath = (OSUtil.isLinux()? FileUtil.STATIC_PATH_LINUX : FileUtil.STATIC_PATH_WIN) + initialNames[i];
+            FileUtil.copyFile(exampleInstructionOrignPath, exampleInstructionAfterPath);
+        }
+      }
 }

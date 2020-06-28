@@ -19,7 +19,7 @@ public class GitTest {
 //        GitProcess gitProcess = new GitProcess();
 //        gitProcess.getGitLabApi().getProjectApi().deleteProject(7483);
 //    }
-
+//
 //    @Test
 //    public void deleteAllGroup() throws Exception{
 //        GitProcess gitProcess = new GitProcess();

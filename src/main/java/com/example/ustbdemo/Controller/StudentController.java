@@ -70,7 +70,7 @@ public class StudentController {
     public ResponseEntity<Result> getChooseByTid(Long tid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
 
-        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChooseByTid(tid);
+        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
         List<ChooseModel> chooseModels = new LinkedList<>();
         for (Assemble_Choose assemble_choose : assemble_chooses){
             ChooseModel chooseModel = new ChooseModel();
@@ -84,11 +84,30 @@ public class StudentController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
-//    @PostMapping("/runAssembleChoose")
-//    public ResponseEntity<Result> getChooseByTid(Long tcid, HttpServletRequest httpServletRequest){
-//        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-//        return ResultUtil.getResult(result, HttpStatus.OK);
-//    }
+    @PostMapping("/runAssembleChoose")
+    public ResponseEntity<Result> runAssembleChoose(Long tcid, String answer, HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        Assemble_Choose assemble_choose = taskService.getAssembleChooseByTid(tcid);
+        Assemble_Choose_Score assemble_choose_score = scoreService.findAssembleChooseScoreByUserandTid(Long.parseLong(user_id), tcid);
+        if (assemble_choose_score == null){
+            assemble_choose_score = new Assemble_Choose_Score();
+            assemble_choose_score.setTcid(tcid);
+            assemble_choose_score.setUid(Long.parseLong(user_id));
+        }
+        assemble_choose_score.setUpdatedate(new Date());
+        Result result = new Result();
+        if(assemble_choose.getAnswers().split("###")[0].equals(answer)){
+            assemble_choose_score.setAcscore(100L);
+            this.scoreService.saveAssembleChooseScore(assemble_choose_score);
+            result.setObject(100L);
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        } else {
+            assemble_choose_score.setAcscore(0L);
+            this.scoreService.saveAssembleChooseScore(assemble_choose_score);
+            result.setObject(0L);
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        }
+    }
 
     @PostMapping("/runSimulation")
     public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest){
@@ -262,8 +281,6 @@ public class StudentController {
             System.out.println(e.toString());
             return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
-
-
 
         assembleProject.setTid(tid);
         try {

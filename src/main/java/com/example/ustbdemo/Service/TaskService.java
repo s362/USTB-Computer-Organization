@@ -3,6 +3,8 @@ package com.example.ustbdemo.Service;
 import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Repository.*;
 import com.example.ustbdemo.Util.FileUtil;
+import com.example.ustbdemo.Util.GitProcess;
+import com.example.ustbdemo.Util.OSUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
@@ -16,30 +18,42 @@ import java.util.List;
 
 @Service("taskService")
 public class TaskService {
-    private final TaskRepository taskRepository;
-    private final ScoreRepository scoreRepository;
-    private final TaskQuestionRepository taskQuestionRepository;
-    private final SimulationRepository simulationRepository;
-    private final InstructionRepository instructionRepository;
     private final AssembleChooseRepository assembleChooseRepository;
+    private final AssembleChooseScoreRepository assembleChooseScoreRepository;
+    private final InstructionRepository instructionRepository;
+    private final QuestionRepository questionRepository;
+    private final ScoreRepository scoreRepository;
+    private final SimulationRepository simulationRepository;
+    private final TaskQuestionRepository taskQuestionRepository;
+    private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public TaskService(TaskRepository taskRepository, ScoreRepository scoreRepository,
                        TaskQuestionRepository taskQuestionRepository, SimulationRepository simulationRepository,
                        InstructionRepository instructionRepository,
-                       AssembleChooseRepository assembleChooseRepository){
+                       AssembleChooseRepository assembleChooseRepository,
+                       AssembleChooseScoreRepository assembleChooseScoreRepository,
+                       QuestionRepository questionRepository,
+                       UserRepository userRepository){
         Assert.notNull(taskRepository, "taskRepository must not be null!");
         Assert.notNull(scoreRepository, "taskRepository must not be null!");
         Assert.notNull(taskQuestionRepository, "taskRepository must not be null!");
         Assert.notNull(instructionRepository, "taskRepository must not be null!");
         Assert.notNull(simulationRepository, "taskRepository must not be null!");
         Assert.notNull(assembleChooseRepository, "taskRepository must not be null!");
+        Assert.notNull(assembleChooseScoreRepository , "taskRepository must not be null!");
+        Assert.notNull(questionRepository , "taskRepository must not be null!");
+        Assert.notNull(userRepository , "taskRepository must not be null!");
         this.taskRepository = taskRepository;
         this.scoreRepository = scoreRepository;
         this.taskQuestionRepository = taskQuestionRepository;
         this.instructionRepository = instructionRepository;
         this.simulationRepository = simulationRepository;
         this.assembleChooseRepository = assembleChooseRepository;
+        this.assembleChooseScoreRepository = assembleChooseScoreRepository;
+        this.questionRepository = questionRepository;
+        this.userRepository = userRepository;
 
     }
 
@@ -47,8 +61,36 @@ public class TaskService {
         return this.simulationRepository.findAll();
     }
 
+    public Simulation getSimulationBySimuid(Long simuid){
+        try{
+            return this.simulationRepository.findById(simuid).get();
+        } catch (Exception e){
+            return  null;
+        }
+    }
+
+    public Instruction getInstructionByInstrId(Long instrId){
+        try{
+            return this.instructionRepository.findById(instrId).get();
+        } catch (Exception e){
+            return  null;
+        }
+    }
+
     public void addSimulation(Simulation simulation){
         this.simulationRepository.save(simulation);
+    }
+
+    public void initialRepository(){
+        this.assembleChooseRepository.deleteAll();
+        this.instructionRepository.deleteAll();
+        this.taskQuestionRepository.deleteAll();
+        this.simulationRepository.deleteAll();
+        this.taskRepository.deleteAll();
+        this.assembleChooseScoreRepository.deleteAll();
+        this.questionRepository.deleteAll();
+        this.userRepository.deleteAll();
+        this.scoreRepository.deleteAll();
     }
 
     public List<Instruction> getAllInstruction(){
@@ -83,14 +125,17 @@ public class TaskService {
         } catch (Exception e){
             return  null;
         }
+    }
 
+    public Assemble_Choose getAssembleChooseByTid(Long tcid){
+        try{
+            return this.assembleChooseRepository.findById(tcid).get();
+        } catch (Exception e){
+            return  null;
+        }
     }
 
     public Instruction getInstructionByinstrid(Long instrid){
-//        Instruction instruction = new Instruction();
-//        instruction.setInstrid(instrid);
-//        Example<Instruction> example = Example.of(instruction);
-//        return this.instructionRepository.findOne(example).get();
         try{
             return this.instructionRepository.findById(instrid).get();
         } catch (Exception e){
@@ -118,7 +163,7 @@ public class TaskService {
         return tasks;
     }
 
-    public List<Assemble_Choose> getAssebleChooseByTid(Long tid){
+    public List<Assemble_Choose> getAssebleChoosesByTid(Long tid){
         Assemble_Choose assemble_choose = new Assemble_Choose();
         assemble_choose.setTid(tid);
         Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
@@ -134,33 +179,45 @@ public class TaskService {
         Task task = this.taskRepository.findById(tid).get();
 //        如果是汇编题的话，删除所有选择题
         if (task.getTtype() == 1L){
-            Assemble_Choose assemble_choose = new Assemble_Choose();
-            assemble_choose.setTid(tid);
-            Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
             try {
+                Assemble_Choose assemble_choose = new Assemble_Choose();
+                assemble_choose.setTid(tid);
+                Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
                 List<Assemble_Choose> assemble_chooses = this.assembleChooseRepository.findAll(exampleAssemble);
                 for(Assemble_Choose assemble_choose1 : assemble_chooses){
                     this.assembleChooseRepository.delete(assemble_choose1);
                 }
             } catch (Exception e){
-                e.printStackTrace();
+                System.out.println("删除选择题失败  " + tid + "  " + e.toString());
             }
-            if(task.getSimuPicPath1() != Simulation.EXAMPLE_SIMULATION_PICPATH){
-                System.out.println(task.getSimuPicPath1());
-                FileUtil.deleteDirectory(task.getSimuPicPath1());
-            }
-            if(task.getSimuPicPath2() != Simulation.EXAMPLE_SIMULATION_PICPATH){
-                FileUtil.deleteDirectory(task.getSimuPicPath2());
+            try{
+                if(task.getSimuPicPath1() != Simulation.EXAMPLE_SIMULATION_PICPATH){
+                    System.out.println(task.getSimuPicPath1());
+                    FileUtil.deleteDirectory(task.getSimuPicPath1());
+                }
+                if(task.getSimuPicPath2() != Simulation.EXAMPLE_SIMULATION_PICPATH){
+                    FileUtil.deleteDirectory(task.getSimuPicPath2());
+                }
+            }catch (Exception e){
+                System.out.println(e.toString());
             }
         }
 
-        this.taskRepository.deleteById(tid);
         FileUtil.deleteFileByTid(tid);
-//        删除跟这道题有关的所有分数
-        Score score = new Score();
-        score.setTid(tid);
-        Example<Score> example = Example.of(score);
+//        删除git
         try {
+            GitProcess gitProcess = new GitProcess();
+            gitProcess.deleteGroupByTid(tid);
+        } catch (Exception e){
+            System.out.println(e.toString());
+        }
+        this.taskRepository.deleteById(tid);
+
+//        删除跟这道题有关的所有分数
+        try {
+            Score score = new Score();
+            score.setTid(tid);
+            Example<Score> example = Example.of(score);
             List<Score> scores = this.scoreRepository.findAll(example);
             for(Score score1:scores){
                 this.scoreRepository.deleteById(score1.getSid());
@@ -169,13 +226,13 @@ public class TaskService {
             e.printStackTrace();
         }
 //        删除所有作业里的这个题
-        Question_Task question_task = new Question_Task();
-        question_task.setTid(tid);
-        Example<Question_Task> exampleQuesTask = Example.of(question_task);
         try {
+            Question_Task question_task = new Question_Task();
+            question_task.setTid(tid);
+            Example<Question_Task> exampleQuesTask = Example.of(question_task);
             List<Question_Task> question_tasks = this.taskQuestionRepository.findAll(exampleQuesTask);
             for(Question_Task question_task1:question_tasks){
-                this.scoreRepository.deleteById(question_task1.getQtid());
+                this.taskQuestionRepository.deleteById(question_task1.getQtid());
             }
         } catch (Exception e){
             e.printStackTrace();

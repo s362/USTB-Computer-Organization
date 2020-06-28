@@ -1,5 +1,7 @@
 package com.example.ustbdemo.Model.DataModel;
 
+import com.example.ustbdemo.Util.FileUtil;
+import com.example.ustbdemo.Util.OSUtil;
 import lombok.Data;
 import lombok.ToString;
 
@@ -44,6 +46,10 @@ public class Task {
 
     @Column(name = "simuPicPath2")
     private String simuPicPath2;
+
+    public static final String EXAMPLE_TaskFile = OSUtil.isLinux() ?
+            FileUtil.STATIC_PATH_LINUX + "exampleTaskFile.zip" : FileUtil.STATIC_PATH_WIN + "exampleTaskFile.zip";
+
 
     public Task(){}
 

@@ -26,7 +26,6 @@ public class Instruction {
             FileUtil.STATIC_PATH_LINUX + "exampleInstructionFile.doc" : FileUtil.STATIC_PATH_WIN + "exampleInstructionFile.doc";
     ;
 
-
     public Instruction(){};
 
     public Instruction(String instrname){

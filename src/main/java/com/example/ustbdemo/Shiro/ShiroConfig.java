@@ -25,7 +25,11 @@ public class ShiroConfig {
         // 配置不会被拦截的链接 顺序判断
         filterChainDefinitionMap.put("/api/signin/**", "anon");
         filterChainDefinitionMap.put("/api/teacher/**", "anon");
+        filterChainDefinitionMap.put("/classpath/**", "anon");
         filterChainDefinitionMap.put("/401", "anon");
+
+//        filterChainDefinitionMap.put("/static/**", "anon");
+
 
         // 添加自己的过滤器并且取名为jwt
         Map<String, Filter> filterMap = new HashMap<String, Filter>(1);
@@ -50,7 +54,6 @@ public class ShiroConfig {
         defaultSessionStorageEvaluator.setSessionStorageEnabled(false);
         subjectDAO.setSessionStorageEvaluator(defaultSessionStorageEvaluator);
         securityManager.setSubjectDAO(subjectDAO);
-
         return securityManager;
     }
 

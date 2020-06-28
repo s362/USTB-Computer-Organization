@@ -32,7 +32,7 @@ public class ControllerRequestAdvice {
      * 定义切点
      * execution表达式可以百度下，这里代表是controller下的所有public方法
      */
-    @Pointcut("execution(public * com.example.gitlabdemo.Controller.*.*(..))")
+    @Pointcut("execution(public * com.example.ustbdemo.Controller.*.*(..))")
     public void log() {
 
     }

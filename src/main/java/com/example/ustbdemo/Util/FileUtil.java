@@ -20,9 +20,10 @@ import java.util.zip.ZipFile;
 public class FileUtil {
     public static final String FILE_PATH_LINUX = "/home/ustbDemo/taskFiles/";
     public static final String STATIC_PATH_LINUX = "/home/ustbDemo/static/";
+    public static final String INITIAL_PATH_LINUX = "/home/ustbDemo/initialFiles/";
     public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\taskFiles\\";
     public static final String STATIC_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\staticFiles\\";
-    public static final String EXAMPLE_SIMUPIC = OSUtil.isLinux()? STATIC_PATH_LINUX + "example_simu.jpg" : STATIC_PATH_WIN + "example_simu.jpg";
+    public static final String INITIAL_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\initialFiles\\";
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id
@@ -167,7 +168,7 @@ public class FileUtil {
             String imgName = matcher.group(0).substring(11, matcher.group(0).length()-1);
             String imgPah = OSUtil.isLinux()? STATIC_PATH_LINUX + tid + "/" + imgName : STATIC_PATH_WIN + tid + "\\" + imgName;
             if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
-            imgPah =  "<div align=center><img src=" + "\"" + "https://123.56.0.67" + imgPah + "\"" + " width = \"80%\"></div>";
+            imgPah =  "<div align=center><img src=" + "\"" + "https://49.232.207.151:8080" + imgPah + "\"" + " width = \"80%\"></div>";
             matcher.appendReplacement(sb, imgPah);
         }
         matcher.appendTail(sb);
@@ -286,6 +287,27 @@ public class FileUtil {
                 }
                 file.delete();
             }
+        }
+    }
+
+    public static void copyFile(String srcPathStr, String desPathStr)
+    {
+        try
+        {
+            FileInputStream fis = new FileInputStream(srcPathStr);//创建输入流对象
+            FileOutputStream fos = new FileOutputStream(desPathStr); //创建输出流对象
+            byte datas[] = new byte[1024*8];//创建搬运工具
+            int len = 0;//创建长度
+            while((len = fis.read(datas))!=-1)//循环读取数据
+            {
+                fos.write(datas,0,len);
+            }
+            fis.close();//释放资源
+            fis.close();//释放资源
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 }

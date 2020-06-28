@@ -5,11 +5,13 @@ public class PathUtil {
         String urlPath;
         if(OSUtil.isLinux()){
             urlPath =  originPath.replace(FileUtil.STATIC_PATH_LINUX, "");
+            urlPath =  urlPath.replace(FileUtil.FILE_PATH_LINUX, "");
         }
         else{
             urlPath = originPath.replace(FileUtil.STATIC_PATH_WIN, "");
+            urlPath = urlPath.replace(FileUtil.FILE_PATH_WIN, "");
         }
-        urlPath = "123.56.0.67:8080/" + urlPath;
+        urlPath = "49.232.207.151:8080/" + urlPath;
         return urlPath;
     }
 }

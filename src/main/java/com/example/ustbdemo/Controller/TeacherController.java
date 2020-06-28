@@ -4,12 +4,14 @@ import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Model.GitModel.QuestionAndTask;
 import com.example.ustbdemo.Model.GitModel.TaskFile;
 import com.example.ustbdemo.Model.GitModel.TaskModel;
+import com.example.ustbdemo.Model.UtilModel.ChooseModel;
 import com.example.ustbdemo.Model.UtilModel.ConfigJson;
 import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Service.QuestionService;
 import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
+import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.ls.LSInput;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.File;
@@ -44,7 +47,11 @@ public class TeacherController {
     @PostMapping(value = "/getInstruct")
     public ResponseEntity<Result> getInstruct(){
         Result result = new Result();
-        result.setObject(taskService.getAllInstruction());
+        List<Instruction> instructions = taskService.getAllInstruction();
+        for(Instruction instruction : instructions){
+            instruction.setInstrFilePath(PathUtil.toUrlPath(instruction.getInstrFilePath()));
+        }
+        result.setObject(instructions);
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
@@ -63,6 +70,13 @@ public class TeacherController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+    @PostMapping("/getExampleTaskFile")
+    public ResponseEntity<Result> getExampleTaskFile(HttpServletRequest httpServletRequest){
+        Result result = new Result();
+        result.setObject(PathUtil.toUrlPath(Task.EXAMPLE_TaskFile));
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
     @PostMapping("/getTasks")
     public ResponseEntity<Result> getTasks(HttpServletRequest httpServletRequest){
         List<JsonNode> jsonNodes = new LinkedList<>();
@@ -72,12 +86,14 @@ public class TeacherController {
             taskMap.put("tid", task.getTid());
             taskMap.put("tname", task.getTname());
             taskMap.put("tdis", task.getTdis());
+            taskMap.put("ttype", task.getTtype());
             if(task.getTtype() == 0L){
-                taskMap.put("taskFilePath", task.getTaskFilePath());
+                taskMap.put("taskFilePath", PathUtil.toUrlPath(task.getTaskFilePath()));
             } else {
-                taskMap.put("taskFilePath", task.getTaskFilePath());
-                taskMap.put("simuPicPath1", task.getSimuPicPath1());
-                taskMap.put("simuPicPath1", task.getSimuPicPath2());
+                taskMap.put("taskFilePath", PathUtil.toUrlPath(task.getTaskFilePath()));
+                taskMap.put("exampleFilePath", PathUtil.toUrlPath(task.getExampleFilePath()));
+                taskMap.put("simuPicPath1", PathUtil.toUrlPath(task.getSimuPicPath1()));
+                taskMap.put("simuPicPath2", PathUtil.toUrlPath(task.getSimuPicPath2()));
             }
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -91,6 +107,14 @@ public class TeacherController {
         }
         Result result = new Result();
         result.setObject(jsonNodes);
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+
+    @PostMapping("/getChooseByTid")
+    public ResponseEntity<Result> getChooseByTid(Long tid){
+        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
+        Result result = new Result(assemble_chooses);
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
@@ -164,6 +188,13 @@ public class TeacherController {
 //        获取 gitProscess对象
         gitProcess = new GitProcess();
         task.setTtype(1L);
+
+        if(task.getSimuid1() == null || taskService.getSimulationBySimuid(task.getSimuid1()) == null ||
+            task.getSimuid2() == null || taskService.getSimulationBySimuid(task.getSimuid2()) == null ||
+            task.getInstrid() == null || taskService.getInstructionByinstrid(task.getInstrid()) == null){
+            return ResultUtil.getResult(new Result("仿真器或者指令集选择有误"), HttpStatus.BAD_REQUEST);
+        }
+
 //        保存题目
         taskService.saveTask(task);
 
@@ -188,6 +219,7 @@ public class TeacherController {
             gitProcess.gitcreateTask(taskModel);
             System.out.println("创建git工程成功");
         } catch (Exception e){
+            System.out.println("创建git题目失败");
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
             return ResultUtil.getResult(new Result("创建git题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
@@ -222,12 +254,21 @@ public class TeacherController {
             taskService.deletTaskByTid(task.getTid());
         }
 
-        String simulatePicPath1 = FileUtil.saveStaticUploadFile(simuPic1);
-        if (simulatePicPath1 != null) task.setSimuPicPath1(simulatePicPath1);
-        else task.setSimuPicPath1(FileUtil.EXAMPLE_SIMUPIC);
-        String simulatePicPath2 = FileUtil.saveStaticUploadFile(simuPic2);
-        if (simulatePicPath2 != null) task.setSimuPicPath2(simulatePicPath2);
-        else task.setSimuPicPath2(FileUtil.EXAMPLE_SIMUPIC);
+        try{
+            String simulatePicPath1 = FileUtil.saveStaticUploadFile(simuPic1);
+            if (simulatePicPath1 != null) task.setSimuPicPath1(simulatePicPath1);
+            else task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        } catch (Exception e){
+            task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        }
+        try {
+            String simulatePicPath2 = FileUtil.saveStaticUploadFile(simuPic2);
+            if (simulatePicPath2 != null) task.setSimuPicPath2(simulatePicPath2);
+            else task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        } catch (Exception e){
+            task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        }
+
         taskService.saveTask(task);
         System.out.println("创建题目成功");
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
@@ -248,11 +289,6 @@ public class TeacherController {
     @PostMapping(value = "/deleteTask")
     public ResponseEntity<Result> deleteTask(Long tid){
         taskService.deletTaskByTid(tid);
-        try {
-            gitProcess.deleteGroupByTid(tid);
-        } catch (Exception e){
-            e.printStackTrace();
-        }
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
@@ -261,6 +297,7 @@ public class TeacherController {
         questionService.deleteQuestionById(qid);
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
+
 
     //    创建verilog题目
 //    @PostMapping(value = "/createVerilogTask")

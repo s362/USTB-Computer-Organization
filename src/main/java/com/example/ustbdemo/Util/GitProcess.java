@@ -15,10 +15,13 @@ import java.util.*;
 
 public class GitProcess {
     GitLabApi gitLabApi;
+//    iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
 //    String hostURL = "http://202.204.62.155:8099";
-    String hostURL = "http://123.56.0.67:3016/";
-//    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq"; // 202.204.62.155 root
-    String privateToken = "m89F6zsGaXtxFwsD2AMy"; //202.204.62.155 ustbdemo ustbdemo
+    //    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq"; // 202.204.62.155 root
+//    String hostURL = "http://123.56.0.67:3016/";
+//    String privateToken = "m89F6zsGaXtxFwsD2AMy"; //202.204.62.155 ustbdemo ustbdemo
+    String hostURL = "http://49.232.207.151:8099/";
+    String privateToken = "qGsB2feqzx3J_-t-uoDT";
 
     public GitProcess(){
         try{
