@@ -1,7 +1,10 @@
 package com.example.ustbdemo.Config;
 
 import com.example.ustbdemo.Model.UtilModel.ResponseBean;
+import com.example.ustbdemo.Model.UtilModel.Result;
+import com.example.ustbdemo.Util.ResultUtil;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,18 +38,21 @@ public class ExceptionController {
 
     // 捕捉其他所有异常
     @ExceptionHandler(Exception.class)
-    public ResponseBean globalException(HttpServletRequest request, Throwable ex) {
+    public ResponseEntity<Result> globalException(HttpServletRequest request, Throwable ex) {
         System.out.println(ex.toString());
         ex.printStackTrace();
-        return new ResponseBean(getStatus(request).value(), ex.getMessage(), null);
+        Result result = new Result();
+        result.setMessage(ex.getMessage() + "   全局错误");
+        result.setSuccess(false);
+        return ResultUtil.getResult(result, HttpStatus.BAD_REQUEST);
     }
 
-    private HttpStatus getStatus(HttpServletRequest request) {
-
-        Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
-        if (statusCode == null) {
-            return HttpStatus.INTERNAL_SERVER_ERROR;
-        }
-        return HttpStatus.valueOf(statusCode);
-    }
+//    private HttpStatus getStatus(HttpServletRequest request) {
+//
+//        Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+//        if (statusCode == null) {
+//            return HttpStatus.INTERNAL_SERVER_ERROR;
+//        }
+//        return HttpStatus.valueOf(statusCode);
+//    }
 }

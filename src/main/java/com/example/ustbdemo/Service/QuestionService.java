@@ -6,11 +6,13 @@ import com.example.ustbdemo.Model.DataModel.Score;
 import com.example.ustbdemo.Repository.QuestionRepository;
 import com.example.ustbdemo.Repository.TaskQuestionRepository;
 import com.example.ustbdemo.Repository.TaskRepository;
+import com.sun.org.apache.bcel.internal.generic.LLOAD;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Iterator;
 import java.util.List;
 
 @Service("questionService")
@@ -51,5 +53,27 @@ public class QuestionService {
             e.printStackTrace();
         }
         this.questionRepository.deleteById(qid);
+    }
+
+    public Question getQuestionByQid(Long qid){
+        try{
+            return this.questionRepository.findById(qid).get();
+        } catch (Exception e){
+            return  null;
+        }
+    }
+
+//    public List<Question_Task> getQuestionTasksByQid(){
+//
+//    }
+
+    public void deleteQuestionTasksByQid(Long qid){
+        Question_Task question_task = new Question_Task();
+        question_task.setQid(qid);
+        Example<Question_Task> question_taskExample = Example.of(question_task);
+        List<Question_Task> question_tasks = taskQuestionRepository.findAll(question_taskExample);
+        for(Question_Task question_task1 : question_tasks){
+            this.taskQuestionRepository.delete(question_task1);
+        }
     }
 }

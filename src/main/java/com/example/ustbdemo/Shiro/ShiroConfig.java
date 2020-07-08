@@ -56,5 +56,4 @@ public class ShiroConfig {
         securityManager.setSubjectDAO(subjectDAO);
         return securityManager;
     }
-
 }

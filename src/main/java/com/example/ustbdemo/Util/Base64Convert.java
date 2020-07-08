@@ -1,7 +1,6 @@
 package com.example.ustbdemo.Util;
 
 import org.apache.commons.codec.binary.Base64;
-
 import java.io.UnsupportedEncodingException;
 
 public class Base64Convert {

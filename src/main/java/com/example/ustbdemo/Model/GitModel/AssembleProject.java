@@ -1,11 +1,49 @@
 package com.example.ustbdemo.Model.GitModel;
 
+import java.util.List;
+
 public class AssembleProject {
     private Long tid;
+    private String tname;
+    private String tdis;
     private String exampleCode;
     private String simuPicPath1;
     private String simuPicPath2;
     private String instrPath;
+    private Long simuid1;
+    private Long simuid2;
+
+    public String getTname() {
+        return tname;
+    }
+
+    public void setTname(String tname) {
+        this.tname = tname;
+    }
+
+    public String getTdis() {
+        return tdis;
+    }
+
+    public void setTdis(String tdis) {
+        this.tdis = tdis;
+    }
+
+    public Long getSimuid1() {
+        return simuid1;
+    }
+
+    public void setSimuid1(Long simuid1) {
+        this.simuid1 = simuid1;
+    }
+
+    public Long getSimuid2() {
+        return simuid2;
+    }
+
+    public void setSimuid2(Long simuid2) {
+        this.simuid2 = simuid2;
+    }
 
     public Long getTid() {
         return tid;

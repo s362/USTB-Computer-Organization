@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public class JudgeUtil {
 //    接受用户id和待评测的题目id，调用docker，然后把返回结果保存为JsonNode格式。
     static public JsonNode shell(String task_id, String user_id) {
-        String command = "sudo docker run ustb/merge:v1 /home/docker/ide/gitrun " + task_id + " " + user_id;
+        String command = "sudo docker run --rm ustb/merge:v1 /home/docker/ide/gitrun " + task_id + " " + user_id;
         
         System.out.println(command);
 
@@ -31,7 +31,6 @@ public class JudgeUtil {
 
                 InputStream er = p.getErrorStream();
                 BufferedReader erreader = new BufferedReader(new InputStreamReader(er));
-                System.out.println("非正常终止");
 
                 System.out.println("错误信息");
                 while ((s = erreader.readLine()) != null) {
@@ -100,4 +99,33 @@ public class JudgeUtil {
         }
     }
 
+    static public Map simulationOut(String code, Long cpu1, Long cpu2) throws Exception{
+        String exep1 = "sudo docker run --rm mipssimulator:v7 /bin/bash /root/run.sh " + code + " " +cpu1+" "+cpu2;
+        Process pro = null;
+
+        pro = Runtime.getRuntime().exec(exep1);
+        int status = pro.waitFor();
+        if (status != 0)
+        {
+            System.out.println("Failed to call shell's command ");
+            System.out.println("error messages");
+            StringBuilder error = new StringBuilder();
+            String line;
+            BufferedReader br = new BufferedReader(new InputStreamReader(pro.getErrorStream(), "UTF-8"));
+            while ((line = br.readLine()) != null) {
+                error.append(line).append('\n');
+            }
+            System.out.println(error.toString());
+        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(pro.getInputStream()));
+        StringBuilder strbr = new StringBuilder();
+        String line;
+        while ((line = br.readLine())!= null)
+        {
+            strbr.append(line).append("\n");
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        Map readValue = mapper.readValue(strbr.toString(), Map.class);
+        return readValue;
+    }
 }

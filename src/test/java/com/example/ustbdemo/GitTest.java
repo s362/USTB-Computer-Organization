@@ -1,18 +1,55 @@
 package com.example.ustbdemo;
 
+import com.example.ustbdemo.Shiro.JwtUtil;
+import com.example.ustbdemo.Shiro.KEY;
+import com.example.ustbdemo.Shiro.TestJWT;
+import com.example.ustbdemo.Util.Base64Convert;
 import com.example.ustbdemo.Util.GitProcess;
-import org.gitlab4j.api.models.Group;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import static com.example.ustbdemo.Shiro.TestJWT.encrty;
 
 public class GitTest {
-//    @Test
-//    public void testFile(){
-//        String dirNmae =  "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\";
-////        File file = new File("")
-//    }
 
+//    @Test
+//    public void lala() throws  Exception{
+//        GitProcess gitProcess = new GitProcess();
+//        Integer projectId = gitProcess.getGitLabApi().getProjectApi().getProject("s36", "teacher").getId();
+//        System.out.println(projectId);
+//    }
+    @Test
+    public void test() throws Exception{
+//        Long lala = 1L;
+//        Long d = 1L;
+//        System.out.println(lala == d);
+//        System.out.println(lala.equals(d));
+        String answer = "0000 \taddi $1, $0, 10 \t// r1 = 10\n" +
+                "0004\taddi $2, $0, 20 \t// r2 = 20\n" +
+                "0008\taddi $4, $0, 30 \t// r3 = 30\n" +
+                "000b\taddi $5, $0, 50 \t// r5 = 50\n" +
+                "0010\taddi $6, $0, 60 \t// r6 = 60\n" +
+                "0014\taddi $7, $0, 70 \t// r7 = 70\n" +
+                "0018\tlw $2, 20($1) \t\t// r2 = ((r1)+ 20*4)    数据段地址 90开始存放 一系列数值。\n" +
+                "001b\tand $4, $2, $5 \t    // r4 = r2 %26 r5\n" +
+                "0020\tor $8, $2, $6 \t\t// r8 = r2 | r6\n" +
+                "0024\tadd $9, $4, $2 \t    // r9 = r4 + r2\n" +
+                "0028\tslt $1, $2, $7 \t\t// r1 = 0001h if r6 < r7 else r1 = 0\n";
+        System.out.println(Base64Convert.strConvertBase(answer));
+        System.out.println(Base64Convert.baseConvertStr(Base64Convert.strConvertBase(answer)));
+//        Map map = new HashMap();
+//        map.put("lala", "laa");
+//        ObjectMapper mapper = new ObjectMapper();
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        JsonNode jsonStr = mapper.readTree(objectMapper.writeValueAsString(map));
+//        System.out.println(jsonStr.hasNonNull("lala"));
+//        System.out.println(jsonStr.hasNonNull("1212"));
+    }
 
 //    @Test
 //    public void deleteProject() throws  Exception{

@@ -1,37 +1,33 @@
 package com.example.ustbdemo.Controller;
 
+import com.example.ustbdemo.Aspect.ControllerRequestAdvice;
 import com.example.ustbdemo.Model.DataModel.*;
-import com.example.ustbdemo.Model.GitModel.QuestionAndTask;
-import com.example.ustbdemo.Model.GitModel.TaskFile;
 import com.example.ustbdemo.Model.GitModel.TaskModel;
-import com.example.ustbdemo.Model.UtilModel.ChooseModel;
-import com.example.ustbdemo.Model.UtilModel.ConfigJson;
 import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Service.QuestionService;
 import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
-import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.ls.LSInput;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
 import java.util.*;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/teacher")
 public class TeacherController {
     GitProcess gitProcess;
 
+    public static final Logger logger = LoggerFactory.getLogger(TeacherController.class);
     @Autowired
     private UserService userService;
 
@@ -62,6 +58,44 @@ public class TeacherController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+    @PostMapping("/getQuestionAndTasks")
+    public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
+        try{
+            List<Question> questions = questionService.getAllQuestion();
+            List<Map> jsonNodes = new LinkedList<>();
+            for(Question question : questions){
+                Map questionMap = new HashMap();
+                questionMap.put("qid", question.getQid());
+                questionMap.put("qname", question.getQname());
+                questionMap.put("qdis", question.getQdis());
+                questionMap.put("enddate", question.getEnddate());
+
+                List<Task> tasks = taskService.getTaskbyQid(question.getQid());
+                questionMap.put("tasks", getMapTasks(tasks));
+                jsonNodes.add(questionMap);
+            }
+            return ResultUtil.getResult(new Result(jsonNodes), HttpStatus.OK);
+        } catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result(e.toString()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("/getChooseByTid")
+    public ResponseEntity<Result> getChooseByTid(Long tid, HttpServletRequest httpServletRequest){
+        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
+        List<Map> jsonNodes = new LinkedList<>();
+        for (Assemble_Choose assemble_choose : assemble_chooses){
+            Map chooseModel = new HashMap();
+            chooseModel.put("tcid", assemble_choose.getTcid());
+            chooseModel.put("discri", assemble_choose.getDiscri());
+            chooseModel.put("options", Arrays.asList(assemble_choose.getOptions().split("###")));
+            chooseModel.put("answers", Arrays.asList(assemble_choose.getAnswers().split("###")));
+            jsonNodes.add(chooseModel);
+        }
+        return ResultUtil.getResult(new Result(jsonNodes), HttpStatus.OK);
+    }
+
     @PostMapping("/getQuestions")
     public ResponseEntity<Result> getQuestions(HttpServletRequest httpServletRequest){
         List<Question> questions = questionService.getAllQuestion();
@@ -79,21 +113,31 @@ public class TeacherController {
 
     @PostMapping("/getTasks")
     public ResponseEntity<Result> getTasks(HttpServletRequest httpServletRequest){
-        List<JsonNode> jsonNodes = new LinkedList<>();
         List<Task> tasks = taskService.getAllTasks();
+        List<JsonNode> jsonNodes = getMapTasks(tasks);
+        Result result = new Result();
+        result.setObject(jsonNodes);
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    private List<JsonNode> getMapTasks(List<Task> tasks){
+        List<JsonNode> jsonNodes = new LinkedList<>();
         for(Task task:tasks){
             Map taskMap = new HashMap();
             taskMap.put("tid", task.getTid());
             taskMap.put("tname", task.getTname());
-            taskMap.put("tdis", task.getTdis());
             taskMap.put("ttype", task.getTtype());
             if(task.getTtype() == 0L){
-                taskMap.put("taskFilePath", PathUtil.toUrlPath(task.getTaskFilePath()));
+//                taskMap.put("taskFilePath", PathUtil.toUrlPath(task.getTaskFilePath()));
             } else {
-                taskMap.put("taskFilePath", PathUtil.toUrlPath(task.getTaskFilePath()));
-                taskMap.put("exampleFilePath", PathUtil.toUrlPath(task.getExampleFilePath()));
+//                taskMap.put("taskFilePath", PathUtil.toUrlPath(task.getTaskFilePath()));
+//                taskMap.put("exampleFilePath", PathUtil.toUrlPath(task.getExampleFilePath()));
+                taskMap.put("tdis", task.getTdis());
                 taskMap.put("simuPicPath1", PathUtil.toUrlPath(task.getSimuPicPath1()));
                 taskMap.put("simuPicPath2", PathUtil.toUrlPath(task.getSimuPicPath2()));
+                taskMap.put("simuid1",task.getSimuid1());
+                taskMap.put("simuid2",task.getSimuid2());
+                taskMap.put("instrid",task.getInstrid());
             }
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -105,22 +149,26 @@ public class TeacherController {
                 continue;
             }
         }
-        Result result = new Result();
-        result.setObject(jsonNodes);
-        return ResultUtil.getResult(result, HttpStatus.OK);
+        return jsonNodes;
     }
 
-
-    @PostMapping("/getChooseByTid")
-    public ResponseEntity<Result> getChooseByTid(Long tid){
-        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
-        Result result = new Result(assemble_chooses);
-        return ResultUtil.getResult(result, HttpStatus.OK);
-    }
+//    @PostMapping("/getChooseByTid")
+//    public ResponseEntity<Result> getChooseByTid(Long tid){
+//        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
+//        Result result = new Result(assemble_chooses);
+//        return ResultUtil.getResult(result, HttpStatus.OK);
+//    }
 
     @PostMapping(value = "/createQuestion")
     public ResponseEntity<Result> createQuestion(@RequestBody JsonNode info){
         Question question = new Question();
+//        判断题目是否存在
+        for(JsonNode jsonNode : info.path("tids")){
+            Task task = taskService.getTaskByTid(jsonNode.asLong());
+            if(task == null){
+                return ResultUtil.getResult(new Result(jsonNode.asLong() + "  题目不存在", false), HttpStatus.BAD_REQUEST);
+            }
+        }
         question.setQname(info.path("qname").asText());
         question.setCreatedate(new Date());
         question.setQdis(info.path("qdis").asText());
@@ -130,10 +178,38 @@ public class TeacherController {
             for(JsonNode jsonNode : info.path("tids")){
                 questionService.saveTaskQuestion(new Question_Task(question.getQid(), jsonNode.asLong()));
             }
-            System.out.println("创建题目成功");
+            logger.info("创建题目成功");
             return ResultUtil.getResult(new Result(), HttpStatus.OK);
         } catch (Exception e){
-            System.out.println("创建题目失败");
+            logger.info("创建题目失败");
+            return ResultUtil.getResult(new Result(e.toString(), false), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(value = "/editQuestion")
+    public ResponseEntity<Result> editQuestion(@RequestBody JsonNode info){
+//        判断题目是否存在
+        for(JsonNode jsonNode : info.path("tids")){
+            Task task = taskService.getTaskByTid(jsonNode.asLong());
+            if(task == null){
+                return ResultUtil.getResult(new Result(jsonNode.asLong() + "  题目不存在", false), HttpStatus.BAD_REQUEST);
+            }
+        }
+        Question question = questionService.getQuestionByQid(info.path("qid").asLong());
+        question.setQname(info.path("qname").asText());
+        question.setCreatedate(new Date());
+        question.setQdis(info.path("qdis").asText());
+        question.setEnddate(DateUtil.getNowDate(info.path("enddate").asText()));
+        try{
+            questionService.saveQuestion(question);
+            questionService.deleteQuestionTasksByQid(question.getQid());
+            for(JsonNode jsonNode : info.path("tids")){
+                questionService.saveTaskQuestion(new Question_Task(question.getQid(), jsonNode.asLong()));
+            }
+            logger.info("修改题目成功");
+            return ResultUtil.getResult(new Result(), HttpStatus.OK);
+        } catch (Exception e){
+            logger.info("修改题目失败");
             return ResultUtil.getResult(new Result(e.toString(), false), HttpStatus.BAD_REQUEST);
         }
     }
@@ -146,13 +222,13 @@ public class TeacherController {
         Task task = new Task(tname, "", 0L);
 
         taskService.saveTask(task);
-        System.out.println(task.getTid() + "开始文件接收");
+        logger.info(task.getTid() + "开始文件接收");
         String task_id = GitProcess.tidToTaskid(task.getTid());
         TaskModel taskModel = new TaskModel(task_id);
 
         try{
             String filePath;
-            filePath = FileUtil.fileUpload(taskFile, task, "");
+            filePath = FileUtil.fileUpload(taskFile, task, "", "");
             if(filePath == null) {
                 return ResultUtil.getResult(new Result("未上传文件"), HttpStatus.BAD_REQUEST);
             }
@@ -160,10 +236,10 @@ public class TeacherController {
             FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "files");
             FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "example");
             task.setTdis(FileUtil.setMdContent(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
-            System.out.println("处理md文件");
+            logger.info("处理md文件");
             FileUtil.moveTaskImg(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "images");
             FileUtil.deleteDirectory(filePath);
-            System.out.println("文件接收成功");
+            logger.info("文件接收成功");
         } catch (Exception e){
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
@@ -172,7 +248,7 @@ public class TeacherController {
 
         try{
             gitProcess.gitcreateTask(taskModel);
-            System.out.println("创建Git成功");
+            logger.info("创建Git成功");
         } catch (Exception e){
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
@@ -182,7 +258,68 @@ public class TeacherController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
-//    创建汇编题目
+//    修改题目
+    @PostMapping(value = "/editVerilogTask")
+    public ResponseEntity<Result> editVerilogTask(Long tid, String tname, @RequestBody MultipartFile taskFile){
+//        获取 gitProscess对象
+        gitProcess = new GitProcess();
+        Task task = taskService.getTaskByTid(tid);
+
+        if(tname != null) task.setTname(tname);
+        taskService.saveTask(task);
+
+        if(taskFile == null || taskFile.isEmpty()){
+            return ResultUtil.getResult(new Result(), HttpStatus.OK);
+        }
+//        删除之前的文件
+        FileUtil.deleteFileByTid(tid);
+        logger.info(task.getTid() + "开始文件接收");
+        String task_id = GitProcess.tidToTaskid(task.getTid());
+        TaskModel taskModel = new TaskModel(task_id);
+
+        try{
+            String filePath;
+            filePath = FileUtil.fileUpload(taskFile, task, "", "");
+            if(filePath == null) {
+                return ResultUtil.getResult(new Result("未上传文件"), HttpStatus.BAD_REQUEST);
+            }
+
+            FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "files");
+            FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "example");
+            task.setTdis(FileUtil.setMdContent(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
+            logger.info("处理md文件");
+            FileUtil.moveTaskImg(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "images");
+            FileUtil.deleteDirectory(filePath);
+            logger.info("文件接收成功");
+        } catch (Exception e){
+//            taskService.deletTaskByTid(task.getTid());
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+
+        try{
+            if(!taskModel.getTaskFiles().isEmpty() || !taskModel.getExampleFiles().isEmpty()) {
+                try{
+                    gitProcess.deleteProject(GitProcess.tidToTaskid(tid), "teacher");
+                    logger.info("删除源工程成功");
+//                    这里必须加一个100ms延迟，不然gitlab后台没有清空上一个删除的工程缓存会报错
+//                    100ms是我猜的，10ms不够
+                    Thread.sleep(100);
+                } catch (Exception e){
+                    logger.info("无源工程，直接创建");
+                }
+                gitProcess.gitcreateTask(taskModel);
+            }
+            logger.info("修改git成功");
+        } catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("创建题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+        taskService.saveTask(task);
+        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
+    //    创建汇编题目
     @PostMapping(value = "/createAssembleTask")
     public ResponseEntity<Result> createAssembleTask(Task task, @RequestBody MultipartFile taskFile, MultipartFile exampleFile, MultipartFile simuPic1, MultipartFile simuPic2, String chooseTask){
 //        获取 gitProscess对象
@@ -194,21 +331,27 @@ public class TeacherController {
             task.getInstrid() == null || taskService.getInstructionByinstrid(task.getInstrid()) == null){
             return ResultUtil.getResult(new Result("仿真器或者指令集选择有误"), HttpStatus.BAD_REQUEST);
         }
+//        if(taskFile == null || taskFile.isEmpty()){
+//            return ResultUtil.getResult(new Result("未上传taskFile"), HttpStatus.BAD_REQUEST);
+//        }
+//        if(exampleFile == null || exampleFile.isEmpty()){
+//            return ResultUtil.getResult(new Result("未上传exampleFile"), HttpStatus.BAD_REQUEST);
+//        }
 
 //        保存题目
         taskService.saveTask(task);
 
-        System.out.println(task.getTid());
+        logger.info(task.getTid().toString());
         String filePath;
         String task_id = GitProcess.tidToTaskid(task.getTid());
         TaskModel taskModel = new TaskModel(task_id);
 //        根据输入方式，选择不同的方式
         try{
-            filePath = FileUtil.fileUpload(taskFile, task, "taskFile");
+            filePath = FileUtil.fileUpload(taskFile, task, "taskFile", "code.asm");
             FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath);
-            filePath = FileUtil.fileUpload(exampleFile, task, "exampleFile");
+            filePath = FileUtil.fileUpload(exampleFile, task, "exampleFile", "code.asm");
             FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath);
-            System.out.println("文件接收成功");
+            logger.info("文件接收成功");
         } catch (Exception e){
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
@@ -217,9 +360,9 @@ public class TeacherController {
 //        创建git工程
         try{
             gitProcess.gitcreateTask(taskModel);
-            System.out.println("创建git工程成功");
+            logger.info("创建git工程成功");
         } catch (Exception e){
-            System.out.println("创建git题目失败");
+            logger.info("创建git题目失败");
             taskService.deletTaskByTid(task.getTid());
             e.printStackTrace();
             return ResultUtil.getResult(new Result("创建git题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
@@ -246,31 +389,185 @@ public class TeacherController {
                     assemble_choose.setDiscri(chooseNode.path("discri").asText());
                     taskService.saveAssembleChoose(assemble_choose);
                 }
-                System.out.println("创建选择题成功");
+                logger.info("创建选择题成功");
             }
         } catch (Exception e){
-            System.out.println("创建选择题失败");
+            logger.info("创建选择题失败");
             e.printStackTrace();
             taskService.deletTaskByTid(task.getTid());
         }
-
+        logger.info("开始接受图片");
         try{
             String simulatePicPath1 = FileUtil.saveStaticUploadFile(simuPic1);
-            if (simulatePicPath1 != null) task.setSimuPicPath1(simulatePicPath1);
-            else task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+            if (simulatePicPath1 != null) {
+                logger.info("图片1接受成功" + simuPic1.getOriginalFilename());
+                task.setSimuPicPath1(simulatePicPath1);
+            }
+            else {
+                logger.info("无图片1，使用默认图片");
+                task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+            }
         } catch (Exception e){
             task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
         }
         try {
             String simulatePicPath2 = FileUtil.saveStaticUploadFile(simuPic2);
-            if (simulatePicPath2 != null) task.setSimuPicPath2(simulatePicPath2);
-            else task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+            if (simulatePicPath2 != null) {
+                logger.info("图片2接受成功" + simuPic1.getOriginalFilename());
+                task.setSimuPicPath2(simulatePicPath2);
+            }
+            else {
+                logger.info("无图片2，使用默认图片");
+                task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+            }
         } catch (Exception e){
             task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
         }
 
         taskService.saveTask(task);
-        System.out.println("创建题目成功");
+        logger.info("创建题目成功");
+        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
+//    修改汇编题目
+    @PostMapping(value = "/editAssembleTask")
+    public ResponseEntity<Result> editAssembleTask(Task task, @RequestBody MultipartFile taskFile, MultipartFile exampleFile, MultipartFile simuPic1, MultipartFile simuPic2, String chooseTask){
+//        获取 gitProscess对象
+        gitProcess = new GitProcess();
+
+        Task dataTask = taskService.getTaskByTid(task.getTid());
+        if((task.getSimuid1() != null && taskService.getSimulationBySimuid(task.getSimuid1()) == null) ||
+                (task.getSimuid2() != null && taskService.getSimulationBySimuid(task.getSimuid2()) == null) ||
+                        (task.getInstrid() != null && taskService.getInstructionByinstrid(task.getInstrid()) == null)){
+            return ResultUtil.getResult(new Result("仿真器或者指令集选择有误"), HttpStatus.BAD_REQUEST);
+        }
+
+//       修改题目
+        if(task.getInstrid() != null) dataTask.setInstrid(task.getInstrid());
+        if(task.getSimuid1() != null) dataTask.setSimuid1(task.getSimuid1());
+        if(task.getSimuid2() != null) dataTask.setSimuid2(task.getSimuid2());
+        if(task.getTdis() != null) dataTask.setTdis(task.getTdis());
+        if (task.getTname()!=null) dataTask.setTname(task.getTname());
+        taskService.saveTask(dataTask);
+        task = dataTask;
+        logger.info(String.format("tid=%d", task.getTid()));
+        String filePath;
+        String task_id = GitProcess.tidToTaskid(task.getTid());
+        TaskModel taskModel = new TaskModel(task_id);
+//        根据输入方式，选择不同的方式
+
+        try{
+//            如果更新文件，才进行这一步
+            if(!((taskFile == null || taskFile.isEmpty()) && (exampleFile == null || exampleFile.isEmpty()))) {
+                filePath = FileUtil.FILE_PATH_LINUX + task.getTid().toString() + "/" + "taskFile";
+                if(!(taskFile == null || taskFile.isEmpty())){
+                    logger.info("修改taskFile文件");
+                    FileUtil.deleteDirectory(filePath);
+                    filePath = FileUtil.fileUpload(taskFile, task, "taskFile", "code.asm");
+                }
+                FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath);
+
+                filePath = FileUtil.FILE_PATH_LINUX + task.getTid().toString() + "/" + "exampleFile";
+                if(!(exampleFile == null || exampleFile.isEmpty())){
+                    logger.info("修改exampleFile文件");
+                    FileUtil.deleteDirectory(filePath);
+                    filePath = FileUtil.fileUpload(exampleFile, task, "exampleFile", "code.asm");
+                }
+                FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath);
+                logger.info("文件接收成功");
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+//        创建git工程
+        try{
+            if(!taskModel.getTaskFiles().isEmpty() || !taskModel.getExampleFiles().isEmpty()){
+                try{
+                    gitProcess.deleteProject(GitProcess.tidToTaskid(task.getTid()), "teacher");
+                    Thread.sleep(100);
+                } catch (Exception e){}
+                gitProcess.gitcreateTask(taskModel);
+            }
+            logger.info("创建git工程成功");
+        } catch (Exception e){
+            logger.info("创建git题目失败");
+//            taskService.deletTaskByTid(task.getTid());
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("创建git题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+
+//        读取选择题
+        ObjectMapper mapper = new ObjectMapper();
+        try{
+            if(chooseTask != null){
+                JsonNode root = mapper.readTree(chooseTask);
+                List<Assemble_Choose> assemble_choose_before = taskService.getAssebleChoosesByTid(task.getTid());
+                for(JsonNode chooseNode : root.path("chooseTask")){
+                    Assemble_Choose assemble_choose;
+                    if(chooseNode.hasNonNull("tcid")){
+                        assemble_choose = taskService.getAssembleChooseByTid(chooseNode.path("tcid").asLong());
+                        if(assemble_choose.getTid() != task.getTid()) {
+                            logger.warn(String.format("选择题对应的题号与不符tid=%d assemble_tid=%d", task.getTid(), assemble_choose.getTid()));
+                            continue;
+                        }
+                        for(Assemble_Choose temp : assemble_choose_before){
+                            if(temp.getTcid() == assemble_choose.getTcid()){
+                                temp.setTcid(null);
+                            }
+                        }
+                    } else{
+                        assemble_choose = new Assemble_Choose();
+                    }
+
+                    String optionsStr = "";
+                    for (JsonNode optionNode : chooseNode.path("options")){
+                        optionsStr += optionNode.asText() + "###";
+                    }
+                    String answerStr = "";
+                    for(JsonNode answerNode : chooseNode.path("answers")){
+                        answerStr += answerNode.asText() + "###";
+                    }
+                    assemble_choose.setTid(task.getTid());
+                    assemble_choose.setOptions(optionsStr.substring(0, optionsStr.length()-3));
+                    assemble_choose.setAnswers(answerStr.substring(0, answerStr.length()-3));
+                    assemble_choose.setDiscri(chooseNode.path("discri").asText());
+                    taskService.saveAssembleChoose(assemble_choose);
+                }
+                for(Assemble_Choose temp : assemble_choose_before){
+                    if(temp.getTcid() != null){
+                        taskService.deleteAssembleChooseByTcide(temp.getTcid());
+                    }
+                }
+                logger.info("修改选择题成功");
+            }
+        } catch (Exception e){
+            logger.error("修改选择题失败 " + e.toString());
+        }
+
+        try{
+            if(simuPic1 != null && !simuPic1.isEmpty()){
+                if(task.getSimuPicPath1() != Simulation.EXAMPLE_SIMULATION_PICPATH){
+                    FileUtil.deleteDirectory(task.getSimuPicPath1());
+                }
+                String simulatePicPath1 = FileUtil.saveStaticUploadFile(simuPic1);
+                task.setSimuPicPath1(simulatePicPath1);
+            }
+        } catch (Exception e){
+            task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        }
+        try {
+            if(task.getSimuPicPath2() != Simulation.EXAMPLE_SIMULATION_PICPATH){
+                FileUtil.deleteDirectory(task.getSimuPicPath2());
+            }
+            String simulatePicPath2 = FileUtil.saveStaticUploadFile(simuPic2);
+            task.setSimuPicPath2(simulatePicPath2);
+        } catch (Exception e){
+            task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        }
+        taskService.saveTask(task);
+
+        logger.info("创建题目成功");
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
@@ -297,73 +594,4 @@ public class TeacherController {
         questionService.deleteQuestionById(qid);
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
-
-
-    //    创建verilog题目
-//    @PostMapping(value = "/createVerilogTask")
-//    public ResponseEntity<Result> createVerilogTask(ConfigJson configJson, String tname, String tdis, @RequestBody MultipartFile taskFile, MultipartFile testFile, MultipartFile exampleFile){
-//        获取 gitProscess对象
-//        gitProcess = new GitProcess();
-//        String filetyes[] = {"taskFile", "testFile", "exampleFile"};
-//        Task task = new Task(tname, tdis, 0L);
-//
-//        try{
-//            taskService.saveTask(task);
-//        } catch (Exception e){
-//            return ResultUtil.getResult(new Result("保存题目失败" + e.toString()), HttpStatus.BAD_REQUEST);
-//        }
-//        System.out.println(task.getTid());
-//        System.out.println("开始文件接收");
-//        String filePath;
-//        String task_id = GitProcess.tidToTaskid(task.getTid());
-//        TaskModel taskModel = new TaskModel(task_id);
-//        MultipartFile multipartFiles[] = {taskFile, testFile, exampleFile};
-//        for(int i = 0; i < 3; i++){
-//            MultipartFile multipartFile = multipartFiles[i];
-//            try{
-//                filePath = FileUtil.fileUpload(multipartFile, filetyes[i], task);
-//                if(filePath == null) continue;
-//
-//                List<TaskFile> taskFiles;
-//                switch (i){
-//                    case 0: taskFiles = taskModel.getTaskFiles();break;
-//                    case 1: taskFiles = taskModel.getTestFiels();break;
-//                    case 2: taskFiles = taskModel.getExampleFiles();break;
-//                    default: taskFiles = taskModel.getTaskFiles();break;
-//                }
-//                FileUtil.setTaskModelFiles(taskFiles, filePath);
-//                System.out.println(multipartFile.getOriginalFilename() + "   "+ filePath);
-//                if(multipartFile.getOriginalFilename().endsWith(".zip")){
-//                    FileUtil.deleteDirectory(filePath);
-//                }
-//            } catch (Exception e){
-//                taskService.deletTaskByTid(task.getTid());
-//                e.printStackTrace();
-//                return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
-//            }
-//        }
-//
-//        if (configJson.isConfig()) {
-//            try{
-//                taskModel.setConfigJson(new TaskFile());
-//                taskModel.getConfigJson().setContent(configJson.toJson());
-//                System.out.println(taskModel.getConfigJson().getContent());
-//            } catch (Exception e){
-//                System.out.println(e.toString());
-//            }
-//            taskModel.getConfigJson().setTitle("config.json");
-//            System.out.println("config.json生成成功");
-//        } else{
-//            System.out.println("无config文件");
-//        }
-//        try{
-//            gitProcess.gitcreateTask(taskModel);
-//        } catch (Exception e){
-//            taskService.deletTaskByTid(task.getTid());
-//            e.printStackTrace();
-//            return ResultUtil.getResult(new Result("创建题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
-//        }
-//        taskService.saveTask(task);
-//        return ResultUtil.getResult(new Result(), HttpStatus.OK);
-//    }
 }

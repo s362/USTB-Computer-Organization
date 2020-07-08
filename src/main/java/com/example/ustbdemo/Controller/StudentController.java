@@ -6,6 +6,7 @@ import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Service.QuestionService;
 import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
+import com.example.ustbdemo.Service.UserService;
 import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Util.*;
 import com.example.ustbdemo.Model.GitModel.*;
@@ -14,21 +15,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.models.TreeItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+//@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/student")
 public class StudentController {
+    public static final Logger logger = LoggerFactory.getLogger(StudentController.class);
 
     @Autowired
     ScoreService scoreService;
@@ -39,14 +40,10 @@ public class StudentController {
     @Autowired
     TaskService taskService;
 
-    GitProcess gitProcess;
+    @Autowired
+    UserService userService;
 
-//    后台测试类，用于测试后端是否上线
-    @PostMapping("/test")
-    public ResponseEntity<Result> testConnect(String test){
-        System.out.println(test);
-        return ResultUtil.getResult(new Result(), HttpStatus.OK);
-    }
+    GitProcess gitProcess;
 
 //    获取用户的所有题目和所有作业。
     @PostMapping("/getQuestionAndTasks")
@@ -58,7 +55,7 @@ public class StudentController {
         for(int i = 0; i < questions.size(); i++){
             Question question = questions.get(i);
             QuestionAndTask questionAndTask = new QuestionAndTask(question);
-            questionAndTask.setTaskScores(getTaskScores(Long.parseLong(user_id), question.getQid()));
+            questionAndTask.setTaskScores(getTaskScores(user_id, question.getQid()));
             questionAndTasks.add(questionAndTask);
         }
         Result result = new Result();
@@ -69,7 +66,7 @@ public class StudentController {
     @PostMapping("/getChooseByTid")
     public ResponseEntity<Result> getChooseByTid(Long tid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-
+        User user = userService.findByUserName(user_id);
         List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
         List<ChooseModel> chooseModels = new LinkedList<>();
         for (Assemble_Choose assemble_choose : assemble_chooses){
@@ -79,7 +76,7 @@ public class StudentController {
             chooseModel.setOptions(Arrays.asList(assemble_choose.getOptions().split("###")));
             chooseModels.add(chooseModel);
         }
-        chooseModels = getAssembleChooseScores(Long.parseLong(user_id), chooseModels);
+        chooseModels = getAssembleChooseScores(user.getUid(), chooseModels);
         Result result = new Result(chooseModels);
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
@@ -87,12 +84,13 @@ public class StudentController {
     @PostMapping("/runAssembleChoose")
     public ResponseEntity<Result> runAssembleChoose(Long tcid, String answer, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        Long uid = userService.findByUserName(user_id).getUid();
         Assemble_Choose assemble_choose = taskService.getAssembleChooseByTid(tcid);
-        Assemble_Choose_Score assemble_choose_score = scoreService.findAssembleChooseScoreByUserandTid(Long.parseLong(user_id), tcid);
+        Assemble_Choose_Score assemble_choose_score = scoreService.findAssembleChooseScoreByUidandTid(uid, tcid);
         if (assemble_choose_score == null){
             assemble_choose_score = new Assemble_Choose_Score();
             assemble_choose_score.setTcid(tcid);
-            assemble_choose_score.setUid(Long.parseLong(user_id));
+            assemble_choose_score.setUid(uid);
         }
         assemble_choose_score.setUpdatedate(new Date());
         Result result = new Result();
@@ -110,57 +108,80 @@ public class StudentController {
     }
 
     @PostMapping("/runSimulation")
-    public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest, @RequestBody JsonNode answerNode){
+        String answer = answerNode.path("answer").asText();
+        answer = Base64Convert.baseConvertStr(answer);
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        gitProcess = new GitProcess();
+//        判断答案是否正确
+        try{
+            Integer project_id;
+            project_id = gitProcess.getProjectId(GitProcess.tidToTaskid(tid), user_id);
+            RepositoryFile repositoryFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id, "code.asm", "master");
+            repositoryFile.setContent(Base64Convert.strConvertBase(answer));
+            gitProcess.getGitLabApi().getRepositoryFileApi().updateFile(project_id, repositoryFile, "master", "udpate");
+
+            Integer teacher_id;
+            teacher_id = gitProcess.getProjectId(GitProcess.tidToTaskid(tid), "teacher");
+            RepositoryFile refFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(teacher_id, "taskFile/code.asm", "master");
+            String af_answer = answer;
+            String rf_answer = Base64Convert.baseConvertStr(refFile.getContent());
+            int wrongIndex = findFirstWrongCode(af_answer, rf_answer);
+            if (wrongIndex == -1){
+                logger.info(user_id + "  答案正确，开始仿真");
+            } else {
+                logger.info(user_id + "  答案错误");
+                Result result = new Result();
+                Map map = new HashMap();
+                map.put("correctIsOk", false);
+                map.put("error", wrongIndex);
+                result.setObject(map);
+                return ResultUtil.getResult(result, HttpStatus.OK);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result(e.toString()), HttpStatus.BAD_REQUEST);
+        }
+
+        Task task = taskService.getTaskByTid(tid);
+        Simulation simulation1 = taskService.getSimulationBySimuid(task.getSimuid1());
+        Simulation simulation2 = taskService.getSimulationBySimuid(task.getSimuid2());
         try {
-            String content = FileUtil.getContent(Simulation.EXAMPLE_SIMULATION_RESULT);
-            ObjectMapper mapper = new ObjectMapper();
-            JsonNode jsonStr = mapper.readTree(content);
+            String _answers[] = answer.split("\n");
+            String _answer = "";
+            for(int i = 0; i < _answers.length;i++){
+                _answers[i] = _answers[i].substring(4);
+                int index = _answers[i].indexOf("//");
+                if(index != -1) _answers[i] = _answers[i].substring(0, index);
+                _answer += _answers[i] + "\n";
+            }
+            logger.info(_answer);
+            Map resultValue = JudgeUtil.simulationOut(Base64Convert.strConvertBase(_answer), simulation1.getInnerid(), simulation2.getInnerid());
+            resultValue.put("correctIsOk", true);
+            resultValue.put("error", -1);
             Result result = new Result();
-            result.setObject(jsonStr);
+            result.setObject(resultValue);
             return ResultUtil.getResult(result, HttpStatus.OK);
         } catch (Exception e){
-            return ResultUtil.getResult(new Result(false), HttpStatus.BAD_REQUEST);
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result(e.toString(), false), HttpStatus.BAD_REQUEST);
         }
+//            String content = FileUtil.getContent(Simulation.EXAMPLE_SIMULATION_RESULT);
+//            ObjectMapper mapper = new ObjectMapper();
+//            Map readValue = mapper.readValue(content, Map.class);
     }
 
-//    获取选择题分数
-    private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
-        for(ChooseModel chooseModel : chooseModels){
-            Assemble_Choose_Score assemble_choose_score = scoreService.findAssembleChooseScoreByUserandTid(uid, chooseModel.getTcid());
-            if (assemble_choose_score == null){
-                assemble_choose_score = new Assemble_Choose_Score(uid, chooseModel.getTcid(), new Date());
-                scoreService.saveAssembleChooseScore(assemble_choose_score);
-            }
-            chooseModel.setScore(assemble_choose_score.getAcscore());
-        }
-        return chooseModels;
-    }
-
-//    获取所有题目分数
-    private List<TaskScore> getTaskScores(Long uid, Long qid){
-        List<TaskScore> taskScores = new LinkedList<>();
-        List<Task> tasks = taskService.getTaskbyQid(qid);
-        for(int i = 0; i < tasks.size(); i++){
-            Score _score = scoreService.findScoreByUserandTid(uid, tasks.get(i).getTid());
-            if (_score == null){
-                _score = new Score(uid, tasks.get(i).getTid(), new Date());
-                scoreService.saveScore(_score);
-            }
-            TaskScore taskScore = new TaskScore(tasks.get(i), _score);
-            taskScores.add(taskScore);
-        }
-        return taskScores;
-    }
-
-//    进行测评，调用python脚本。调用过程封装在了JudgeUtil中。
+    //  进行测评，调用python脚本。调用过程封装在了JudgeUtil中。
     @PostMapping(value = "/run", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> run_judge(String task_id, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> run_judge(Long tid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + task_id + "   开始评测");
+        User user = userService.findByUserName(user_id);
+        String task_id = GitProcess.tidToTaskid(tid);
+        logger.info(user_id + "   " + task_id + "   开始评测");
 
         Score score = new Score();
-        score.setUid(Long.parseLong(user_id));
+
+        score.setUid(user.getUid());
         score.setTid(GitProcess.taskIdtoTid(task_id));
         Score task_score;
         task_score = scoreService.findScoreByUserandTid(score.getUid(), score.getTid());
@@ -185,18 +206,18 @@ public class StudentController {
         return ResultUtil.getResult(new Result(jsonObject), HttpStatus.OK);
     }
 
-
 //    修改IDE文件名称
     @PutMapping(value = "/renameFile", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> renameFile(String task_id, @RequestBody JsonNode info, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> renameFile(Long tid, @RequestBody JsonNode info, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + task_id);
+        String task_id = GitProcess.tidToTaskid(tid);
+        logger.info(user_id + "   " + task_id);
 
         gitProcess = new GitProcess();
-        System.out.println(info);
+        logger.info(info.toString());
         String shortid = info.path("shortid").asText();
         String title = info.path("title").asText();
-        System.out.println(shortid + title);
+        logger.info(shortid + title);
 
         Integer project_id = gitProcess.getProjectId(task_id, user_id);
         if (project_id == null) return ResultUtil.getResult(new Result("no project"), HttpStatus.BAD_REQUEST);
@@ -205,7 +226,7 @@ public class StudentController {
         try{
             repositoryFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id, Base64Convert.baseConvertStr(shortid), "master");
         } catch (Exception e){
-            System.out.println("no such file");
+            logger.info("no such file");
             return ResultUtil.getResult(new Result("没有该文件"), HttpStatus.BAD_REQUEST);
         }
 
@@ -215,7 +236,7 @@ public class StudentController {
         try{
             gitProcess.isFileExist(project_id, gitFile);
         }catch (Exception e){
-            System.out.println("文件存在");
+            logger.info("文件存在");
             return ResultUtil.getResult(new Result("文件已存在"), HttpStatus.BAD_REQUEST);
         }
 
@@ -224,7 +245,7 @@ public class StudentController {
         if(gitProcess.gitdeleteFile(project_id, gitFile)){
             gitFile.setShortid(Base64Convert.strConvertBase(title));
             gitFile.setCode(repositoryFile.getContent());
-            System.out.println("文件删除成功");
+            logger.info("文件删除成功");
             if(gitProcess.gitcreateFile(project_id, gitFile)){
                 String new_shortid = Base64Convert.strConvertBase(title);
                 Result result = new Result();
@@ -234,7 +255,6 @@ public class StudentController {
         }
         return ResultUtil.getResult(new Result("false"), HttpStatus.BAD_REQUEST);
     }
-
 
     //    获取题目信息，包括之前写的代码，题目描述
 //    如果是第一次访问，则会自动创建一个新文件
@@ -254,57 +274,60 @@ public class StudentController {
         try{
             if (project_id == null) {
                 project_id = gitProcess.createProject(task_id, user_id);
-                System.out.println("创建工程成功");
+                logger.info("创建工程成功");
             }
             if(gitProcess.getRepositoryFiles(project_id).isEmpty()){
-                System.out.println("学生文件为空");
+                logger.info("学生文件为空");
                 try {
                     List<TreeItem> treeItems = gitProcess.getGitLabApi().getRepositoryApi().getTree(teacher_id, "exampleFile", "master");
-
-                    System.out.println("有exampleFile");
+                    logger.info("有exampleFile");
                     if(treeItems.isEmpty()) throw new Exception();
                     TreeItem treeItem = treeItems.get(0);
                     RepositoryFile repositoryFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(teacher_id, treeItem.getPath(), "master");
-                    repositoryFile.setFilePath("top");
-                    repositoryFile.setFileName("top");
+                    repositoryFile.setFilePath("code.asm");
+                    repositoryFile.setFileName("code.asm");
                     gitProcess.getGitLabApi().getRepositoryFileApi().createFile(project_id, repositoryFile, "master", "update");
 
                 } catch (Exception e){
 //                        没有 example文件
-                    System.out.println("无example文件，创建空的top.v文件");
-                    GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top"), "");
+                    logger.info("无example文件，创建空的code.asm文件");
+                    GitFile gitFile = new GitFile(Base64Convert.strConvertBase("code.asm"), "");
                     gitProcess.gitcreateFile(project_id, gitFile);
                 }
-                System.out.println("创建学生文件成功");
+                logger.info("创建学生文件成功");
             }
         } catch (GitLabApiException e){
-            System.out.println(e.toString());
+            logger.info(e.toString());
             return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
 
         assembleProject.setTid(tid);
         try {
-            assembleProject.setExampleCode(gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id,"top","master").getContent());
+            assembleProject.setExampleCode(gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id,"code.asm","master").getContent());
             assembleProject.setExampleCode(Base64Convert.baseConvertStr(assembleProject.getExampleCode()));
         }catch (Exception e){
-//            e.printStackTrace();
             assembleProject.setExampleCode("");
         }
         assembleProject.setSimuPicPath1(PathUtil.toUrlPath(task.getSimuPicPath1()));
         assembleProject.setSimuPicPath2(PathUtil.toUrlPath(task.getSimuPicPath2()));
         Instruction instruction = this.taskService.getInstructionByinstrid(task.getInstrid());
         assembleProject.setInstrPath(PathUtil.toUrlPath(instruction.getInstrFilePath()));
+        assembleProject.setSimuid1(task.getSimuid1());
+        assembleProject.setSimuid2(task.getSimuid2());
+        assembleProject.setTname(task.getTname());
+        assembleProject.setTdis(task.getTdis());
         return ResultUtil.getResult(new Result(assembleProject), HttpStatus.OK);
     }
 
-
-//    获取题目信息，包括之前写的代码，题目描述
+    //    获取题目信息，包括之前写的代码，题目描述
 //    如果是第一次访问，则会自动创建一个新文件
     @PostMapping(value = "/getproject")
-    public ResponseEntity<Result> getTask(String task_id, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<Result> getTask(Long tid, HttpServletRequest httpServletRequest) {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + task_id);
+        String task_id = GitProcess.tidToTaskid(tid);
+        logger.info(user_id + "   " + task_id);
         gitProcess = new GitProcess();
+        Task task = taskService.getTaskByTid(tid);
 
         GitProject gitProject = new GitProject();
         Integer project_id;
@@ -314,17 +337,13 @@ public class StudentController {
         try{
             if (project_id == null) {
                 project_id = gitProcess.createProject(task_id, user_id);
-                System.out.println("创建工程成功");
+                logger.info("创建工程成功");
             }
-            /**
-             * TODO
-             * 如果工程获取后为空
-             */
             if(gitProcess.getRepositoryFiles(project_id).isEmpty()){
-                System.out.println("学生文件为空");
+                logger.info("学生文件为空");
                 try {
                     List<TreeItem> treeItems = gitProcess.getGitLabApi().getRepositoryApi().getTree(teacher_id, "exampleFile", "master");
-                    System.out.println("有example文件");
+                    logger.info("有example文件");
                     if(treeItems.isEmpty()) throw new Exception();
                     for(TreeItem treeItem : treeItems){
                         RepositoryFile repositoryFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(teacher_id, treeItem.getPath(), "master");
@@ -333,29 +352,31 @@ public class StudentController {
                     }
                 } catch (Exception e){
 //                        没有 example文件
-                    System.out.println("无example文件，创建空的top.v文件");
+                    logger.info("无example文件，创建空的top.v文件");
                     GitFile gitFile = new GitFile(Base64Convert.strConvertBase("top.v"), "");
                     gitProcess.gitcreateFile(project_id, gitFile);
                 }
-                System.out.println("创建学生文件成功");
+                logger.info("创建学生文件成功");
             }
         } catch (GitLabApiException e){
-            System.out.println(e.toString());
+            logger.info(e.toString());
             return ResultUtil.getResult(new Result("创建工程失败  " + e.toString()), HttpStatus.BAD_REQUEST);
         }
         gitProject.setSourceId(project_id.toString());
         gitProject.setModules(gitProcess.getRepositoryFiles(project_id));
         gitProject.setTags(new LinkedList<String>());
         gitProject.setDirectories(new LinkedList<GitFolder>());
-        gitProject.setId(task_id);
-        gitProject = gitProcess.setTeacherInfo(gitProject, teacher_id);
-
+        gitProject.setId(GitProcess.taskIdtoTid(task_id).toString());
+//        gitProject = gitProcess.setTeacherInfo(gitProject, teacher_id);
+        gitProject.setDescription(task.getTdis());
+        gitProject.setAlias(task.getTname());
+        gitProject.setTitle(task.getTname());
         try {
             gitProject.setSourceId(gitProcess.getProjectCommiteId(project_id));
         }
         catch (GitLabApiException e){
             gitProject.setSourceId("first");
-            System.out.println(e.toString());
+            logger.info(e.toString());
         }
         return ResultUtil.getResult(new Result(gitProject), HttpStatus.OK);
     }
@@ -364,7 +385,7 @@ public class StudentController {
     @PutMapping(value = "/createFile", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> createFile(Long tid, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + tid);
+        logger.info(user_id + "   " + tid);
 
         gitProcess = new GitProcess();
         Integer project_id = gitProcess.getProjectId(GitProcess.tidToTaskid(tid), user_id);
@@ -378,7 +399,7 @@ public class StudentController {
             }
 
             if (gitProcess.gitcreateFile(project_id, gitFile)){
-                System.out.println("createsucess");
+                logger.info("createsucess");
             }
             else {
                 return ResultUtil.getResult(new Result("fail"), HttpStatus.BAD_REQUEST);
@@ -391,7 +412,7 @@ public class StudentController {
     @PutMapping(value = "/saveFile", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> saveFile(Long tid, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + tid);
+        logger.info(user_id + "   " + tid);
 
         gitProcess = new GitProcess();
         Integer project_id = gitProcess.getProjectId(GitProcess.tidToTaskid(tid), user_id);
@@ -402,7 +423,7 @@ public class StudentController {
 
             GitFile gitFile = new GitFile(modules.getModules().get(i).getShortid(), modules.getModules().get(i).getCode());
             if(gitProcess.gitupdateFile(project_id, gitFile)){
-                System.out.println("updatesucss");
+                logger.info("updatesucss");
             }
             else {
                 return ResultUtil.getResult(new Result("fail"), HttpStatus.BAD_REQUEST);
@@ -411,12 +432,11 @@ public class StudentController {
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
     }
 
-
 //    IDE删除文件，因为前端限制必须有一个文件存在，所以如果删除了最后一个文件，则会自动创建一个新文件。
     @DeleteMapping("/deleteFile")
     public ResponseEntity<Result> deleteFile(Long tid, String shortid, HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        System.out.println(user_id + "   " + tid);
+        logger.info(user_id + "   " + tid);
 
         if(shortid.equals(Base64Convert.strConvertBase("README.md")))
             return ResultUtil.getResult(new Result("不能删除README.md文件"), HttpStatus.BAD_REQUEST);
@@ -428,11 +448,60 @@ public class StudentController {
         GitFile gitFile = new GitFile();
         gitFile.setShortid(Base64Convert.baseConvertStr(shortid));
         if (gitProcess.gitdeleteFile(project_id, gitFile)){
-            System.out.println("delete success");
+            logger.info("delete success");
             return ResultUtil.getResult(new Result(), HttpStatus.OK);
         }
         else {
             return ResultUtil.getResult(new Result("delete failure"), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    //    获取选择题分数
+    private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
+        for(ChooseModel chooseModel : chooseModels){
+            Assemble_Choose_Score assemble_choose_score = scoreService.findAssembleChooseScoreByUidandTid(uid, chooseModel.getTcid());
+            if (assemble_choose_score == null){
+                assemble_choose_score = new Assemble_Choose_Score(uid, chooseModel.getTcid(), new Date());
+                scoreService.saveAssembleChooseScore(assemble_choose_score);
+            }
+            chooseModel.setScore(assemble_choose_score.getAcscore());
+        }
+        return chooseModels;
+    }
+
+    //    获取所有题目分数
+    private List<TaskScore> getTaskScores(String user_id, Long qid){
+        List<TaskScore> taskScores = new LinkedList<>();
+        List<Task> tasks = taskService.getTaskbyQid(qid);
+        User user = userService.findByUserName(user_id);
+        Long uid = user.getUid();
+        for(int i = 0; i < tasks.size(); i++){
+            Score _score = scoreService.findScoreByUserandTid(uid, tasks.get(i).getTid());
+            if (_score == null){
+                _score = new Score(uid, tasks.get(i).getTid(), new Date());
+                scoreService.saveScore(_score);
+            }
+            TaskScore taskScore = new TaskScore(tasks.get(i), _score);
+            taskScores.add(taskScore);
+        }
+        return taskScores;
+    }
+
+    private int findFirstWrongCode(String answer, String ref_answer){
+        String answers[] = answer.split("\n");
+        String ref_answers[] = ref_answer.split("\n");
+        for(int i = 0; i < answers.length && i < ref_answers.length; i++){
+            int index = answers[i].indexOf("//");
+            if(index != -1) answers[i] = answers[i].substring(0, index);
+            answers[i] = answers[i].replace("\t", "").replace(" ", "");
+            index = ref_answers[i].indexOf("//");
+            if(index != -1) ref_answers[i] = ref_answers[i].substring(0, index);
+            ref_answers[i] = ref_answers[i].replace("\t", "").replace(" ", "");
+            if(!answers[i].equals(ref_answers[i])){
+                return i;
+            }
+        }
+        if(answers.length == ref_answers.length) return  -1;
+        else return answers.length;
     }
 }

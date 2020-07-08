@@ -51,18 +51,18 @@ public class MyRealm extends AuthorizingRealm {
     @Override
     protected AuthenticationInfo doGetAuthenticationInfo(AuthenticationToken auth) throws AuthenticationException{
         String token = (String) auth.getCredentials();
+//        System.out.println("doGetAuthenticationInfo  " + token);
         // 解密获得username，用于和数据库进行对比
         String username = JwtUtil.getUsername(token);
         if (username == null) {
             throw new AuthenticationException("token无效,请重新输入");
         }
-
         User userBean = userService.findByUserName(username);
         if (userBean == null) {
             System.out.println("用户不存在!");
             throw new AuthenticationException("用户不存在!");
         }
-        if (!JwtUtil.verify(token, username, userBean.getPasswd())) {
+        if (!JwtUtil.verify(token.split(" ")[1])) {
             System.out.println("用户名或密码错误");
             throw new AuthenticationException("用户名或密码错误");
         }

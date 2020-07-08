@@ -135,6 +135,17 @@ public class TaskService {
         }
     }
 
+    public void deleteAssembleChooseByTcide(Long tcid){
+        this.assembleChooseRepository.deleteById(tcid);
+        Assemble_Choose_Score score = new Assemble_Choose_Score();
+        score.setTcid(tcid);
+        Example<Assemble_Choose_Score> example = Example.of(score);
+        List<Assemble_Choose_Score> scores = this.assembleChooseScoreRepository.findAll(example);
+        for(Assemble_Choose_Score score1:scores){
+            this.assembleChooseScoreRepository.deleteById(score1.getTcid());
+        }
+    }
+
     public Instruction getInstructionByinstrid(Long instrid){
         try{
             return this.instructionRepository.findById(instrid).get();
@@ -162,6 +173,7 @@ public class TaskService {
         }
         return tasks;
     }
+
 
     public List<Assemble_Choose> getAssebleChoosesByTid(Long tid){
         Assemble_Choose assemble_choose = new Assemble_Choose();
@@ -209,7 +221,7 @@ public class TaskService {
             GitProcess gitProcess = new GitProcess();
             gitProcess.deleteGroupByTid(tid);
         } catch (Exception e){
-            System.out.println(e.toString());
+//            System.out.println(e.toString());
         }
         this.taskRepository.deleteById(tid);
 

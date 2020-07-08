@@ -34,7 +34,6 @@ public class ControllerRequestAdvice {
      */
     @Pointcut("execution(public * com.example.ustbdemo.Controller.*.*(..))")
     public void log() {
-
     }
 
     /**
@@ -49,7 +48,7 @@ public class ControllerRequestAdvice {
         String client = request.getRemoteAddr();
         String method = request.getMethod();
         String requestURI = request.getRequestURI();
-        String token = request.getHeader("token");
+//        String token = request.getHeader("token");
         Object[] args = joinPoint.getArgs();
         Map<String, Object> params = new HashMap<>();
         if (args.length > 0) {
@@ -58,18 +57,16 @@ public class ControllerRequestAdvice {
         long currentTimeMillis = System.currentTimeMillis();
         timeThreadLocal.set(currentTimeMillis);
         StringBuffer sb = new StringBuffer();
-        sb.append("Request_").append(currentTimeMillis).append(" ");
+        sb.append("Request_").append(" ");
         sb.append("<").append(client).append(">");
         sb.append(" ").append(method).append(" ");
         sb.append("\"").append(requestURI).append("\"");
-        sb.append(" token:").append(token).append(" ");
+//        sb.append(" token:").append(token).append(" ");
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             sb.append("params").append("=>").append(objectMapper.writeValueAsString(params));
         } catch (Exception e){
-
         }
-
         logger.info(sb.toString());
     }
 
@@ -135,11 +132,10 @@ public class ControllerRequestAdvice {
     public void afterReturning(Object obj) {
         try{
             ObjectMapper objectMapper = new ObjectMapper();
-            logger.info("Response_" + timeThreadLocal.get() + " => " + objectMapper.writeValueAsString(obj));
+            logger.info("Response_" + " => " + objectMapper.writeValueAsString(obj));
         } catch (Exception e){
-            logger.info("Response_" + timeThreadLocal.get());
+            logger.info("Response_");
         }
-
     }
 
     /**

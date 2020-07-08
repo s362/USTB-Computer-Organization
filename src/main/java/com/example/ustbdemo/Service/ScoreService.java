@@ -2,6 +2,7 @@ package com.example.ustbdemo.Service;
 
 import com.example.ustbdemo.Model.DataModel.Assemble_Choose_Score;
 import com.example.ustbdemo.Model.DataModel.Score;
+import com.example.ustbdemo.Model.DataModel.User;
 import com.example.ustbdemo.Repository.AssembleChooseScoreRepository;
 import com.example.ustbdemo.Repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ public class ScoreService {
         }
     }
 
-    public Assemble_Choose_Score findAssembleChooseScoreByUserandTid(Long uid, Long tcid){
+    public Assemble_Choose_Score findAssembleChooseScoreByUidandTid(Long uid, Long tcid){
         Assemble_Choose_Score assemble_choose_score = new Assemble_Choose_Score();
         assemble_choose_score.setUid(uid);
         assemble_choose_score.setTcid(tcid);

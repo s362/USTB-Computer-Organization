@@ -27,7 +27,7 @@ public class FileUtil {
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id
-    public static String fileUpload(MultipartFile file, Task task, String fileType) throws Exception{
+    public static String fileUpload(MultipartFile file, Task task, String fileType, String destFilename) throws Exception{
         File dirFile, destFile;
         String dirpath = "";
         dirpath = OSUtil.isLinux() ?  FILE_PATH_LINUX + task.getTid().toString() + "/" + fileType : FILE_PATH_WIN + task.getTid().toString() + "\\" + fileType;
@@ -42,8 +42,13 @@ public class FileUtil {
             System.out.println("未上传" + "文件");
             return null;
         }
-        String filename = file.getOriginalFilename();
-//        System.out.println(dirFile.getPath());
+        String filename = "";
+        if(destFilename.equals("")){
+            filename = file.getOriginalFilename();
+        } else{
+            filename = destFilename;
+        }
+
         String destPath = OSUtil.isLinux() ? dirFile.getPath() + "/" + filename : dirFile.getPath() + "\\" + filename;
         destFile = new File(destPath);
 
@@ -89,8 +94,6 @@ public class FileUtil {
         }
     }
 
-
-
     public static void setTaskModelFiles(List<TaskFile> taskFileList, String files_path) throws  Exception{
         File f = new File(files_path);
         if (!f.exists()) {
@@ -121,7 +124,7 @@ public class FileUtil {
 
     public static String setMdContent(Long tid, String mdPath) throws Exception{
         TaskFile taskFile = getTaskFile(new File(mdPath));
-        System.out.println("处理 md 文件");
+//        System.out.println("处理 md 文件");
         return handleImg(tid, taskFile.getContent());
     }
 
@@ -166,9 +169,12 @@ public class FileUtil {
 
         while (matcher.find()) {
             String imgName = matcher.group(0).substring(11, matcher.group(0).length()-1);
-            String imgPah = OSUtil.isLinux()? STATIC_PATH_LINUX + tid + "/" + imgName : STATIC_PATH_WIN + tid + "\\" + imgName;
+//            String imgPah = OSUtil.isLinux()? STATIC_PATH_LINUX + tid + "/" + imgName : STATIC_PATH_WIN + tid + "\\" + imgName;
+//            if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
+//            imgPah =  "<div align=center><img src=" + "\"" + "https://49.232.207.151:8080" + imgPah + "\"" + " width = \"80%\"></div>";
+            String imgPah = OSUtil.isLinux()? tid + "/" + imgName : tid + "\\" + imgName;
             if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
-            imgPah =  "<div align=center><img src=" + "\"" + "https://49.232.207.151:8080" + imgPah + "\"" + " width = \"80%\"></div>";
+            imgPah =  "<div align=center><img src=" + "\"" + "http://49.232.207.151:8080/" + imgPah + "\"" + " width = \"80%\"></div>";
             matcher.appendReplacement(sb, imgPah);
         }
         matcher.appendTail(sb);
@@ -267,27 +273,32 @@ public class FileUtil {
         System.out.println("deleteFileByTid  " + filePath + "   ");
     }
 
-    public static void deleteDirectory(String dirPath)
-    {
-        File file = new File(dirPath);
-        if(file.isFile())
-        {
-            file.delete();
-        }else
-        {
-            File[] files = file.listFiles();
-            if(files == null)
+    public static void deleteDirectory(String dirPath) {
+        try{
+            File file = new File(dirPath);
+            if(file.isFile())
             {
                 file.delete();
             }else
             {
-                for (int i = 0; i < files.length; i++)
+                File[] files = file.listFiles();
+                if(files == null)
                 {
-                    deleteDirectory(files[i].getAbsolutePath());
+                    file.delete();
+                }else
+                {
+                    for (int i = 0; i < files.length; i++)
+                    {
+                        deleteDirectory(files[i].getAbsolutePath());
+                    }
+                    file.delete();
                 }
-                file.delete();
             }
+        }catch (Exception e){
+            e.printStackTrace();
+            System.out.println(e.toString());
         }
+
     }
 
     public static void copyFile(String srcPathStr, String desPathStr)

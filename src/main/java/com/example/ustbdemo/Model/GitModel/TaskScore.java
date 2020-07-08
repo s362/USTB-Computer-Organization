@@ -14,6 +14,12 @@ public class TaskScore {
 
     public TaskScore(){};
 
+    public TaskScore(Task task){
+        this.tid = task.getTid();
+        this.tname = task.getTname();
+        this.tdis = task.getTdis();
+    }
+
     public TaskScore(Task task, Score score){
         this.tid = task.getTid();
         this.tname = task.getTname();

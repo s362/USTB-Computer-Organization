@@ -1,26 +1,32 @@
 package com.example.ustbdemo.Controller;
+import com.example.ustbdemo.Aspect.ControllerRequestAdvice;
 import com.example.ustbdemo.Model.DataModel.Instruction;
 import com.example.ustbdemo.Model.DataModel.Simulation;
-import com.example.ustbdemo.Model.DataModel.Task;
 import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Model.DataModel.User;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
 import com.example.ustbdemo.Shiro.JwtUtil;
-import com.example.ustbdemo.Util.FileUtil;
-import com.example.ustbdemo.Util.GitProcess;
-import com.example.ustbdemo.Util.OSUtil;
-import com.example.ustbdemo.Util.ResultUtil;
+import com.example.ustbdemo.Shiro.TestJWT;
+import com.example.ustbdemo.Util.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.gitlab4j.api.models.Group;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.io.ObjectStreamClass;
+import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+import java.util.Random;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
+
 @RestController
 @RequestMapping("/api/signin")
 public class LoginController {
@@ -29,23 +35,91 @@ public class LoginController {
     @Autowired
     TaskService taskService;
 
+    public static final Logger logger = LoggerFactory.getLogger(LoginController.class);
+
+    final String loginUrl = "http://202.205.145.156:8017/sys/api/user/validate?";
+
+    @PostMapping(value = "/test")
+    public ResponseEntity<Result> test(){
+        logger.info("info message");
+        logger.error("error message");
+        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
 //    登录验证,正确就返回jwt，错误返回报错信息
     @PostMapping(value = "/", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> login(@RequestBody User user){
-        System.out.println(user);
+        logger.info(user.toString());
         try{
             if (userService.getByUsernameAndPwd(user.getUsername(), user.getPasswd()) != null){
-                String token = JwtUtil.sign(user.getUsername(), user.getPasswd());
+                String token = JwtUtil.sign(user.getUsername());
                 if(token != null){
                     Result result = new Result();
                     result.setObject(token);
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }
             }
-            System.out.println("无此用户");
+            logger.info("无此用户");
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
         } catch (Exception e){
-            System.out.println(e.toString());
+            logger.info(e.toString());
+            return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(value = "/jwtlogin", consumes = "application/json; charset=utf-8")
+    public ResponseEntity<Result> jwtlogin(@RequestBody JsonNode tokenNode){
+        String token = tokenNode.path("token").asText();
+        logger.info(token);
+        try {
+            String json = TestJWT.dencrty(token);
+            logger.info(json);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            logger.info(token);
+            if(userService.findByUserName(root.path("un").asText())== null){
+                User user = new User();
+                user.setUsername(root.path("un").asText());
+                userService.addUser(user);
+            }
+            String jwtToken = JwtUtil.sign(root.path("un").asText());
+            return ResultUtil.getResult(new Result(jwtToken), HttpStatus.OK);
+        } catch (Exception e) {
+//            e.printStackTrace();
+            logger.info(e.toString());
+            return ResultUtil.getResult(new Result("json错误  "+ e.toString()), HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    @PostMapping(value = "/platformlogin", consumes = "application/json; charset=utf-8")
+    public ResponseEntity<Result> platformlogin(@RequestBody User user){
+        try{
+            String nonce = getRandomString();
+            String cnonce = getRandomString();
+            String username = user.getUsername();
+            String password = user.getPasswd();
+            password = getSHA256(password);
+            password = getSHA256(nonce+password.toUpperCase()+cnonce.toUpperCase()).toUpperCase();
+            String param = String.format("username=%s&password=%s&nonce=%s&cnonce=%s", username, password, nonce,cnonce);
+
+            String command = String.format(loginUrl + param);
+//            if(OSUtil.isLinux()) command = String.format("curl \'%s?%s\'", url, param);
+            logger.info(command);
+//            Map readValue = ReadRountine.readRountine(command);
+            String strbr = HttpClient.doGet(command);
+            ObjectMapper mapper = new ObjectMapper();
+            Map readValue = mapper.readValue(strbr, Map.class);
+            if(readValue == null) throw new Exception();
+            if ((int)readValue.get("code") != 0) throw new Exception();
+
+//            如果系统中没有该user，则保存
+            if(userService.findByUserName(username)== null){
+                userService.addUser(user);
+            }
+            String token = JwtUtil.sign(user.getUsername());
+            return ResultUtil.getResult(new Result((Object)token), HttpStatus.OK);
+        } catch (Exception e){
+            logger.info(e.toString());
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
         }
     }
@@ -53,7 +127,7 @@ public class LoginController {
 //    添加用户
     @PostMapping("/adduser")
     public ResponseEntity<Result> addUser(String username, String upassword){
-        System.out.println(username + "   " + upassword);
+        logger.info(username + "   " + upassword);
         User user = new User();
         user.setUsername(username);
         user.setPasswd(upassword);
@@ -71,6 +145,17 @@ public class LoginController {
         return ResultUtil.getResult(new Result("登录失败", false), HttpStatus.BAD_REQUEST);
     }
 
+    public String getRandomString(){
+        String str="ABCDEF0123456789";
+        Random random=new Random();
+        StringBuffer sb=new StringBuffer();
+        for(int i=0;i<16;i++){
+            int number=random.nextInt(str.length()-1);
+            sb.append(str.charAt(number));
+        }
+        return sb.toString();
+    }
+
     @PostMapping("/initial")
     public ResponseEntity<Result> initial() throws Exception{
         initialFile();
@@ -78,18 +163,18 @@ public class LoginController {
         try {
             deleteAllGitGroup();
         } catch (Exception e) {
-            System.out.println("删除所有工程失败" + e.toString());
+            logger.info("删除所有工程失败" + e.toString());
         }
-        User user1 = new User("41624110", "41624110", 2l);
-        User user2 = new User("41624111", "41624111", 2l);
-        User user3 = new User("41624112", "41624112", 2l);
+        User user1 = new User("test1", "123456", 2l);
+        User user2 = new User("test2", "123456", 2l);
+        User user3 = new User("test3", "123456", 2l);
         userService.addUser(user1);
         userService.addUser(user2);
         userService.addUser(user3);
-        Simulation simulation = new Simulation("理想5级流水线cpu");
-        Simulation simulation1 = new Simulation("数据重定向五级流水线cpu");
-        Simulation simulation2 = new Simulation("重定向+暂停五级流水线cpu");
-        Simulation simulation3 = new Simulation("其他");
+        Simulation simulation = new Simulation("理想5级流水线cpu", 0l);
+        Simulation simulation1 = new Simulation("数据重定向五级流水线cpu", 1L);
+        Simulation simulation2 = new Simulation("重定向+暂停五级流水线cpu", 2L);
+        Simulation simulation3 = new Simulation("其他", 3L);
         this.taskService.addSimulation(simulation);
         this.taskService.addSimulation(simulation1);
         this.taskService.addSimulation(simulation2);
@@ -103,7 +188,7 @@ public class LoginController {
     private void deleteAllGitGroup() throws Exception{
         GitProcess gitProcess = new GitProcess();
         for (Group group : gitProcess.getGitLabApi().getGroupApi().getGroups()){
-            System.out.println(group.getName());
+            logger.info(group.getName());
             gitProcess.getGitLabApi().getGroupApi().deleteGroup(group.getId());
         }
     }
@@ -130,5 +215,47 @@ public class LoginController {
             String exampleInstructionAfterPath = (OSUtil.isLinux()? FileUtil.STATIC_PATH_LINUX : FileUtil.STATIC_PATH_WIN) + initialNames[i];
             FileUtil.copyFile(exampleInstructionOrignPath, exampleInstructionAfterPath);
         }
-      }
+    }
+
+
+    /**
+     * 利用java原生的类实现SHA256加密
+     *
+     * @param str
+     * @return
+     */
+    private String getSHA256(String str) {
+        MessageDigest messageDigest;
+        String encodestr = "";
+        try {
+            messageDigest = MessageDigest.getInstance("SHA-256");
+            messageDigest.update(str.getBytes("UTF-8"));
+            encodestr = byte2Hex(messageDigest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return encodestr;
+    }
+
+    /**
+     * 将byte转为16进制
+     *
+     * @param bytes
+     * @return
+     */
+    private static String byte2Hex(byte[] bytes) {
+        StringBuffer stringBuffer = new StringBuffer();
+        String temp = null;
+        for (int i = 0; i < bytes.length; i++) {
+            temp = Integer.toHexString(bytes[i] & 0xFF);
+            if (temp.length() == 1) {
+                //1得到一位的进行补0操作
+                stringBuffer.append("0");
+            }
+            stringBuffer.append(temp);
+        }
+        return stringBuffer.toString();
+    }
 }

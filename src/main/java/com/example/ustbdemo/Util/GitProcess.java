@@ -49,19 +49,30 @@ public class GitProcess {
         gitLabApi.getGroupApi().deleteGroup(groupId);
     }
 
+    public void deleteProject(String task_id, String projectName) throws GitLabApiException{
+        System.out.println(task_id + "  " + projectName);
+        Integer projectId = gitLabApi.getProjectApi().getProject(task_id, projectName).getId();
+        gitLabApi.getProjectApi().deleteProject(projectId);
+    }
+
 
     public Integer getProjectId(String task_id, String user_id) {
         Integer project_id;
+        System.out.println(task_id + user_id);
         try{
-//            System.out.println(user);
-            project_id = gitLabApi.getProjectApi().getProject(task_id, user_id).getId();
+            Project gitProject = gitLabApi.getProjectApi().getProject(task_id, user_id);
+            if(gitProject == null){
+                System.out.println("no this project");
+                throw new GitLabApiException("无工程");
+            }
+            project_id = gitProject.getId();
         } catch (GitLabApiException e){
             System.out.println(e.toString());
             System.out.println("no this project");
             project_id = null;
         } catch (Exception e){
+            System.out.println("未知错误");
             System.out.println(e.toString());
-//            e.printStackTrace();
             project_id = null;
         }
         return project_id;
@@ -204,17 +215,32 @@ public class GitProcess {
     public boolean gitcreateTask(TaskModel taskModel) throws Exception{
         String path = taskModel.getTask_id();
         GroupApi groupApi = gitLabApi.getGroupApi();
+        Integer groupId;
 //        创建group
-        groupApi.addGroup(path, path);
+        try{
+            groupId = groupApi.getGroup(path).getId();
+            System.out.println("题目已存在 groupid=" + groupId);
+        } catch (Exception e){
+            groupApi.addGroup(path, path);
 //        拿到groupid
-        Integer groupId = groupApi.getGroup(path).getId();
+            groupId = groupApi.getGroup(path).getId();
+            System.out.println("题目不存在，创建group, groupid="+groupId);
+        }
 //        创建teacher工程
-        gitLabApi.getProjectApi().createProject(groupId, "teacher");
+        Integer project_id;
+        try{
+            gitLabApi.getProjectApi().createProject(groupId, "teacher");
 
-        Integer project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
+            project_id = gitLabApi.getProjectApi().getProject(path, "teacher").getId();
 //      添加老师上传的文件
-        createRepositorys(taskModel.getTaskFiles(), "taskFile", project_id);
-        createRepositorys(taskModel.getExampleFiles(), "exampleFile", project_id);
+            createRepositorys(taskModel.getTaskFiles(), "taskFile", project_id);
+            createRepositorys(taskModel.getExampleFiles(), "exampleFile", project_id);
+        } catch (Exception e){
+            e.printStackTrace();
+            System.out.println("创建git工程失败");
+            throw new Exception();
+        }
+
         if(taskModel.getConfigJson() != null){
             createRepository(taskModel.getConfigJson(), taskModel.getConfigJson().getTitle(), project_id);
         }
