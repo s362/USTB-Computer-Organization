@@ -40,6 +40,7 @@ public class TeacherController {
     @Autowired
     private QuestionService questionService;
 
+//    获取instruct
     @PostMapping(value = "/getInstruct")
     public ResponseEntity<Result> getInstruct(){
         Result result = new Result();
@@ -51,6 +52,7 @@ public class TeacherController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+//    获取仿真器
     @PostMapping(value = "/getSimulation")
     public ResponseEntity<Result> getSimulation(){
         Result result = new Result();
@@ -58,6 +60,7 @@ public class TeacherController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+//    返回所有作业和他下面的题目
     @PostMapping("/getQuestionAndTasks")
     public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
         try{
@@ -81,6 +84,7 @@ public class TeacherController {
         }
     }
 
+//    获取选择题
     @PostMapping("/getChooseByTid")
     public ResponseEntity<Result> getChooseByTid(Long tid, HttpServletRequest httpServletRequest){
         List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
@@ -96,6 +100,7 @@ public class TeacherController {
         return ResultUtil.getResult(new Result(jsonNodes), HttpStatus.OK);
     }
 
+//    获取所有题目
     @PostMapping("/getQuestions")
     public ResponseEntity<Result> getQuestions(HttpServletRequest httpServletRequest){
         List<Question> questions = questionService.getAllQuestion();
@@ -104,13 +109,15 @@ public class TeacherController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
-    @PostMapping("/getExampleTaskFile")
-    public ResponseEntity<Result> getExampleTaskFile(HttpServletRequest httpServletRequest){
-        Result result = new Result();
-        result.setObject(PathUtil.toUrlPath(Task.EXAMPLE_TaskFile));
-        return ResultUtil.getResult(result, HttpStatus.OK);
-    }
 
+//    @PostMapping("/getExampleTaskFile")
+//    public ResponseEntity<Result> getExampleTaskFile(HttpServletRequest httpServletRequest){
+//        Result result = new Result();
+//        result.setObject(PathUtil.toUrlPath(Task.EXAMPLE_TaskFile));
+//        return ResultUtil.getResult(result, HttpStatus.OK);
+//    }
+
+//    获取所有题目
     @PostMapping("/getTasks")
     public ResponseEntity<Result> getTasks(HttpServletRequest httpServletRequest){
         List<Task> tasks = taskService.getAllTasks();
@@ -120,6 +127,7 @@ public class TeacherController {
         return ResultUtil.getResult(result, HttpStatus.OK);
     }
 
+//    把所有题目根据题目类型转换为json格式返回
     private List<JsonNode> getMapTasks(List<Task> tasks){
         List<JsonNode> jsonNodes = new LinkedList<>();
         for(Task task:tasks){
@@ -152,13 +160,7 @@ public class TeacherController {
         return jsonNodes;
     }
 
-//    @PostMapping("/getChooseByTid")
-//    public ResponseEntity<Result> getChooseByTid(Long tid){
-//        List<Assemble_Choose> assemble_chooses = taskService.getAssebleChoosesByTid(tid);
-//        Result result = new Result(assemble_chooses);
-//        return ResultUtil.getResult(result, HttpStatus.OK);
-//    }
-
+//    创建作业
     @PostMapping(value = "/createQuestion")
     public ResponseEntity<Result> createQuestion(@RequestBody JsonNode info){
         Question question = new Question();
@@ -185,7 +187,7 @@ public class TeacherController {
             return ResultUtil.getResult(new Result(e.toString(), false), HttpStatus.BAD_REQUEST);
         }
     }
-
+//    编辑作业
     @PostMapping(value = "/editQuestion")
     public ResponseEntity<Result> editQuestion(@RequestBody JsonNode info){
 //        判断题目是否存在
@@ -224,19 +226,25 @@ public class TeacherController {
         taskService.saveTask(task);
         logger.info(task.getTid() + "开始文件接收");
         String task_id = GitProcess.tidToTaskid(task.getTid());
+//        创建gitlab工程生成所对应的对象
         TaskModel taskModel = new TaskModel(task_id);
 
         try{
             String filePath;
+//            接收verilog上传的文件
             filePath = FileUtil.fileUpload(taskFile, task, "", "");
             if(filePath == null) {
                 return ResultUtil.getResult(new Result("未上传文件"), HttpStatus.BAD_REQUEST);
             }
-
+//            设置taskFile变量
             FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "files");
+            //            设置exampleFile变量
+
             FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "example");
+//            获取content.md内容，并修改其中图片路径，
             task.setTdis(FileUtil.setMdContent(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
             logger.info("处理md文件");
+//            把图片移动到静态文件中
             FileUtil.moveTaskImg(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "images");
             FileUtil.deleteDirectory(filePath);
             logger.info("文件接收成功");
@@ -247,6 +255,7 @@ public class TeacherController {
         }
 
         try{
+//            在gitlab中创建工程
             gitProcess.gitcreateTask(taskModel);
             logger.info("创建Git成功");
         } catch (Exception e){
@@ -267,7 +276,7 @@ public class TeacherController {
 
         if(tname != null) task.setTname(tname);
         taskService.saveTask(task);
-
+//        如果不修改文件，直接返回
         if(taskFile == null || taskFile.isEmpty()){
             return ResultUtil.getResult(new Result(), HttpStatus.OK);
         }
@@ -279,11 +288,12 @@ public class TeacherController {
 
         try{
             String filePath;
+//            接收文件
             filePath = FileUtil.fileUpload(taskFile, task, "", "");
             if(filePath == null) {
                 return ResultUtil.getResult(new Result("未上传文件"), HttpStatus.BAD_REQUEST);
             }
-
+//            和创建一样。
             FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "files");
             FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "example");
             task.setTdis(FileUtil.setMdContent(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
@@ -300,6 +310,7 @@ public class TeacherController {
         try{
             if(!taskModel.getTaskFiles().isEmpty() || !taskModel.getExampleFiles().isEmpty()) {
                 try{
+//                    先删除源gitlab 工程
                     gitProcess.deleteProject(GitProcess.tidToTaskid(tid), "teacher");
                     logger.info("删除源工程成功");
 //                    这里必须加一个100ms延迟，不然gitlab后台没有清空上一个删除的工程缓存会报错
@@ -308,6 +319,7 @@ public class TeacherController {
                 } catch (Exception e){
                     logger.info("无源工程，直接创建");
                 }
+//                创建新工程
                 gitProcess.gitcreateTask(taskModel);
             }
             logger.info("修改git成功");
@@ -347,8 +359,11 @@ public class TeacherController {
         TaskModel taskModel = new TaskModel(task_id);
 //        根据输入方式，选择不同的方式
         try{
+//            将taskFile传到 taskFile文件夹中
             filePath = FileUtil.fileUpload(taskFile, task, "taskFile", "code.asm");
+//            设置taskFile变量
             FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath);
+//            将exampleFile传到exampleFile文件夹中
             filePath = FileUtil.fileUpload(exampleFile, task, "exampleFile", "code.asm");
             FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath);
             logger.info("文件接收成功");
@@ -376,6 +391,7 @@ public class TeacherController {
                 for(JsonNode chooseNode : root.path("chooseTask")){
                     Assemble_Choose assemble_choose = new Assemble_Choose();
                     String optionsStr = "";
+//                    用 ### 进行拼接
                     for (JsonNode optionNode : chooseNode.path("options")){
                         optionsStr += optionNode.asText() + "###";
                     }
@@ -398,6 +414,7 @@ public class TeacherController {
         }
         logger.info("开始接受图片");
         try{
+//            吧图片放进静态资源文件夹中
             String simulatePicPath1 = FileUtil.saveStaticUploadFile(simuPic1);
             if (simulatePicPath1 != null) {
                 logger.info("图片1接受成功" + simuPic1.getOriginalFilename());
@@ -505,6 +522,7 @@ public class TeacherController {
                 List<Assemble_Choose> assemble_choose_before = taskService.getAssebleChoosesByTid(task.getTid());
                 for(JsonNode chooseNode : root.path("chooseTask")){
                     Assemble_Choose assemble_choose;
+//                    如果有tcid字段，说明是之前的题目，进行修改
                     if(chooseNode.hasNonNull("tcid")){
                         assemble_choose = taskService.getAssembleChooseByTid(chooseNode.path("tcid").asLong());
                         if(assemble_choose.getTid() != task.getTid()) {
@@ -516,6 +534,7 @@ public class TeacherController {
                                 temp.setTcid(null);
                             }
                         }
+//                        如果没有，则为新增加的题目，直接添加
                     } else{
                         assemble_choose = new Assemble_Choose();
                     }
@@ -547,6 +566,7 @@ public class TeacherController {
 
         try{
             if(simuPic1 != null && !simuPic1.isEmpty()){
+//                如果不是默认图片，则删除
                 if(task.getSimuPicPath1() != Simulation.EXAMPLE_SIMULATION_PICPATH){
                     FileUtil.deleteDirectory(task.getSimuPicPath1());
                 }

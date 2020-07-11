@@ -16,13 +16,13 @@ public class Assemble_Choose_Score {
     private Long acsid;
 
     @Column(name = "tcid")
-    private Long tcid;
+    private Long tcid; // 选择题id
 
     @Column(name = "uid")
-    private Long uid;
+    private Long uid; // 用户id
 
     @Column(name = "acscore")
-    private Long acscore;
+    private Long acscore; // 选择题分数
 
     @Column(name = "update_at")
     private Date updatedate;

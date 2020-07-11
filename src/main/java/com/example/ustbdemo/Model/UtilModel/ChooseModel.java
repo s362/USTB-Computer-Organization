@@ -2,6 +2,7 @@ package com.example.ustbdemo.Model.UtilModel;
 
 import java.util.List;
 
+//学生获取选择题时返回的对象
 public class ChooseModel {
     List<String> options;
     Long score;

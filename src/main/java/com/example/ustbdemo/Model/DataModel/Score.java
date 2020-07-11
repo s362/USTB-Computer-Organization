@@ -16,13 +16,13 @@ public class Score {
     private Long sid;
 
     @Column(name = "uid")
-    private Long uid;
+    private Long uid; // 用户id
 
     @Column(name = "tid")
-    private Long tid;
+    private Long tid; // 题目id
 
     @Column(name = "tscore")
-    private Long tscore;
+    private Long tscore; // 题目分数
 
     @Column(name = "update_at")
     private Date updatedate;

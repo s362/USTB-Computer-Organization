@@ -21,31 +21,31 @@ public class Task {
     private Long ttype; // 题目类型
 
     @Column(name = "tname", length = 100)
-    private String tname;
+    private String tname; // 题目名称
 
     @Column(name = "tdis", length = 10000)
-    private String tdis;
+    private String tdis; // 题目描述
 
     @Column(name = "simuid1")
-    private Long simuid1;
+    private Long simuid1; // 仿真器 2 id
 
     @Column(name = "simuid2")
-    private Long simuid2;
+    private Long simuid2; // 仿真器1 id
 
     @Column(name = "instrid")
-    private Long instrid;
+    private Long instrid; // 指令说明书id
 
     @Column(name = "taskFilePath")
-    private String taskFilePath;
+    private String taskFilePath; // 正确工程存放的位置 ，这个暂时也没用
 
     @Column(name = "exampleFilePath")
-    private String exampleFilePath;
+    private String exampleFilePath; // 样例工程存放的位置 ,这个目前没用
 
     @Column(name = "simuPicPath1")
-    private String simuPicPath1;
+    private String simuPicPath1; // 第一个仿真图存放的位置
 
     @Column(name = "simuPicPath2")
-    private String simuPicPath2;
+    private String simuPicPath2; // 第二个仿真图存放的位置
 
     public static final String EXAMPLE_TaskFile = OSUtil.isLinux() ?
             FileUtil.STATIC_PATH_LINUX + "exampleTaskFile.zip" : FileUtil.STATIC_PATH_WIN + "exampleTaskFile.zip";

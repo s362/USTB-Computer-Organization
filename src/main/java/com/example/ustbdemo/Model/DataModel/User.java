@@ -16,13 +16,13 @@ public class User {
     private Long uid;
 
     @Column(name = "utype")
-    private Long utype;
+    private Long utype; // 用户类型
 
     @Column(name = "username", length = 255, unique = true)
-    private String username;
+    private String username; // 用户名
 
     @Column(name = "upasswd", length = 255)
-    private String upasswd;
+    private String upasswd; // 密码
 
     @Column(name = "udis", length = 255)
     private String udis;

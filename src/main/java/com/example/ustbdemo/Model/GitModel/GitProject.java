@@ -6,12 +6,13 @@ import java.util.List;
 
 @ToString
 public class GitProject {
-    private List<GitFile> modules;
+//    除了加注释的变量，其他变量都是前端冗余的信息，不加前端会报错
+    private List<GitFile> modules; // 文件
     private String git;
     private String alias;
     private String sourceId;
     private List<String> tags;
-    private String description;
+    private String description; // 描述
     private List<GitFolder> directories;
     private String id;
     private String title;

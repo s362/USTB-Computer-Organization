@@ -7,10 +7,10 @@ import com.example.ustbdemo.Service.TaskService;
 import java.sql.Date;
 
 public class TaskScore {
-    private Long tid;
-    private String tname;
-    private String tdis;
-    private Long tscore;
+    private Long tid; //题目id
+    private String tname; // 题目名字
+    private String tdis; // 题目描述
+    private Long tscore; // 题目分数
 
     public TaskScore(){};
 

@@ -13,19 +13,19 @@ import javax.xml.stream.events.Namespace;
 public class Assemble_Choose {
     @Id
     @GeneratedValue
-    private Long tcid; // 题目id
+    private Long tcid; // 选择题id
 
     @Column(name = "tid")
-    private Long tid;
+    private Long tid; // 题目id，因为一个题目有多个选择题，这里是一对多关系
 
     @Column(name = "discri")
-    private String  discri;
+    private String  discri; // 选择题描述
 
     @Column(name = "options", length = 10000)
-    private String options;
+    private String options; // 选项
 
     @Column(name = "answers", length = 255)
-    private String answers;
+    private String answers; // 答案
 
     public Assemble_Choose(){};
 

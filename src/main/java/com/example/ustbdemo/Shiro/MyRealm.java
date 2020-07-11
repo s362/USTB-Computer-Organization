@@ -1,7 +1,4 @@
 package com.example.ustbdemo.Shiro;
-
-
-
 import com.example.ustbdemo.Model.DataModel.User;
 import com.example.ustbdemo.Service.UserService;
 import org.apache.shiro.authc.AuthenticationException;

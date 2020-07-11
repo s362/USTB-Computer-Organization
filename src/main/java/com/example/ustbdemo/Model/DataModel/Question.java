@@ -25,7 +25,7 @@ public class Question {
     private Date createdate;
 
     @Column(name = "end_at")
-    private Date enddate;
+    private Date enddate; // 截至时间
 
 
 

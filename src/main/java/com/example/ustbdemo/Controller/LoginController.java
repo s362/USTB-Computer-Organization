@@ -39,19 +39,14 @@ public class LoginController {
 
     final String loginUrl = "http://202.205.145.156:8017/sys/api/user/validate?";
 
-    @PostMapping(value = "/test")
-    public ResponseEntity<Result> test(){
-        logger.info("info message");
-        logger.error("error message");
-        return ResultUtil.getResult(new Result(), HttpStatus.OK);
-    }
 
-//    登录验证,正确就返回jwt，错误返回报错信息
+//    普通登录验证,正确就返回jwt，错误返回报错信息
     @PostMapping(value = "/", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> login(@RequestBody User user){
         logger.info(user.toString());
         try{
             if (userService.getByUsernameAndPwd(user.getUsername(), user.getPasswd()) != null){
+//                签名，生成jwt
                 String token = JwtUtil.sign(user.getUsername());
                 if(token != null){
                     Result result = new Result();
@@ -67,21 +62,25 @@ public class LoginController {
         }
     }
 
+//    国家项目会带有token，这里对国家平台生成的token进行验证，并且在本地数据库生成一个对应用户
     @PostMapping(value = "/jwtlogin", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> jwtlogin(@RequestBody JsonNode tokenNode){
         String token = tokenNode.path("token").asText();
         logger.info(token);
         try {
+//            对token进行校验
             String json = TestJWT.dencrty(token);
             logger.info(json);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
             logger.info(token);
+//            如果该用户在本地系统里没有，则在本地系统中添加该用户
             if(userService.findByUserName(root.path("un").asText())== null){
                 User user = new User();
                 user.setUsername(root.path("un").asText());
                 userService.addUser(user);
             }
+//            进行签名，返回本地生成的token给前端
             String jwtToken = JwtUtil.sign(root.path("un").asText());
             return ResultUtil.getResult(new Result(jwtToken), HttpStatus.OK);
         } catch (Exception e) {
@@ -91,9 +90,11 @@ public class LoginController {
         }
     }
 
+//    用国家平台用户名密码进行登录，用本地调用国家接口进行验证
     @PostMapping(value = "/platformlogin", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> platformlogin(@RequestBody User user){
         try{
+//            国家平台要求的格式
             String nonce = getRandomString();
             String cnonce = getRandomString();
             String username = user.getUsername();
@@ -105,17 +106,19 @@ public class LoginController {
             String command = String.format(loginUrl + param);
 //            if(OSUtil.isLinux()) command = String.format("curl \'%s?%s\'", url, param);
             logger.info(command);
-//            Map readValue = ReadRountine.readRountine(command);
+//            进行get请求
             String strbr = HttpClient.doGet(command);
             ObjectMapper mapper = new ObjectMapper();
             Map readValue = mapper.readValue(strbr, Map.class);
             if(readValue == null) throw new Exception();
+//            如果code 为 0，表示帐号密码正确，否则错误
             if ((int)readValue.get("code") != 0) throw new Exception();
 
-//            如果系统中没有该user，则保存
+//            如果系统中没有该user，则在本地平台添加用户
             if(userService.findByUserName(username)== null){
                 userService.addUser(user);
             }
+//            进行签名，生成token
             String token = JwtUtil.sign(user.getUsername());
             return ResultUtil.getResult(new Result((Object)token), HttpStatus.OK);
         } catch (Exception e){
@@ -145,6 +148,7 @@ public class LoginController {
         return ResultUtil.getResult(new Result("登录失败", false), HttpStatus.BAD_REQUEST);
     }
 
+//    国家平台要求的，生成随机字符
     public String getRandomString(){
         String str="ABCDEF0123456789";
         Random random=new Random();
@@ -156,6 +160,7 @@ public class LoginController {
         return sb.toString();
     }
 
+//    本地平台初始化，删除所有文件，删除gitlab中所有数据和数据库所有数据，调试用
     @PostMapping("/initial")
     public ResponseEntity<Result> initial() throws Exception{
         initialFile();

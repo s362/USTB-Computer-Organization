@@ -15,11 +15,12 @@ public class Question_Task {
     @GeneratedValue
     private Long qtid;
 
+//    一个question对应多个task
     @Column(name = "tid", nullable = false)
-    private Long tid;
+    private Long tid; // 题目id
 
     @Column(name = "qid", nullable = false)
-    private Long qid;
+    private Long qid; // 作业id
 
     public Question_Task(){}
 

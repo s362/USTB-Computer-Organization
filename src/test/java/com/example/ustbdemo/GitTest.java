@@ -16,13 +16,6 @@ import java.util.Map;
 import static com.example.ustbdemo.Shiro.TestJWT.encrty;
 
 public class GitTest {
-
-//    @Test
-//    public void lala() throws  Exception{
-//        GitProcess gitProcess = new GitProcess();
-//        Integer projectId = gitProcess.getGitLabApi().getProjectApi().getProject("s36", "teacher").getId();
-//        System.out.println(projectId);
-//    }
     @Test
     public void test() throws Exception{
 //        Long lala = 1L;
