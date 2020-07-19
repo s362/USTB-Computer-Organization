@@ -11,6 +11,7 @@ public class TaskScore {
     private String tname; // 题目名字
     private String tdis; // 题目描述
     private Long tscore; // 题目分数
+    private Long ttype; //题目类型
 
     public TaskScore(){};
 
@@ -18,6 +19,7 @@ public class TaskScore {
         this.tid = task.getTid();
         this.tname = task.getTname();
         this.tdis = task.getTdis();
+        this.ttype=task.getTtype();
     }
 
     public TaskScore(Task task, Score score){
@@ -25,6 +27,7 @@ public class TaskScore {
         this.tname = task.getTname();
         this.tdis = task.getTdis();
         this.tscore = score.getTscore();
+        this.ttype=task.getTtype();
     }
 
     public Long getTid() {
@@ -57,5 +60,13 @@ public class TaskScore {
 
     public void setTscore(Long tscore) {
         this.tscore = tscore;
+    }
+
+    public Long getTtype() {
+        return ttype;
+    }
+
+    public void setTtype(Long ttype) {
+        this.ttype = ttype;
     }
 }

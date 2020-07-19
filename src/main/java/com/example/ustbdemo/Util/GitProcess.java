@@ -20,11 +20,12 @@ public class GitProcess {
     //    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq"; // 202.204.62.155 root
 //    String hostURL = "http://123.56.0.67:3016/";
 //    String privateToken = "m89F6zsGaXtxFwsD2AMy"; //202.204.62.155 ustbdemo ustbdemo
-    String hostURL = "http://49.232.207.151:8099/";
-    String privateToken = "qGsB2feqzx3J_-t-uoDT";
+    String hostURL =OSUtil.isLinux()?"http://49.232.207.151:8099/":"http://123.56.167.195:8099/";
+    String privateToken =OSUtil.isLinux()?"qGsB2feqzx3J_-t-uoDT":"fx6yrR33bDaMQ-Q3BaVp";
 
     public GitProcess(){
         try{
+            System.out.println(this.hostURL+"  "+this.privateToken);
             this.gitLabApi = new GitLabApi(this.hostURL, this.privateToken);
         } catch (Exception e){
             e.toString();
@@ -280,5 +281,9 @@ public class GitProcess {
     }
     public static Long taskIdtoTid(String task_id){
         return Long.parseLong(task_id.substring(1));
+    }
+
+    public static void sss(){
+//        this.gitLabApi.
     }
 }

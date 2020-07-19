@@ -161,7 +161,7 @@ public class JWT {
      *            the payload
      * @param out
      *            the output buffer, it will be cleared
-     * @param expire
+     * @param expires
      *         expire time in milliseconds
      * @return the output buffer
      */
@@ -198,7 +198,7 @@ public class JWT {
      *            the payload data
      * @param out
      *            encrypted and signed output
-     * @param expire
+     * @param expires
      *         expire time in milliseconds
      * @return the output byte buffer, same as out
      */

@@ -49,6 +49,7 @@ public class StudentController {
     @PostMapping("/getQuestionAndTasks")
     public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
 //        从header中读取token，并提取用户名，注意是用户名username，不是用户id。
+        System.out.println(httpServletRequest.getHeader("Authorization"));
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
 //        获取所有作业
         List<Question> questions = questionService.getAllQuestion();
@@ -165,8 +166,9 @@ public class StudentController {
             String _answers[] = answer.split("\n");
             String _answer = "";
             for(int i = 0; i < _answers.length;i++){
-                _answers[i] = _answers[i].substring(4);
-                int index = _answers[i].indexOf("//");
+                int index=min(_answers[i].indexOf(" "),_answers[i].indexOf("\t"));  //去掉每行代码前的编号
+                _answers[i] = _answers[i].substring(index);
+                index = _answers[i].indexOf("//");
                 if(index != -1) _answers[i] = _answers[i].substring(0, index);
                 _answer += _answers[i] + "\n";
             }
@@ -509,17 +511,29 @@ public class StudentController {
         String answers[] = answer.split("\n");
         String ref_answers[] = ref_answer.split("\n");
         for(int i = 0; i < answers.length && i < ref_answers.length; i++){
-            int index = answers[i].indexOf("//");
+            //对学生代码进行处理
+            int index = answers[i].indexOf("//");       //去掉每行代码后的注释
             if(index != -1) answers[i] = answers[i].substring(0, index);
+            index=min(answers[i].indexOf(" "),answers[i].indexOf("\t"));  //去掉每行代码前的编号
+            if(index != -1) answers[i]=answers[i].substring(index);
             answers[i] = answers[i].replace("\t", "").replace(" ", "");
+            //对老师正确代码进行处理
             index = ref_answers[i].indexOf("//");
             if(index != -1) ref_answers[i] = ref_answers[i].substring(0, index);
+            index = min(ref_answers[i].indexOf(" "),ref_answers[i].indexOf("\t"));
+            if(index != -1) ref_answers[i] = ref_answers[i].substring(index);
             ref_answers[i] = ref_answers[i].replace("\t", "").replace(" ", "");
+
             if(!answers[i].equals(ref_answers[i])){
                 return i;
             }
         }
         if(answers.length == ref_answers.length) return  -1;
         else return answers.length;
+    }
+
+    private Integer min(Integer a,Integer b){
+        if (a<b) return a;
+        return b;
     }
 }

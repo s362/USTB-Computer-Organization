@@ -1,5 +1,6 @@
 package com.example.ustbdemo;
 
+import com.example.ustbdemo.Model.GitModel.TaskModel;
 import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Shiro.KEY;
 import com.example.ustbdemo.Shiro.TestJWT;
@@ -7,6 +8,7 @@ import com.example.ustbdemo.Util.Base64Convert;
 import com.example.ustbdemo.Util.GitProcess;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gitlab4j.api.GitLabApiException;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -192,4 +194,17 @@ public class GitTest {
 //
 //    }
 
+//    @Test
+//    public void createProject() {
+//        try {
+//            GitProcess gitProcess=new GitProcess();
+//
+////        gitProcess.gitcreateTask(new TaskModel("x1"));
+//            gitProcess.createProject("x1","xx1");
+//            System.out.println(111);
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//
+//    }
 }

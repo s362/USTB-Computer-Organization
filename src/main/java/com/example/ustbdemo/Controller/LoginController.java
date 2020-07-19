@@ -37,7 +37,7 @@ public class LoginController {
 
     public static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
-    final String loginUrl = "http://202.205.145.156:8017/sys/api/user/validate?";
+    final String loginUrl = "http://202.205.145.156:8017/sys/api/user/validate?";//??
 
 
 //    普通登录验证,正确就返回jwt，错误返回报错信息
@@ -53,8 +53,8 @@ public class LoginController {
                     result.setObject(token);
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }
-            }
-            logger.info("无此用户");
+            } logger.info("无此用户");
+
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
         } catch (Exception e){
             logger.info(e.toString());
@@ -120,6 +120,8 @@ public class LoginController {
             }
 //            进行签名，生成token
             String token = JwtUtil.sign(user.getUsername());
+            logger.info(user.getUsername());
+            logger.info("token: "+token);
             return ResultUtil.getResult(new Result((Object)token), HttpStatus.OK);
         } catch (Exception e){
             logger.info(e.toString());

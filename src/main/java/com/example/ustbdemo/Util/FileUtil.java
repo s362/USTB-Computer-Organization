@@ -21,9 +21,12 @@ public class FileUtil {
     public static final String FILE_PATH_LINUX = "/home/ustbDemo/taskFiles/";
     public static final String STATIC_PATH_LINUX = "/home/ustbDemo/static/";
     public static final String INITIAL_PATH_LINUX = "/home/ustbDemo/initialFiles/";
-    public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\taskFiles\\";
-    public static final String STATIC_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\staticFiles\\";
-    public static final String INITIAL_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\initialFiles\\";
+//    public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\taskFiles\\";
+//    public static final String STATIC_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\staticFiles\\";
+//    public static final String INITIAL_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\initialFiles\\";
+    public static final String FILE_PATH_WIN = "F:\\D_disk\\ustbdemo\\taskFiles\\";
+    public static final String STATIC_PATH_WIN = "F:\\D_disk\\ustbdemo\\staticFiles\\";
+    public static final String INITIAL_PATH_WIN = "F:\\D_disk\\ustbdemo\\initialFiles\\";
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id
