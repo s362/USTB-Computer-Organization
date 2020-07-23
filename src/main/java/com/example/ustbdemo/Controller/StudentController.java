@@ -401,6 +401,23 @@ public class StudentController {
         return ResultUtil.getResult(new Result(gitProject), HttpStatus.OK);
     }
 
+    //    获取所有作业
+    @PostMapping("/getQuestions")
+    public ResponseEntity<Result> getQuestions(HttpServletRequest httpServletRequest){
+        List<Question> questions = questionService.getAllQuestion();
+        Result result = new Result();
+        result.setObject(questions);
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    @PostMapping("/getTtype")
+    public ResponseEntity<Result> getTtype(Long tid,HttpServletRequest httpServletRequest){
+        Task task=taskService.getTaskByTid(tid);
+        Result result=new Result();
+        result.setObject(task);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
 //    IDE创建文件
     @PutMapping(value = "/createFile", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> createFile(Long tid, @RequestBody GitProject modules, HttpServletRequest httpServletRequest){
@@ -506,6 +523,8 @@ public class StudentController {
         }
         return taskScores;
     }
+
+
 
     private int findFirstWrongCode(String answer, String ref_answer){
         String answers[] = answer.split("\n");
