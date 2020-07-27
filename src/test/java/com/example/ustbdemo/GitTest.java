@@ -9,6 +9,7 @@ import com.example.ustbdemo.Util.GitProcess;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.GroupApi;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -200,7 +201,24 @@ public class GitTest {
 //            GitProcess gitProcess=new GitProcess();
 //
 ////        gitProcess.gitcreateTask(new TaskModel("x1"));
-//            gitProcess.createProject("x1","xx1");
+//            gitProcess.createProject("x1","test1");
+//            System.out.println(111);
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//
+//    }
+//        @Test
+//    public void TestGit() {
+//        try {
+//            GitProcess gitProcess=new GitProcess();
+//
+////        gitProcess.gitcreateTask(new TaskModel("x1"));
+////            gitProcess.createProject("x1","xx1");
+//            GroupApi groupApi=gitProcess.getGitLabApi().getGroupApi();
+//            System.out.println(groupApi);
+//            Integer groupid=groupApi.getGroup("t11").getId();
+//            System.out.println(groupid);
 //            System.out.println(111);
 //        }catch (Exception e){
 //            e.printStackTrace();

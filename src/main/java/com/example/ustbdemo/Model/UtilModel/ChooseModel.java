@@ -8,6 +8,7 @@ public class ChooseModel {
     Long score;
     Long tcid;
     String discri;
+    Integer partid;
 
     public List<String> getOptions() {
         return options;
@@ -39,5 +40,13 @@ public class ChooseModel {
 
     public void setDiscri(String discri) {
         this.discri = discri;
+    }
+
+    public Integer getPartid() {
+        return partid;
+    }
+
+    public void setPartid(Integer partid) {
+        this.partid = partid;
     }
 }

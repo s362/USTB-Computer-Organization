@@ -24,6 +24,10 @@ public class Assemble_Choose_Score {
     @Column(name = "acscore")
     private Long acscore; // 选择题分数
 
+    @Column(name = "times")
+    private Long times;  //学生提交次数
+
+
     @Column(name = "update_at")
     private Date updatedate;
 
@@ -34,6 +38,7 @@ public class Assemble_Choose_Score {
         this.tcid = tcid;
         this.acscore = 0L;
         this.updatedate = updatedate;
+        this.times=0L;
     }
 
     public Date getUpdatedate() {
@@ -75,6 +80,16 @@ public class Assemble_Choose_Score {
     public void setAcscore(Long acscore) {
         this.acscore = acscore;
     }
+
+    public Long getTimes() {
+        return times;
+    }
+
+    public void setTimes(Long times) {
+        this.times = times;
+    }
+
+    public void addTimes(){this.times=this.times+1;}
 }
 
 

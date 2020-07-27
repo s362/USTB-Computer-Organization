@@ -73,6 +73,9 @@ public class OSUtil {
     public static boolean isOpenVMS(){
         return OS.indexOf("openvms")>=0;
     }
+
+    //获取系统变量的值，用于CG平台中对虚拟机内系统变量的读取
+    public static String getOSProperty(String key){return System.getenv(key);}
 }
 
 

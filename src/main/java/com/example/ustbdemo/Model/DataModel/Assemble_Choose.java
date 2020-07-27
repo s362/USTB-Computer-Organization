@@ -18,6 +18,9 @@ public class Assemble_Choose {
     @Column(name = "tid")
     private Long tid; // 题目id，因为一个题目有多个选择题，这里是一对多关系
 
+    @Column(name = "tpart")
+    private Integer tpart;  //该选择题属于题目的哪个部分，1 2 3分别代表三个部分汇编代码后、理想流水线原理单步仿真后、关键技术原理仿真后
+
     @Column(name = "discri")
     private String  discri; // 选择题描述
 
@@ -75,5 +78,13 @@ public class Assemble_Choose {
 
     public void setAnswers(String answers) {
         this.answers = answers;
+    }
+
+    public Integer getTpart() {
+        return tpart;
+    }
+
+    public void setTpart(Integer tpart) {
+        this.tpart = tpart;
     }
 }

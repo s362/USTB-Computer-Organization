@@ -81,6 +81,29 @@ public class StudentController {
             chooseModel.setTcid(assemble_choose.getTcid());
             chooseModel.setDiscri(assemble_choose.getDiscri());
             chooseModel.setOptions(Arrays.asList(assemble_choose.getOptions().split("###")));
+            chooseModel.setPartid(assemble_choose.getTpart());
+            chooseModels.add(chooseModel);
+        }
+//        设置选择题分数
+        chooseModels = getAssembleChooseScores(user.getUid(), chooseModels);
+        Result result = new Result(chooseModels);
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    @PostMapping("/getChooseByTidAndPartId")
+    public ResponseEntity<Result> getChooseByTidAndPartId(Long tid, int partId,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user = userService.findByUserName(user_id);
+//        获取该题目下的所有选择题
+        List<Assemble_Choose> assemble_chooses = taskService.getAssembleChooseByTidAndPartId(tid,partId);
+        List<ChooseModel> chooseModels = new LinkedList<>();
+//        变为前端要求格式。因为数据库用字符串来存的选项，这里要断开
+        for (Assemble_Choose assemble_choose : assemble_chooses){
+            ChooseModel chooseModel = new ChooseModel();
+            chooseModel.setTcid(assemble_choose.getTcid());
+            chooseModel.setDiscri(assemble_choose.getDiscri());
+            chooseModel.setOptions(Arrays.asList(assemble_choose.getOptions().split("###")));
+            chooseModel.setPartid(assemble_choose.getTpart());
             chooseModels.add(chooseModel);
         }
 //        设置选择题分数
@@ -100,18 +123,25 @@ public class StudentController {
             assemble_choose_score = new Assemble_Choose_Score();
             assemble_choose_score.setTcid(tcid);
             assemble_choose_score.setUid(uid);
+            assemble_choose_score.setAcscore(0L);
+            assemble_choose_score.setTimes(0L);
         }
+        if (assemble_choose_score.getAcscore()<100L) assemble_choose_score.addTimes();  //若该选择之前没有对则将提交次数加一，因为本次提交算入其中
         assemble_choose_score.setUpdatedate(new Date());
         Result result = new Result();
 //        将数据库正确答案进行分割，与学生答案比较
         if(assemble_choose.getAnswers().split("###")[0].equals(answer)){
             assemble_choose_score.setAcscore(100L);
             this.scoreService.saveAssembleChooseScore(assemble_choose_score);
+            saveSimulationScore(uid,assemble_choose.getTid());
+            generateGradeCSV(user_id,uid,assemble_choose.getTid());
             result.setObject(100L);
             return ResultUtil.getResult(result, HttpStatus.OK);
         } else {
-            assemble_choose_score.setAcscore(0L);
+            if(assemble_choose_score.getAcscore()<100L) assemble_choose_score.setAcscore(0L);  //若已经提交正确过，则错误信息不予记录
             this.scoreService.saveAssembleChooseScore(assemble_choose_score);
+            saveSimulationScore(uid,assemble_choose.getTid());
+            generateGradeCSV(user_id,uid,assemble_choose.getTid());
             result.setObject(0L);
             return ResultUtil.getResult(result, HttpStatus.OK);
         }
@@ -219,6 +249,7 @@ public class StudentController {
         task_score.setTscore(jsonObject.findValue("score").asLong());
 //        更新分数
         scoreService.saveScore(task_score);
+        generateGradeCSV(user_id,task_score.getUid(),task_score.getTid());
         return ResultUtil.getResult(new Result(jsonObject), HttpStatus.OK);
     }
 
@@ -554,5 +585,51 @@ public class StudentController {
     private Integer min(Integer a,Integer b){
         if (a<b) return a;
         return b;
+    }
+
+    private Long max(Long a,Long b){
+        if (a>b) return a;
+        return b;
+    }
+
+    //计算并保存汇编仿真实验题的分数
+    private void saveSimulationScore(Long uid,Long tid) {
+        List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(tid); //取出该实验题对应的所有选择题
+        int number=assembleChooseList.size();
+        Long grade=0L;
+        for (Assemble_Choose assembleChoose: assembleChooseList){
+            Assemble_Choose_Score assembleChooseScore = scoreService.findAssembleChooseScoreByUidandTid(uid,assembleChoose.getTcid());
+            if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
+            grade=grade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
+        }
+        grade=grade/number;
+
+        Score score = new Score();
+        score.setUid(uid);
+        score.setTid(tid);
+        Score task_score;
+        task_score = scoreService.findScoreByUserandTid(score.getUid(), score.getTid());
+        if (task_score==null){
+            scoreService.saveScore(score);
+            task_score=score;
+        }
+        task_score.setTscore(grade);
+        task_score.setUpdatedate(new Date());
+        scoreService.saveScore(task_score);
+    }
+
+
+    /**
+     * 将当前用户的当前实验题的得分信息写入csv文件，用于与CG对接
+     * @param user_id  用户名
+     * @param uid  用户的主键
+     * @param tid  题目的id
+     */
+    private void generateGradeCSV(String user_id,Long uid,Long tid){
+        Score score=scoreService.findScoreByUserandTid(uid,tid);
+        int grade;
+        if (score==null) grade=0;
+        else grade=score.getTscore().intValue();
+        FileUtil.saveCSVFile(user_id,grade);
     }
 }

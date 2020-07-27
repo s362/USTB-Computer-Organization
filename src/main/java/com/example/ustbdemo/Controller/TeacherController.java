@@ -403,6 +403,7 @@ public class TeacherController {
                     assemble_choose.setOptions(optionsStr.substring(0, optionsStr.length()-3));
                     assemble_choose.setAnswers(answerStr.substring(0, answerStr.length()-3));
                     assemble_choose.setDiscri(chooseNode.path("discri").asText());
+                    assemble_choose.setTpart(chooseNode.path("partid").asInt());
                     taskService.saveAssembleChoose(assemble_choose);
                 }
                 logger.info("创建选择题成功");
@@ -548,6 +549,7 @@ public class TeacherController {
                         answerStr += answerNode.asText() + "###";
                     }
                     assemble_choose.setTid(task.getTid());
+                    assemble_choose.setTpart(chooseNode.path("partid").asInt());
                     assemble_choose.setOptions(optionsStr.substring(0, optionsStr.length()-3));
                     assemble_choose.setAnswers(answerStr.substring(0, answerStr.length()-3));
                     assemble_choose.setDiscri(chooseNode.path("discri").asText());

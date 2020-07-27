@@ -135,6 +135,7 @@ public class TaskService {
         }
     }
 
+
     public void deleteAssembleChooseByTcide(Long tcid){
         this.assembleChooseRepository.deleteById(tcid);
         Assemble_Choose_Score score = new Assemble_Choose_Score();
@@ -178,6 +179,18 @@ public class TaskService {
     public List<Assemble_Choose> getAssebleChoosesByTid(Long tid){
         Assemble_Choose assemble_choose = new Assemble_Choose();
         assemble_choose.setTid(tid);
+        Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
+        try {
+            return this.assembleChooseRepository.findAll(exampleAssemble);
+        } catch (Exception e){
+            return new LinkedList<>();
+        }
+    }
+
+    public List<Assemble_Choose> getAssembleChooseByTidAndPartId(Long tid,int partId){
+        Assemble_Choose assemble_choose = new Assemble_Choose();
+        assemble_choose.setTid(tid);
+        assemble_choose.setTpart(partId);
         Example<Assemble_Choose> exampleAssemble = Example.of(assemble_choose);
         try {
             return this.assembleChooseRepository.findAll(exampleAssemble);
