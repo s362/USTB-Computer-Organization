@@ -328,7 +328,7 @@ public class FileUtil {
 
     //在每次学生提交代码后将成绩写入csv文件中,便于CG平台取出
     public static void saveCSVFile(String name,Integer grade){
-        String filePath = OSUtil.isLinux()?"/home/ustbDemo/grade.csv":"E:/GIT/test.csv";
+        String filePath = OSUtil.isLinux()?"/home/ustbDemo/grade.csv":"E:/GIT/grade.csv";
         try {
             // 创建CSV写对象
             CsvWriter csvWriter = new CsvWriter(filePath,',', Charset.forName("GBK"));
