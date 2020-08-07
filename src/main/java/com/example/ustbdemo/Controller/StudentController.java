@@ -45,6 +45,44 @@ public class StudentController {
 
     GitProcess gitProcess;
 
+
+    //对学生的工程信息进行暂时的一个保存
+    @PostMapping("/temporarilySave")
+    public ResponseEntity<Result> temporarilySave(@RequestBody Stage stage,HttpServletRequest httpServletRequest){
+        String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        logger.info(stage.toString());
+        User user = userService.findByUserName(username);
+        stage.setUid(user.getUid());
+        //查询该题有没有过暂存信息
+        Stage finalStage=taskService.findTemporaryData(stage.getUid(),stage.getTid());
+        if (finalStage!=null) {
+            //若有，则直接覆盖掉原来的信息
+            stage.setStageId(finalStage.getStageId());
+        }
+        try {
+            taskService.saveTemporaryData(stage);
+            return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        }catch (Exception e){
+            Result result=new Result();
+            result.setMessage("数据保存失败");
+            return ResultUtil.getResult(result,HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    //对学生的暂存信息进行查询
+    @PostMapping("/findTemporaryData")
+    public ResponseEntity<Result> findTemporaryData(Long tid,HttpServletRequest httpServletRequest){
+        String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        logger.info("tid= "+tid);
+        User user = userService.findByUserName(username);
+        Stage stage=taskService.findTemporaryData(user.getUid(),tid);
+        Result result=new Result();
+        result.setObject(stage);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+
+
 //    获取用户的所有题目和所有作业。
     @PostMapping("/getQuestionAndTasks")
     public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){

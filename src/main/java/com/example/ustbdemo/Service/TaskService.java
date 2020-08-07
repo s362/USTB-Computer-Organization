@@ -27,6 +27,7 @@ public class TaskService {
     private final TaskQuestionRepository taskQuestionRepository;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
+    private final StageRepository stageRepository;
 
     @Autowired
     public TaskService(TaskRepository taskRepository, ScoreRepository scoreRepository,
@@ -35,16 +36,18 @@ public class TaskService {
                        AssembleChooseRepository assembleChooseRepository,
                        AssembleChooseScoreRepository assembleChooseScoreRepository,
                        QuestionRepository questionRepository,
-                       UserRepository userRepository){
+                       UserRepository userRepository,
+                       StageRepository stageRepository){
         Assert.notNull(taskRepository, "taskRepository must not be null!");
-        Assert.notNull(scoreRepository, "taskRepository must not be null!");
-        Assert.notNull(taskQuestionRepository, "taskRepository must not be null!");
-        Assert.notNull(instructionRepository, "taskRepository must not be null!");
-        Assert.notNull(simulationRepository, "taskRepository must not be null!");
-        Assert.notNull(assembleChooseRepository, "taskRepository must not be null!");
-        Assert.notNull(assembleChooseScoreRepository , "taskRepository must not be null!");
-        Assert.notNull(questionRepository , "taskRepository must not be null!");
-        Assert.notNull(userRepository , "taskRepository must not be null!");
+        Assert.notNull(scoreRepository, "scoreRepository must not be null!");
+        Assert.notNull(taskQuestionRepository, "taskQuestionRepository must not be null!");
+        Assert.notNull(instructionRepository, "instructionRepository must not be null!");
+        Assert.notNull(simulationRepository, "simulationRepository must not be null!");
+        Assert.notNull(assembleChooseRepository, "assembleChooseRepository must not be null!");
+        Assert.notNull(assembleChooseScoreRepository , "assembleChooseScoreRepository must not be null!");
+        Assert.notNull(questionRepository , "questionRepository must not be null!");
+        Assert.notNull(userRepository , "userRepository must not be null!");
+        Assert.notNull(stageRepository , "stageRepository must not be null!");
         this.taskRepository = taskRepository;
         this.scoreRepository = scoreRepository;
         this.taskQuestionRepository = taskQuestionRepository;
@@ -54,7 +57,7 @@ public class TaskService {
         this.assembleChooseScoreRepository = assembleChooseScoreRepository;
         this.questionRepository = questionRepository;
         this.userRepository = userRepository;
-
+        this.stageRepository=stageRepository;
     }
 
     public List<Simulation> getAllSimulation(){
@@ -91,6 +94,7 @@ public class TaskService {
         this.questionRepository.deleteAll();
         this.userRepository.deleteAll();
         this.scoreRepository.deleteAll();
+        this.stageRepository.deleteAll();
     }
 
     public List<Instruction> getAllInstruction(){
@@ -261,6 +265,25 @@ public class TaskService {
             }
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    public void saveTemporaryData(Stage stage){
+        this.stageRepository.save(stage);
+    }
+
+    /**
+     * 查询学生的暂存信息
+     * @param uid 用户id
+     * @param tid 题目id
+     * @return 暂存信息
+     */
+    public Stage findTemporaryData(Long uid,Long tid){
+        try {
+            return this.stageRepository.findByUidAndTid(uid,tid);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
         }
     }
 }
