@@ -668,6 +668,6 @@ public class StudentController {
         int grade;
         if (score==null) grade=0;
         else grade=score.getTscore().intValue();
-        FileUtil.saveCSVFile(user_id,grade);
+        FileUtil.saveCSVFile(user_id,tid,grade);
     }
 }

@@ -327,21 +327,71 @@ public class FileUtil {
     }
 
     //在每次学生提交代码后将成绩写入csv文件中,便于CG平台取出
-    public static void saveCSVFile(String name,Integer grade){
-        String filePath = OSUtil.isLinux()?"/home/ustbDemo/grade.csv":"E:/GIT/grade.csv";
-        try {
-            // 创建CSV写对象
-            CsvWriter csvWriter = new CsvWriter(filePath,',', Charset.forName("GBK"));
-            //CsvWriter csvWriter = new CsvWriter(filePath);
+    public static void saveCSVFile(String name,Long tid,Integer grade){
 
-            // 写表头
-//            String[] headers = {"id","得分","评语"};
-            String[] content = {name,grade.toString(),null};
-//            csvWriter.writeRecord(headers);
-            csvWriter.writeRecord(content);
-            csvWriter.close();
-        } catch (IOException e) {
+        String dirs=OSUtil.isLinux()?"/home/ustbDemo/grades/t"+tid:"E:/GIT/t"+tid;
+        File dir=new File(dirs);
+        try {
+            if (!dir.exists()){
+                dir.mkdirs();
+            }
+        }catch (Exception e){
+            System.out.println("新建文件夹失败");
+        }
+        String saveFile = dirs+"/grade.csv";
+//        try {
+//            // 创建CSV写对象
+//            CsvWriter csvWriter = new CsvWriter(filePath,',', Charset.forName("GBK"));
+//            //CsvWriter csvWriter = new CsvWriter(filePath);
+//
+//            // 写表头
+////            String[] headers = {"id","得分","评语"};
+//            String[] content = {name,grade.toString(),null};
+////            csvWriter.writeRecord(headers);
+//            csvWriter.writeRecord(content);
+//
+//            csvWriter.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        String saveFile = filePath;
+        File file = new File(saveFile);
+        FileOutputStream fos = null;
+        OutputStreamWriter osw = null;
+
+        try {
+            if (!file.exists()) {
+                boolean hasFile = file.createNewFile();
+                if(hasFile){
+                    System.out.println("file not exists, create new file");
+                }
+                fos = new FileOutputStream(file);
+            } else {
+                System.out.println("file exists");
+                fos = new FileOutputStream(file, true);
+            }
+
+            osw = new OutputStreamWriter(fos, "GBK");
+            String content = name+','+grade.toString()+',';
+            osw.write(content); //写入内容
+            osw.write("\r\n");  //换行
+        } catch (Exception e) {
             e.printStackTrace();
+        }finally {   //关闭流
+            try {
+                if (osw != null) {
+                    osw.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (fos != null) {
+                    fos.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
