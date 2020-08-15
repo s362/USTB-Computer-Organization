@@ -74,6 +74,16 @@ public class LoginController {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
             logger.info(token);
+//            logger.info(String.valueOf(root.path("un")));
+            if(root.path("un")==null||root.path("un").asText().equals("")){
+                logger.info("json格式不是国家平台格式");
+                if(root.path("username")!=null&& !root.path("username").asText().equals("")){
+                    logger.info("json格式是本地平台格式，直接返回");
+                    return ResultUtil.getResult(new Result(token,true), HttpStatus.OK);
+                }
+                logger.info("json格式不是本地平台格式");
+                return ResultUtil.getResult(new Result("json格式错误",false), HttpStatus.BAD_REQUEST);
+            }
 //            如果该用户在本地系统里没有，则在本地系统中添加该用户
             if(userService.findByUserName(root.path("un").asText())== null){
                 User user = new User();
@@ -82,7 +92,7 @@ public class LoginController {
             }
 //            进行签名，返回本地生成的token给前端
             String jwtToken = JwtUtil.sign(root.path("un").asText());
-            return ResultUtil.getResult(new Result(jwtToken), HttpStatus.OK);
+            return ResultUtil.getResult(new Result(jwtToken,true), HttpStatus.OK);
         } catch (Exception e) {
 //            e.printStackTrace();
             logger.info(e.toString());
