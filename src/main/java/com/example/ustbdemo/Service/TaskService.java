@@ -286,4 +286,20 @@ public class TaskService {
             return null;
         }
     }
+
+    /**
+     * 获取对应课程下的所有题目信息
+     * @param courseId  课程id
+     * @return 题目列表
+     */
+    public List<Task> getTasksByCourseId(Long courseId){
+        Task task=new Task();
+        task.setCourseId(courseId);
+        Example<Task> taskExample=Example.of(task);
+        try{
+            return this.taskRepository.findAll(taskExample);
+        }catch (Exception e){
+            return null;
+        }
+    }
 }

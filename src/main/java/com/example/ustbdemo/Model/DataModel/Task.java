@@ -12,7 +12,7 @@ import java.util.Date;
 @Table(name = "task")
 @Data
 @ToString
-public class Task {
+public class Task {             //题库对应的数据库表
     @Id
     @GeneratedValue
     private Long tid; // 题目id
@@ -46,6 +46,12 @@ public class Task {
 
     @Column(name = "simuPicPath2")
     private String simuPicPath2; // 第二个仿真图存放的位置
+
+    @Column(name = "course_id")
+    private Long courseId;          //该题目对应的课程id
+
+    @Column(name = "is_public")
+    private Integer isPublic;           //该题目是否公开到公共题库中
 
     public static final String EXAMPLE_TaskFile = OSUtil.isLinux() ?
             FileUtil.STATIC_PATH_LINUX + "exampleTaskFile.zip" : FileUtil.STATIC_PATH_WIN + "exampleTaskFile.zip";
@@ -145,5 +151,21 @@ public class Task {
 
     public void setTdis(String tdis) {
         this.tdis = tdis;
+    }
+
+    public Long getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(Long courseId) {
+        this.courseId = courseId;
+    }
+
+    public Integer getIsPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(Integer isPublic) {
+        this.isPublic = isPublic;
     }
 }

@@ -16,7 +16,7 @@ public class User {
     private Long uid;
 
     @Column(name = "utype")
-    private Long utype; // 用户类型
+    private Long utype; // 用户类型 0-管理员、1-老师、2-学生
 
     @Column(name = "username", length = 255, unique = true)
     private String username; // 用户名

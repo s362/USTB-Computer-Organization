@@ -7,6 +7,8 @@ import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.List;
+
 @Service("userService")
 public class UserService {
     private final UserRepository userRepository;
@@ -53,6 +55,53 @@ public class UserService {
             return true;
         } catch (Exception e){
             System.out.println(e.toString());
+            return false;
+        }
+    }
+
+    /**
+     * 得到所有的老师的信息，包括密码，只有管理员有权访问
+     * @return 老师的信息列表
+     */
+    public List<User> getTeachers(){
+        User user=new User();
+        user.setUtype(1L);
+        Example<User> userExample=Example.of(user);
+        try {
+            return this.userRepository.findAll(userExample);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 新建老师，
+     * @param teacher  老师个人信息
+     * @return  新建是否成功
+     */
+    public boolean addTeacher(User teacher){
+        teacher.setUtype(1L);
+        try {
+            this.userRepository.save(teacher);
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 删除老师
+     * @param teacherId 老师id
+     * @return 删除是否成功
+     */
+    public boolean deleteTeacherByTeacherId(Long teacherId){
+        try {
+            this.userRepository.deleteById(teacherId);
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
             return false;
         }
     }

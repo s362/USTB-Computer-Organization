@@ -1,13 +1,10 @@
 package com.example.ustbdemo.Controller;
 
-import com.example.ustbdemo.Aspect.ControllerRequestAdvice;
 import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Model.GitModel.TaskModel;
 import com.example.ustbdemo.Model.UtilModel.Result;
-import com.example.ustbdemo.Service.QuestionService;
-import com.example.ustbdemo.Service.ScoreService;
-import com.example.ustbdemo.Service.TaskService;
-import com.example.ustbdemo.Service.UserService;
+import com.example.ustbdemo.Service.*;
+import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +36,9 @@ public class TeacherController {
 
     @Autowired
     private QuestionService questionService;
+
+    @Autowired
+    private ManageService manageService;
 
 //    获取instruct
     @PostMapping(value = "/getInstruct")
@@ -100,7 +100,7 @@ public class TeacherController {
         return ResultUtil.getResult(new Result(jsonNodes), HttpStatus.OK);
     }
 
-//    获取所有题目
+//    获取所有作业
     @PostMapping("/getQuestions")
     public ResponseEntity<Result> getQuestions(HttpServletRequest httpServletRequest){
         List<Question> questions = questionService.getAllQuestion();
@@ -615,5 +615,206 @@ public class TeacherController {
     public ResponseEntity<Result> deleteQuestion(Long qid){
         questionService.deleteQuestionById(qid);
         return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
+
+    // 获取老师教学的所有课程
+    @PostMapping(value = "/getTeacherCourse")
+    public ResponseEntity<Result> getTeacherCourse(HttpServletRequest httpServletRequest){
+        if (IsTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        String username= JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(username);
+        List<Course> courseList=manageService.getTeacherCourseList(user.getUid());
+        Result result=new Result();
+        result.setObject(courseList);
+        result.setSuccess(true);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+    // 获取该课程下的所有题目
+    @PostMapping(value = "/getTasksByCourseId")
+    public ResponseEntity<Result> getTasksByCourseId(Long courseId,HttpServletRequest httpServletRequest){
+        if (IsTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        List<Task> taskList=taskService.getTasksByCourseId(courseId);
+        List<JsonNode> tasks=getMapTasks(taskList);     //把必要的信息打包成json格式返回
+        Result result=new Result();
+        result.setObject(tasks);
+        result.setSuccess(true);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+    //删除题目
+    @PostMapping(value = "/deleteTasksByTaskId")
+    public ResponseEntity<Result> deleteTasksByTaskId(Long taskId,HttpServletRequest httpServletRequest){
+        if (IsTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        taskService.deletTaskByTid(taskId);
+        return ResultUtil.getResult(new Result(),HttpStatus.OK);
+    }
+
+    //    获取instruct  指令说明书
+    @PostMapping(value = "/getInstructFiles")
+    public ResponseEntity<Result> getInstructFiles(HttpServletRequest httpServletRequest){
+        if (IsTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        Result result = new Result();
+        List<Instruction> instructions = taskService.getAllInstruction();
+        for(Instruction instruction : instructions){
+            instruction.setInstrFilePath(PathUtil.toUrlPath(instruction.getInstrFilePath()));
+        }
+        result.setObject(instructions);
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    //    获取仿真器
+    @PostMapping(value = "/getSimulators")
+    public ResponseEntity<Result> getSimulators(HttpServletRequest httpServletRequest){
+        if (IsTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        Result result = new Result();
+        result.setObject(taskService.getAllSimulation());
+        return ResultUtil.getResult(result, HttpStatus.OK);
+    }
+
+    //    创建汇编题目
+    @PostMapping(value = "/createSimulationTask")
+    public ResponseEntity<Result> createSimulationTask(Task task, @RequestBody MultipartFile taskFile, MultipartFile exampleFile, MultipartFile simuPic1, MultipartFile simuPic2, String chooseTask,HttpServletRequest httpServletRequest){
+        if (IsTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+//        获取 gitProscess对象
+        gitProcess = new GitProcess();
+        task.setTtype(1L);
+
+        if(task.getSimuid1() == null || taskService.getSimulationBySimuid(task.getSimuid1()) == null ||
+                task.getSimuid2() == null || taskService.getSimulationBySimuid(task.getSimuid2()) == null ||
+                task.getInstrid() == null || taskService.getInstructionByinstrid(task.getInstrid()) == null){
+            return ResultUtil.getResult(new Result("仿真器或者指令集选择有误"), HttpStatus.BAD_REQUEST);
+        }
+//        if(taskFile == null || taskFile.isEmpty()){
+//            return ResultUtil.getResult(new Result("未上传taskFile"), HttpStatus.BAD_REQUEST);
+//        }
+//        if(exampleFile == null || exampleFile.isEmpty()){
+//            return ResultUtil.getResult(new Result("未上传exampleFile"), HttpStatus.BAD_REQUEST);
+//        }
+
+//        保存题目
+        taskService.saveTask(task);
+
+        logger.info(task.getTid().toString());
+        String filePath;
+        String task_id = GitProcess.tidToTaskid(task.getTid());
+        TaskModel taskModel = new TaskModel(task_id);
+//        根据输入方式，选择不同的方式
+        try{
+//            将taskFile传到 taskFile文件夹中
+            filePath = FileUtil.fileUpload(taskFile, task, "taskFile", "code.asm");
+//            设置taskFile变量
+            FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath);
+//            将exampleFile传到exampleFile文件夹中
+            filePath = FileUtil.fileUpload(exampleFile, task, "exampleFile", "code.asm");
+            FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath);
+            logger.info("文件接收成功");
+        } catch (Exception e){
+            taskService.deletTaskByTid(task.getTid());
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+//        创建git工程
+        try{
+            gitProcess.gitcreateTask(taskModel);
+            logger.info("创建git工程成功");
+        } catch (Exception e){
+            logger.info("创建git题目失败");
+            taskService.deletTaskByTid(task.getTid());
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("创建git题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+
+//        读取选择题
+        ObjectMapper mapper = new ObjectMapper();
+        try{
+            if(chooseTask != null){
+                JsonNode root = mapper.readTree(chooseTask);
+                for(JsonNode chooseNode : root.path("chooseTask")){
+                    Assemble_Choose assemble_choose = new Assemble_Choose();
+                    String optionsStr = "";
+//                    用 ### 进行拼接
+                    for (JsonNode optionNode : chooseNode.path("options")){
+                        optionsStr += optionNode.asText() + "###";
+                    }
+                    String answerStr = "";
+                    for(JsonNode answerNode : chooseNode.path("answers")){
+                        answerStr += answerNode.asText() + "###";
+                    }
+                    assemble_choose.setTid(task.getTid());
+                    assemble_choose.setOptions(optionsStr.substring(0, optionsStr.length()-3));
+                    assemble_choose.setAnswers(answerStr.substring(0, answerStr.length()-3));
+                    assemble_choose.setDiscri(chooseNode.path("discri").asText());
+                    assemble_choose.setTpart(chooseNode.path("partid").asInt());
+                    taskService.saveAssembleChoose(assemble_choose);
+                }
+                logger.info("创建选择题成功");
+            }
+        } catch (Exception e){
+            logger.info("创建选择题失败");
+            e.printStackTrace();
+            taskService.deletTaskByTid(task.getTid());
+        }
+        logger.info("开始接受图片");
+        try{
+//            吧图片放进静态资源文件夹中
+            String simulatePicPath1 = FileUtil.saveStaticUploadFile(simuPic1);
+            if (simulatePicPath1 != null) {
+                logger.info("图片1接受成功" + simuPic1.getOriginalFilename());
+                task.setSimuPicPath1(simulatePicPath1);
+            }
+            else {
+                logger.info("无图片1，使用默认图片");
+                task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+            }
+        } catch (Exception e){
+            task.setSimuPicPath1(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        }
+        try {
+            String simulatePicPath2 = FileUtil.saveStaticUploadFile(simuPic2);
+            if (simulatePicPath2 != null) {
+                logger.info("图片2接受成功" + simuPic1.getOriginalFilename());
+                task.setSimuPicPath2(simulatePicPath2);
+            }
+            else {
+                logger.info("无图片2，使用默认图片");
+                task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+            }
+        } catch (Exception e){
+            task.setSimuPicPath2(Simulation.EXAMPLE_SIMULATION_PICPATH);
+        }
+
+        taskService.saveTask(task);
+        logger.info("创建题目成功");
+        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
+
+    /**TODO
+     *  1.Verilog题目出题接口
+     *  2.批量导入导出接口
+     *  3.
+     */
+
+
+    private boolean IsTeacher(HttpServletRequest httpServletRequest){      //判断该用户是否拥有老师权限
+        String token=httpServletRequest.getHeader("Authorization");
+        String username= JwtUtil.getUsername(token);
+        User user=userService.findByUserName(username);
+        if (user==null) return true;
+        return user.getUtype() != 1;
     }
 }
