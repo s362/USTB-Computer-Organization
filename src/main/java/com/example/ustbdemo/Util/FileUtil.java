@@ -36,6 +36,7 @@ public class FileUtil {
         String dirpath = "";
         dirpath = OSUtil.isLinux() ?  FILE_PATH_LINUX + task.getTid().toString() + "/" + fileType : FILE_PATH_WIN + task.getTid().toString() + "\\" + fileType;
 
+        //创建父文件夹
         dirFile = new File(dirpath);
         if(!dirFile.getParentFile().getParentFile().exists()) dirFile.getParentFile().getParentFile().mkdir();
         if(!dirFile.getParentFile().exists()) dirFile.getParentFile().mkdir();
@@ -324,6 +325,61 @@ public class FileUtil {
         {
             e.printStackTrace();
         }
+    }
+
+
+
+    /**
+     *复制，如果是zip包就解压,适用于Verilog编程题的压缩包
+     * @param srcFilePath 原始路径
+     * @param task 目标题目
+     * @return 最终路径
+     */
+    public static String copyAndUnzipFile(String srcFilePath,Task task){
+        //父目录
+        String dirPath=OSUtil.isLinux()?FileUtil.FILE_PATH_LINUX+'/'+task.getTid():FileUtil.FILE_PATH_WIN+"\\"+task.getTid();
+
+        //文件目录
+        String decFilePath=dirPath+(OSUtil.isLinux()?srcFilePath.substring(srcFilePath.lastIndexOf('/')):srcFilePath.substring(srcFilePath.lastIndexOf("\\")));
+
+        File dirFile=new File(dirPath);
+        if (!dirFile.exists()) dirFile.mkdirs();   //若父文件夹不存在，则创建
+
+        copyFile(srcFilePath,decFilePath); //将原题复制一份作为新题
+        task.setTaskFilePath(decFilePath);
+        String finalPath;
+        if(decFilePath.endsWith(".zip")){
+            finalPath = OSUtil.isLinux() ? dirFile.getPath() + "/unzip/" : dirFile.getPath() + "\\unzip\\";
+            unZip(srcFilePath, finalPath);
+        } else {
+            finalPath =srcFilePath;
+        }
+        return finalPath;
+    }
+
+    /**
+     * 复制原题文件到新的位置，适用于汇编仿真题
+     * @param srcFilePath 原文件路径
+     * @param task 题目信息
+     * @param fileType 文件类型
+     * @return 新文件路径
+     */
+    public static String copySimulationFile(String srcFilePath,Task task,String fileType){
+
+        String dirPath=OSUtil.isLinux()?FILE_PATH_LINUX+task.getTid()+"/"+fileType:FILE_PATH_WIN+task.getTid()+"\\"+fileType;
+
+        File dirFile=new File(dirPath);
+        if (!dirFile.exists()) dirFile.mkdirs();
+
+        File srcFile=new File(srcFilePath);
+
+        String decFilePath=dirPath+(OSUtil.isLinux()?"/":"\\")+srcFile.getName();
+        copyFile(srcFilePath,decFilePath);
+        if (fileType.equals("exampleFile"))
+            task.setExampleFilePath(decFilePath);
+        else
+            task.setTaskFilePath(decFilePath);
+        return decFilePath;
     }
 
     //在每次学生提交代码后将成绩写入csv文件中,便于CG平台取出

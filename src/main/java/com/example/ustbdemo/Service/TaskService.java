@@ -302,4 +302,53 @@ public class TaskService {
             return null;
         }
     }
+
+    /**
+     * 将对应的题目公开到公共题库
+     * @param tid 题目id
+     * @return 操作是否成功
+     */
+    public boolean makeTaskPublic(Long tid){
+        try {
+            Task task=this.taskRepository.findById(tid).get();
+            task.setIsPublic(1);
+            this.taskRepository.save(task);
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 取消公开
+     * @param tid 题目id
+     * @return 操作是否成功
+     */
+    public boolean cancelTaskPublic(Long tid){
+        try {
+            Task task=this.taskRepository.findById(tid).get();
+            task.setIsPublic(0);
+            this.taskRepository.save(task);
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 获取题库中的公开题目
+     * @return 题目信息的列表
+     */
+    public List<Task> getPublicTasks(){
+        Task task=new Task();
+        task.setIsPublic(1);
+        Example<Task> taskExample=Example.of(task);
+        try {
+            return this.taskRepository.findAll(taskExample);
+        }catch (Exception e){
+            return null;
+        }
+    }
 }

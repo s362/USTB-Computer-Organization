@@ -618,10 +618,13 @@ public class TeacherController {
     }
 
 
+    //下面是含有老师权限过滤部分
+
+
     // 获取老师教学的所有课程
     @PostMapping(value = "/getTeacherCourse")
     public ResponseEntity<Result> getTeacherCourse(HttpServletRequest httpServletRequest){
-        if (IsTeacher(httpServletRequest)){
+        if (IsNotTeacher(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
         String username= JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -636,7 +639,7 @@ public class TeacherController {
     // 获取该课程下的所有题目
     @PostMapping(value = "/getTasksByCourseId")
     public ResponseEntity<Result> getTasksByCourseId(Long courseId,HttpServletRequest httpServletRequest){
-        if (IsTeacher(httpServletRequest)){
+        if (IsNotTeacher(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
         List<Task> taskList=taskService.getTasksByCourseId(courseId);
@@ -650,17 +653,150 @@ public class TeacherController {
     //删除题目
     @PostMapping(value = "/deleteTasksByTaskId")
     public ResponseEntity<Result> deleteTasksByTaskId(Long taskId,HttpServletRequest httpServletRequest){
-        if (IsTeacher(httpServletRequest)){
+        if (IsNotTeacher(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
         taskService.deletTaskByTid(taskId);
         return ResultUtil.getResult(new Result(),HttpStatus.OK);
     }
 
+    //将题目公开到题库
+    @PostMapping(value = "/makeTaskPublic")
+    public ResponseEntity<Result> makeTaskPublic(Long tid,HttpServletRequest httpServletRequest){
+        if (IsNotTeacher(httpServletRequest))return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        if (taskService.makeTaskPublic(tid)) return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        else return ResultUtil.getResult(new Result("公开到公共题库失败"),HttpStatus.BAD_REQUEST);
+    }
+
+    //取消题目公开
+    @PostMapping(value = "/cancelTaskPublic")
+    public ResponseEntity<Result> cancelTaskPublic(Long tid,HttpServletRequest httpServletRequest){
+        if (IsNotTeacher(httpServletRequest))return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        if (taskService.cancelTaskPublic(tid)) return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        else return ResultUtil.getResult(new Result("公开到公共题库失败"),HttpStatus.BAD_REQUEST);
+    }
+
+    //获取公开的题目
+    @PostMapping(value = "/getPublicTasks")
+    public ResponseEntity<Result> getPublicTasks(HttpServletRequest httpServletRequest){
+        if (IsNotTeacher(httpServletRequest))return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        List<Task> taskList=taskService.getPublicTasks();
+        List<JsonNode> tasks=getMapTasks(taskList);
+        Result result=new Result();
+        result.setObject(tasks);
+        result.setSuccess(true);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+    //添加公共题库里的题目到本课程中来，采取的策略是将公开的题目复制一份，本地和git上都要复制
+    @PostMapping(value = "/addPublicTaskToCourse")
+    public ResponseEntity<Result> addPublicTaskToCourse(Long tid,Long courseId,HttpServletRequest httpServletRequest){
+        if (IsNotTeacher(httpServletRequest)) return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        Task task=taskService.getTaskByTid(tid);
+        if (task==null) return ResultUtil.getResult(new Result("该题目id不正确"), HttpStatus.BAD_REQUEST);
+        if (task.getIsPublic()!=1) return ResultUtil.getResult(new Result("无法添加非公开题目到此课程"), HttpStatus.BAD_REQUEST);
+
+        Task newTask=new Task(task.getTname(),task.getTdis(),task.getTtype());  //新建一个同样的题目
+        newTask.setIsPublic(0);         //新的题目默认不公开
+        newTask.setCourseId(courseId);  //绑定到此课程
+        taskService.saveTask(newTask);
+        logger.info("tid="+newTask.getTid());
+        String newTaskId=GitProcess.tidToTaskid(newTask.getTid()); //新建题目的projectid
+        TaskModel taskModel=new TaskModel(newTaskId);
+
+        gitProcess=new GitProcess();
+
+        try {
+            if (task.getTtype()==0L) { //是Verilog编程题目
+                try{
+                    logger.info("开始复制Verilog编程题");
+                    String finalPath=FileUtil.copyAndUnzipFile(task.getTaskFilePath(),newTask);
+                    //            设置taskFile变量
+                    FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "files");
+                    //            设置exampleFile变量
+                    FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "example");
+    //            获取content.md内容，并修改其中图片路径，
+                    task.setTdis(FileUtil.setMdContent(newTask.getTid(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
+                    logger.info("处理md文件");
+    //            把图片移动到静态文件中
+                    FileUtil.moveTaskImg(newTask.getTid(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "images");
+                    FileUtil.deleteDirectory(finalPath);
+                    logger.info("文件复制成功");
+                }catch (Exception e){
+                    throw new Exception("Verilog题目文件处理出错");
+                }
+
+                try{
+//            在gitlab中创建工程
+                    gitProcess.gitcreateTask(taskModel);
+                    logger.info("创建Git成功");
+                } catch (Exception e){
+                    e.printStackTrace();
+                    throw new Exception("gitlab创建题目失败");
+                }
+                logger.info("Verilog编程题复制成功");
+            }else { //是汇编仿真题目
+                logger.info("开始复制汇编仿真题");
+                try{
+                    String finalPath=FileUtil.copySimulationFile(task.getExampleFilePath(),newTask,"exampleFile");
+                    FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), finalPath);  //设置task中的exampleFile
+                    finalPath=FileUtil.copySimulationFile(task.getTaskFilePath(),newTask,"taskFile");
+                    FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), finalPath);    //设置task中的taskFile
+                }catch (Exception e){
+                    e.printStackTrace();
+                    throw new Exception("文件复制错误");
+                }
+                logger.info("文件复制成功");
+                //        创建git工程
+                try{
+                    gitProcess.gitcreateTask(taskModel);
+                    logger.info("创建git工程成功");
+                } catch (Exception e){
+                    logger.info("创建git题目失败");
+                    e.printStackTrace();
+                    throw new Exception("汇编仿真题git工程创建失败");
+                }
+
+                //将原题的部分信息直接复制过来
+                newTask.setInstrid(task.getInstrid());
+                newTask.setSimuid1(task.getSimuid1());
+                newTask.setSimuid2(task.getSimuid2());
+
+                //图片是直接保存在static文件夹下的，可以直接共用，不用将图片也复制一遍
+                newTask.setSimuPicPath1(task.getSimuPicPath1());
+                newTask.setSimuPicPath2(task.getSimuPicPath2());
+
+                //复制选择题
+                try{
+                    List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(task.getTid());
+                    for (Assemble_Choose item:assembleChooseList) {
+                        Assemble_Choose assembleChoose=new Assemble_Choose();
+                        assembleChoose.setTid(newTask.getTid());
+                        assembleChoose.setTpart(item.getTpart());
+                        assembleChoose.setAnswers(item.getAnswers());
+                        assembleChoose.setDiscri(item.getDiscri());
+                        assembleChoose.setOptions(item.getOptions());
+                        taskService.saveAssembleChoose(assembleChoose);     //这里必须要新建一个对象用来存储，不能直接用item来进行save
+                    }
+                    logger.info("选择题复制成功");
+                }catch (Exception e){
+                    e.printStackTrace();
+                    throw  new Exception("选择题复制出错");
+                }
+                logger.info("汇编仿真题复制成功");
+            }
+            taskService.saveTask(newTask);
+            return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        }catch (Exception e){
+            taskService.deletTaskByTid(newTask.getTid());
+            return ResultUtil.getResult(new Result("操作出错："+e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
     //    获取instruct  指令说明书
     @PostMapping(value = "/getInstructFiles")
     public ResponseEntity<Result> getInstructFiles(HttpServletRequest httpServletRequest){
-        if (IsTeacher(httpServletRequest)){
+        if (IsNotTeacher(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
         Result result = new Result();
@@ -675,7 +811,7 @@ public class TeacherController {
     //    获取仿真器
     @PostMapping(value = "/getSimulators")
     public ResponseEntity<Result> getSimulators(HttpServletRequest httpServletRequest){
-        if (IsTeacher(httpServletRequest)){
+        if (IsNotTeacher(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
         Result result = new Result();
@@ -684,15 +820,14 @@ public class TeacherController {
     }
 
     //    创建汇编题目
-    @PostMapping(value = "/createSimulationTask")
+    @PostMapping(value = "/createSimulationTaskofCourse")
     public ResponseEntity<Result> createSimulationTask(Task task, @RequestBody MultipartFile taskFile, MultipartFile exampleFile, MultipartFile simuPic1, MultipartFile simuPic2, String chooseTask,HttpServletRequest httpServletRequest){
-        if (IsTeacher(httpServletRequest)){
+        if (IsNotTeacher(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
 //        获取 gitProscess对象
         gitProcess = new GitProcess();
         task.setTtype(1L);
-
         if(task.getSimuid1() == null || taskService.getSimulationBySimuid(task.getSimuid1()) == null ||
                 task.getSimuid2() == null || taskService.getSimulationBySimuid(task.getSimuid2()) == null ||
                 task.getInstrid() == null || taskService.getInstructionByinstrid(task.getInstrid()) == null){
@@ -706,6 +841,8 @@ public class TeacherController {
 //        }
 
 //        保存题目
+        if (task.getIsPublic()==null) task.setIsPublic(0);
+        if (task.getCourseId()==null) return ResultUtil.getResult(new Result("课程id为空"), HttpStatus.BAD_REQUEST);
         taskService.saveTask(task);
 
         logger.info(task.getTid().toString());
@@ -803,14 +940,105 @@ public class TeacherController {
     }
 
 
+    //    创建题目
+    @PostMapping(value = "/createVerilogTaskOfCourse")
+    public ResponseEntity<Result> createVerilogTaskOfCourse(String tname,Long courseId, @RequestBody MultipartFile taskFile,HttpServletRequest httpServletRequest){
+        if (IsNotTeacher(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+//        获取 gitProscess对象
+        gitProcess = new GitProcess();
+        Task task = new Task(tname, "", 0L);
+        task.setIsPublic(0);
+        task.setCourseId(courseId);
+        taskService.saveTask(task);
+        logger.info(task.getTid() + "开始文件接收");
+        String task_id = GitProcess.tidToTaskid(task.getTid());
+//        创建gitlab工程生成所对应的对象
+        TaskModel taskModel = new TaskModel(task_id);
+
+        try{
+            String filePath;
+//            接收verilog上传的文件
+            filePath = FileUtil.fileUpload(taskFile, task, "", "");
+            if(filePath == null) {
+                return ResultUtil.getResult(new Result("未上传文件"), HttpStatus.BAD_REQUEST);
+            }
+//            设置taskFile变量
+            FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "files");
+            //            设置exampleFile变量
+
+            FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), filePath + (OSUtil.isLinux()? "/" : "\\") + "example");
+//            获取content.md内容，并修改其中图片路径，
+            task.setTdis(FileUtil.setMdContent(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
+            logger.info("处理md文件");
+//            把图片移动到静态文件中
+            FileUtil.moveTaskImg(task.getTid(), filePath + (OSUtil.isLinux()? "/" : "\\") + "images");
+            FileUtil.deleteDirectory(filePath);
+            logger.info("文件接收成功");
+        } catch (Exception e){
+            taskService.deletTaskByTid(task.getTid());
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("文件接收失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+
+        try{
+//            在gitlab中创建工程
+            gitProcess.gitcreateTask(taskModel);
+            logger.info("创建Git成功");
+        } catch (Exception e){
+            taskService.deletTaskByTid(task.getTid());
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("创建题目失败" + "  " + e.toString()), HttpStatus.BAD_REQUEST);
+        }
+        taskService.saveTask(task);
+        return ResultUtil.getResult(new Result(), HttpStatus.OK);
+    }
+
+
+    // 批量导入题目
+    @PostMapping(value = "/importTasks")
+    public ResponseEntity<Result> importTasks(){
+        return ResultUtil.getResult(new Result(),HttpStatus.OK);
+    }
+
+    //批量导出题目
+    @PostMapping(value = "/exportTasks")
+    public ResponseEntity<Result> exportTask(@RequestBody JsonNode jsonNode, HttpServletRequest httpServletRequest){
+        System.out.println(jsonNode.toString());
+        JsonNode taskIdList=jsonNode.findValue("taskId");
+        for (int i=0;i<taskIdList.size();i++) {
+            Task task=taskService.getTaskByTid(taskIdList.get(i).asLong());;
+            if (task==null) {
+                logger.info("taskId="+taskIdList.get(i).asLong()+"的题目不存在");
+                continue;
+            }
+            try {
+                if (task.getTtype()==0L){
+
+                }
+            }catch (Exception e){
+//                System.out.println(task);
+                logger.info("taskId="+task.getTid());
+            }
+
+
+
+
+        }
+        String path="000";
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(path);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
     /**TODO
-     *  1.Verilog题目出题接口
+     *  1.更新Verilog题目出题接口
      *  2.批量导入导出接口
-     *  3.
      */
 
 
-    private boolean IsTeacher(HttpServletRequest httpServletRequest){      //判断该用户是否拥有老师权限
+    private boolean IsNotTeacher(HttpServletRequest httpServletRequest){      //判断该用户是否拥有老师权限
         String token=httpServletRequest.getHeader("Authorization");
         String username= JwtUtil.getUsername(token);
         User user=userService.findByUserName(username);
