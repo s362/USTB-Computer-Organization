@@ -351,4 +351,37 @@ public class TaskService {
             return null;
         }
     }
+
+
+    /**
+     * 通过innerId查看对用的汇编仿真器
+     * @param innerId innerid
+     * @return 仿真器信息
+     */
+    public Simulation getSimulationByInnerId(Long innerId){
+        Simulation simulation=new Simulation();
+        simulation.setInnerid(innerId);
+        Example<Simulation> simulationExample=Example.of(simulation);
+        try {
+            return this.simulationRepository.findOne(simulationExample).get();
+        }catch (Exception e){
+            return null;
+        }
+    }
+
+    /**
+     * 通过指令集名称进行查找
+     * @param instrName 指令集名称
+     * @return 指令集信息
+     */
+    public Instruction getInstructionByName(String instrName){
+        Instruction instruction=new Instruction();
+        instruction.setInstrname(instrName);
+        Example<Instruction> instructionExample=Example.of(instruction);
+        try {
+            return this.instructionRepository.findOne(instructionExample).get();
+        }catch (Exception e){
+            return null;
+        }
+    }
 }

@@ -8,6 +8,10 @@ import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeCreator;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.util.*;
 
 @RestController
@@ -333,8 +339,9 @@ public class TeacherController {
 
     //    创建汇编题目
     @PostMapping(value = "/createAssembleTask")
-    public ResponseEntity<Result> createAssembleTask(Task task, @RequestBody MultipartFile taskFile, MultipartFile exampleFile, MultipartFile simuPic1, MultipartFile simuPic2, String chooseTask){
+    public ResponseEntity<Result> createAssembleTask(Task task, @RequestBody MultipartFile taskFile, MultipartFile exampleFile,  MultipartFile simuPic1,  MultipartFile simuPic2,  String chooseTask){
 //        获取 gitProscess对象
+        logger.info(task.toString());
         gitProcess = new GitProcess();
         task.setTtype(1L);
 
@@ -851,7 +858,7 @@ public class TeacherController {
         TaskModel taskModel = new TaskModel(task_id);
 //        根据输入方式，选择不同的方式
         try{
-//            将taskFile传到 taskFile文件夹中
+//            将taskFile传到 taskFile文件夹中,接受文件名为code.asm
             filePath = FileUtil.fileUpload(taskFile, task, "taskFile", "code.asm");
 //            设置taskFile变量
             FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), filePath);
@@ -940,7 +947,7 @@ public class TeacherController {
     }
 
 
-    //    创建题目
+    //    创建verilog题目
     @PostMapping(value = "/createVerilogTaskOfCourse")
     public ResponseEntity<Result> createVerilogTaskOfCourse(String tname,Long courseId, @RequestBody MultipartFile taskFile,HttpServletRequest httpServletRequest){
         if (IsNotTeacher(httpServletRequest)){
@@ -998,43 +1005,192 @@ public class TeacherController {
 
     // 批量导入题目
     @PostMapping(value = "/importTasks")
-    public ResponseEntity<Result> importTasks(){
-        return ResultUtil.getResult(new Result(),HttpStatus.OK);
+    public ResponseEntity<Result> importTasks(Long courseId,@RequestBody MultipartFile tasks,HttpServletRequest httpServletRequest){
+        if (IsNotTeacher(httpServletRequest)) return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        try{
+            if (courseId==null) return ResultUtil.getResult(new Result("未输入课程id"), HttpStatus.BAD_REQUEST);
+            String dirPath=FileUtil.zipFileUploadAndUnzip(tasks,"tasks");
+            logger.info("文件接收并解压成功");
+            File dirFile=new File(dirPath);
+            File[] files=dirFile.listFiles();
+
+            gitProcess=new GitProcess();
+
+            Boolean flag=true;      //用来记录所有题目是否都成功导入
+            for (int i=0;i<files.length;i++){
+                logger.info(files[i].getPath());
+                JsonNode taskJson=FileUtil.fetchTaskJson(files[i]);
+                Task task=new Task();
+                task.setCourseId(courseId);
+                task.setIsPublic(taskJson.get("isPublic").asInt());
+                task.setTtype(taskJson.get("tType").asLong());
+                task.setTname(taskJson.get("tName").asText());
+                taskService.saveTask(task);
+                try {
+                    //创建gitlab需要用到的数据
+                    String task_id = GitProcess.tidToTaskid(task.getTid());
+                    TaskModel taskModel = new TaskModel(task_id);
+
+                    if (task.getTtype() == 0) {  //如果该题是verilog汇编题，照着创建题目时的格式再处理一边即可
+                        String srcFilePath=files[i].getPath()+File.separator+taskJson.get("taskFilePath").asText();  //源文件的路径
+                        String finalPath;
+                        //接收verilog上传的文件
+                        finalPath = FileUtil.copyAndUnzipFile(srcFilePath, task);
+                        //            设置taskFile变量
+                        FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "files");
+                        //            设置exampleFile变量
+                        FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "example");
+                        //            获取content.md内容，并修改其中图片路径，
+                        task.setTdis(FileUtil.setMdContent(task.getTid(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
+                        logger.info("处理md文件");
+                        //            把图片移动到静态文件中
+                        FileUtil.moveTaskImg(task.getTid(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "images");
+                        FileUtil.deleteDirectory(finalPath);
+                        logger.info("verilog题目文件解析成功");
+
+                    } else {  //如果该题是汇编仿真题
+                        task.setTdis(taskJson.get("tDis").asText());
+                        Long innerId1=taskJson.get("innerId1").asLong();
+                        Long innerId2=taskJson.get("innerId2").asLong();
+                        String instrName=taskJson.get("instrName").asText();
+                        Simulation simulation1=taskService.getSimulationByInnerId(innerId1);
+                        if (simulation1==null) throw new Exception("本地不存在对应的仿真器id");
+                        Simulation simulation2=taskService.getSimulationByInnerId(innerId2);
+                        if (simulation2==null) throw new Exception("本地不存在对应的仿真器id");
+                        Instruction instruction=taskService.getInstructionByName(instrName);
+                        if (instruction==null) throw new Exception("没有对应的指令说明书");
+
+                        task.setSimuid1(simulation1.getSimuid());
+                        task.setSimuid2(simulation2.getSimuid());
+                        task.setInstrid(instruction.getInstrid());
+
+                        //开始对选择题进行处理
+                        Iterator<JsonNode> chooseList=taskJson.get("choose").elements();
+                        while (chooseList.hasNext()){
+                            JsonNode choose= chooseList.next();
+                            Assemble_Choose assembleChoose=new Assemble_Choose();
+                            assembleChoose.setTid(task.getTid());
+                            assembleChoose.setTpart(choose.get("tPart").asInt());
+                            assembleChoose.setOptions(choose.get("options").asText());
+                            assembleChoose.setDiscri(choose.get("description").asText());
+                            assembleChoose.setAnswers(choose.get("answers").asText());
+                            taskService.saveAssembleChoose(assembleChoose);
+                        }
+
+                        //进行文件处理
+                        String srcFilePath=files[i].getPath()+File.separator+"exampleFile"+File.separator+"code.asm";
+                        String finalPath=FileUtil.copySimulationFile(srcFilePath,task,"exampleFile");
+                        FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), finalPath);  //设置task中的exampleFile
+
+                        srcFilePath=files[i].getPath()+File.separator+"taskFile"+File.separator+"code.asm";
+                        finalPath=FileUtil.copySimulationFile(srcFilePath,task,"taskFile");
+                        FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), finalPath);    //设置task中的taskFile
+
+                        //开始图片处理
+                        srcFilePath=files[i].getPath()+File.separator+taskJson.get("simuPicPath1").asText();
+                        FileUtil.copyPicture(srcFilePath,task,1);
+                        srcFilePath=files[i].getPath()+File.separator+taskJson.get("simuPicPath2").asText();
+                        FileUtil.copyPicture(srcFilePath,task,2);
+                        logger.info("汇编仿真题解析成功");
+                    }
+
+                    gitProcess.gitcreateTask(taskModel);  //将得到的文件提交到gitlab上
+                    logger.info("gitlab项目创建成功");
+                    taskService.saveTask(task);  //保存新的题目信息
+
+                }catch (Exception e){
+                    e.printStackTrace();
+                    taskService.deletTaskByTid(task.getTid());
+                    flag=false;
+                }
+            }
+            logger.info("文件读取成功");
+            FileUtil.deleteDirectory(dirPath);  //将解压的目录删除掉
+//            logger.info();
+            Result result=new Result();
+            result.setSuccess(true);
+            if (flag) result.setMessage("全部题目导入成功");
+            else result.setMessage("部分题目导入成功");
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        }catch (Exception e){
+            return ResultUtil.getResult(new Result("导入失败"+e.getMessage()),HttpStatus.OK);
+        }
     }
 
     //批量导出题目
     @PostMapping(value = "/exportTasks")
-    public ResponseEntity<Result> exportTask(@RequestBody JsonNode jsonNode, HttpServletRequest httpServletRequest){
-        System.out.println(jsonNode.toString());
+    public void exportTask(@RequestBody JsonNode jsonNode, HttpServletRequest httpServletRequest, HttpServletResponse response){
+        if (IsNotTeacher(httpServletRequest)) return;
+        logger.info(jsonNode.toString());
         JsonNode taskIdList=jsonNode.findValue("taskId");
+//        List<Long> taskIdList=new ArrayList<>();
+//        taskIdList.add(tid);
+        logger.info(taskIdList.toString());
+        List<Long> taskList=new ArrayList<>();      //该数组用来记录每个有效的题目id，用于之后文件的压缩
         for (int i=0;i<taskIdList.size();i++) {
             Task task=taskService.getTaskByTid(taskIdList.get(i).asLong());;
             if (task==null) {
-                logger.info("taskId="+taskIdList.get(i).asLong()+"的题目不存在");
+                logger.info("taskId="+taskIdList.get(i)+"的题目不存在");
                 continue;
             }
+            taskList.add(task.getTid());
             try {
-                if (task.getTtype()==0L){
+                Map<String,Object> taskJson=new HashMap<>();
+                //汇编仿真题，将数据库中的其他信息存为一个json格式的数据，对应的图片都复制到自己题目的文件夹里，之后一起压缩下载。
+                if (task.getTtype()==1L){
+                    taskJson.put("instrName",taskService.getInstructionByInstrId(task.getInstrid()).getInstrname());  //指令说明书换成名称进行存储，不同平台可能id不一样
+                    taskJson.put("isPublic",task.getIsPublic());
+                    taskJson.put("innerId1",taskService.getSimulationBySimuid(task.getSimuid1()).getInnerid()); //使用innerid进行存储，不用平台上simuid可能不一样，但innerid一定一样
+                    taskJson.put("innerId2",taskService.getSimulationBySimuid(task.getSimuid2()).getInnerid());
+                    taskJson.put("tType",task.getTtype());
+                    taskJson.put("tName",task.getTname());
+                    taskJson.put("tDis",task.getTdis());
+                    //获取该题目对应的选择题
+//                    Map<String,Object> taskChooseJson=new HashMap<>();
+                    ArrayNode taskChooseJsonArray= JsonNodeFactory.instance.arrayNode(); //创建json数组，用来存放各个选择题
+                    List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(task.getTid());
+                    for (Assemble_Choose item:assembleChooseList){
+                        ObjectNode taskChooseJson=JsonNodeFactory.instance.objectNode();  //ObjectNode才可以put，jsonNode无法put
 
+                        taskChooseJson.put("description",item.getDiscri());
+                        taskChooseJson.put("options",item.getOptions());
+                        taskChooseJson.put("answers",item.getAnswers());
+                        taskChooseJson.put("tPart",item.getTpart());
+
+                        taskChooseJsonArray.add(taskChooseJson);
+                    }
+                    taskJson.put("choose",taskChooseJsonArray);
+
+                    //将图片拷贝并重命名到题目所在文件夹，之后和taskjson文件以及code.asm文件一起压缩
+                    String dirPath=(OSUtil.isLinux()?FileUtil.FILE_PATH_LINUX:FileUtil.FILE_PATH_WIN)+ File.separator+task.getTid()+File.separator;
+                    FileUtil.copyFile(task.getSimuPicPath1(),dirPath+"simuPic1"+task.getSimuPicPath1().substring(task.getSimuPicPath1().lastIndexOf(".")));
+                    FileUtil.copyFile(task.getSimuPicPath2(),dirPath+"simuPic2"+task.getSimuPicPath2().substring(task.getSimuPicPath2().lastIndexOf(".")));
+                    //将图片名称记录下来，便于导入的时候进行处理
+                    taskJson.put("simuPicPath1","simuPic1"+task.getSimuPicPath1().substring(task.getSimuPicPath1().lastIndexOf(".")));
+                    taskJson.put("simuPicPath2","simuPic2"+task.getSimuPicPath2().substring(task.getSimuPicPath2().lastIndexOf(".")));
+
+                }else {//verilog编程题实际上已经是一个压缩包形式了，直接最后压缩成一个总的即可，不用多做处理，仅存储题目类型和名称就可以
+                    taskJson.put("tType",task.getTtype());
+                    taskJson.put("tName",task.getTname());
+                    taskJson.put("isPublic",task.getIsPublic());
+                    taskJson.put("taskFilePath",task.getTaskFilePath().substring(task.getTaskFilePath().lastIndexOf(File.separator)+1));  //记录一下压缩包的的名称，便于在导入的时候进行处理
                 }
+                FileUtil.saveTaskJson(task.getTid(),taskJson);      //将json信息存起来
             }catch (Exception e){
-//                System.out.println(task);
-                logger.info("taskId="+task.getTid());
+                logger.info("taskId="+task.getTid()+"打包失败");
             }
-
-
-
-
         }
-        String path="000";
-        Result result=new Result();
-        result.setSuccess(true);
-        result.setObject(path);
-        return ResultUtil.getResult(result,HttpStatus.OK);
+        try {
+            FileUtil.fileToZip(response,taskList,"tasks");//将文件压缩并传输，然后删除
+//            return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        }catch (Exception e){
+//            return ResultUtil.getResult(new Result("导出失败"+e.getMessage()),HttpStatus.BAD_REQUEST);
+        }
     }
+
     /**TODO
      *  1.更新Verilog题目出题接口
-     *  2.批量导入导出接口
+     *  2.批量导入接口
      */
 
 

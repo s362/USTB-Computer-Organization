@@ -61,7 +61,11 @@ public class StudentController {
         }
         try {
             taskService.saveTemporaryData(stage);
-            return ResultUtil.getResult(new Result(),HttpStatus.OK);
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setObject(getGradeOfTask(user.getUid(),stage.getTid()));
+            generateGradeCSV(username,stage.getUid(),stage.getTid());  //每次保存/提交的时候生成csv文件
+            return ResultUtil.getResult(result,HttpStatus.OK);
         }catch (Exception e){
             Result result=new Result();
             result.setMessage("数据保存失败");
@@ -172,14 +176,14 @@ public class StudentController {
             assemble_choose_score.setAcscore(100L);
             this.scoreService.saveAssembleChooseScore(assemble_choose_score);
             saveSimulationScore(uid,assemble_choose.getTid());
-            generateGradeCSV(user_id,uid,assemble_choose.getTid());
+//            generateGradeCSV(user_id,uid,assemble_choose.getTid());
             result.setObject(100L);
             return ResultUtil.getResult(result, HttpStatus.OK);
         } else {
             if(assemble_choose_score.getAcscore()<100L) assemble_choose_score.setAcscore(0L);  //若已经提交正确过，则错误信息不予记录
             this.scoreService.saveAssembleChooseScore(assemble_choose_score);
             saveSimulationScore(uid,assemble_choose.getTid());
-            generateGradeCSV(user_id,uid,assemble_choose.getTid());
+//            generateGradeCSV(user_id,uid,assemble_choose.getTid());
             result.setObject(0L);
             return ResultUtil.getResult(result, HttpStatus.OK);
         }
@@ -192,6 +196,17 @@ public class StudentController {
         answer = Base64Convert.baseConvertStr(answer);
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         gitProcess = new GitProcess();
+
+        User user=userService.findByUserName(user_id);
+        if (user==null) return ResultUtil.getResult(new Result("用户不存在"), HttpStatus.BAD_REQUEST);
+        Assemble_Code_Score assembleCodeScore=scoreService.findAssembleCodeScoreByUidAndTid(user.getUid(),tid);
+        if(assembleCodeScore==null){  //如果之前不存在该题目的数据，则新建一个
+            assembleCodeScore=new Assemble_Code_Score();
+            assembleCodeScore.setUid(user.getUid());
+            assembleCodeScore.setTid(tid);
+            assembleCodeScore.setTimes(0L);
+            assembleCodeScore.setAssembleCodeScore(0L);
+        }
 //        判断答案是否正确
         try{
             Integer project_id;
@@ -209,9 +224,22 @@ public class StudentController {
             String rf_answer = Base64Convert.baseConvertStr(refFile.getContent());
 //            调用，找到第一个错误的行，如果正确返回-1。
             int wrongIndex = findFirstWrongCode(af_answer, rf_answer);
+
+            if (assembleCodeScore.getAssembleCodeScore()<100L){  //放在此处是为了防止前面拉去gitlab文件方便报错导致提交次数无故增加
+                assembleCodeScore.addTimes();
+                assembleCodeScore.setUpdatedate(new Date());
+            }
             if (wrongIndex == -1){
+                assembleCodeScore.setAssembleCodeScore(100L);
+                scoreService.saveAssembleCodeScore(assembleCodeScore);
+                saveSimulationScore(user.getUid(),tid);  //刷新该实验的成绩信息
+//                generateGradeCSV(user_id,user.getUid(),tid); //生成csv文件
                 logger.info(user_id + "  答案正确，开始仿真");
             } else {
+                if (assembleCodeScore.getAssembleCodeScore()<100) assembleCodeScore.setAssembleCodeScore(0L); //若之前已经提交正确过，则错误信息不予记录
+                scoreService.saveAssembleCodeScore(assembleCodeScore);
+                saveSimulationScore(user.getUid(),tid);  //刷新该实验的成绩信息
+//                generateGradeCSV(user_id,user.getUid(),tid); //生成csv文件
                 logger.info(user_id + "  答案错误");
                 Result result = new Result();
                 Map map = new HashMap();
@@ -562,6 +590,16 @@ public class StudentController {
         }
     }
 
+
+    //获取提示信息
+    @PostMapping(value = "/getGrade")
+    public ResponseEntity<Result> getGrade(Long tid,Long uid){
+        Result result=new Result();
+        result.setObject(getGradeOfTask(uid,tid));
+        result.setSuccess(true);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){
@@ -634,13 +672,23 @@ public class StudentController {
     private void saveSimulationScore(Long uid,Long tid) {
         List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(tid); //取出该实验题对应的所有选择题
         int number=assembleChooseList.size();
-        Long grade=0L;
+        Long grade;
+
+        Assemble_Code_Score assembleCodeScore=scoreService.findAssembleCodeScoreByUidAndTid(uid,tid);
+        Long codeGrade=0L;
+        if (assembleCodeScore!=null&&assembleCodeScore.getAssembleCodeScore()==100L){
+            codeGrade=max(100-10*(assembleCodeScore.getTimes()-1),0L);
+        }
+
+        Long chooseGrade=0L;
         for (Assemble_Choose assembleChoose: assembleChooseList){
             Assemble_Choose_Score assembleChooseScore = scoreService.findAssembleChooseScoreByUidandTid(uid,assembleChoose.getTcid());
             if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
-            grade=grade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
+            chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
         }
-        grade=grade/number;
+        chooseGrade=chooseGrade/number;
+
+        grade=(codeGrade+chooseGrade*2)/3;//代码和选择的占分比例是1：2
 
         Score score = new Score();
         score.setUid(uid);
@@ -669,5 +717,12 @@ public class StudentController {
         if (score==null) grade=0;
         else grade=score.getTscore().intValue();
         FileUtil.saveCSVFile(user_id,tid,grade);
+    }
+
+    //获取题目对应的分数
+    private Long getGradeOfTask(Long uid,Long tid){
+        Score score=scoreService.findScoreByUserandTid(uid,tid);
+        if (score==null) return 0L;
+        return score.getTscore();
     }
 }
