@@ -551,6 +551,30 @@ public class FileUtil {
 
     }
 
+    /**
+     * 将文件打包成压缩包
+     * @param pathList 原文件路径或者文件夹路径
+     * @param fileName 目标压缩文件完整路径
+     */
+    public static void zipFile(List<String> pathList,String fileName){
+        try {
+            //创建zip输出流
+            ZipOutputStream out = new ZipOutputStream( new FileOutputStream(fileName));
+            //创建缓冲输出流
+            BufferedOutputStream bos = new BufferedOutputStream(out);
+            for (String file:pathList) {
+                File sourceFile = new File(file);
+                //调用函数遍历文件夹内容
+                compress(out, bos, sourceFile, sourceFile.getName());
+            }
+            bos.close();
+            out.close();
+            System.out.println("压缩完成"+fileName);
+        }catch (Exception e){
+            System.out.println("压缩失败");
+        }
+    }
+
 
     //递归遍历每个文件/文件夹，若是文件则打包，若不是则递归调用，将对应整个目录树到添加到zip文件中
     public static void compress(ZipOutputStream out, BufferedOutputStream bos, File sourceFile, String base) throws Exception {

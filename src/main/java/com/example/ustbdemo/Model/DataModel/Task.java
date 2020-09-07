@@ -18,7 +18,7 @@ public class Task {             //题库对应的数据库表
     private Long tid; // 题目id
 
     @Column(name = "ttype")
-    private Long ttype; // 题目类型
+    private Long ttype; // 题目类型   0L——Verilog   1L——汇编
 
     @Column(name = "tname", length = 100)
     private String tname; // 题目名称

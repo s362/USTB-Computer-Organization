@@ -591,11 +591,13 @@ public class StudentController {
     }
 
 
-    //获取提示信息
+    //获取成绩信息
     @PostMapping(value = "/getGrade")
-    public ResponseEntity<Result> getGrade(Long tid,Long uid){
+    public ResponseEntity<Result> getGrade(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
         Result result=new Result();
-        result.setObject(getGradeOfTask(uid,tid));
+        result.setObject(getGradeOfTask(user.getUid(),tid));
         result.setSuccess(true);
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
@@ -686,7 +688,8 @@ public class StudentController {
             if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
             chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
         }
-        chooseGrade=chooseGrade/number;
+        if(number==0) chooseGrade=0L;
+        else chooseGrade=chooseGrade/number;
 
         grade=(codeGrade+chooseGrade*2)/3;//代码和选择的占分比例是1：2
 
