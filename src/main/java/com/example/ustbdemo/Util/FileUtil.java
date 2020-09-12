@@ -172,7 +172,7 @@ public class FileUtil {
     //    处理题目描述中的图片信息
 //    因为后端储存题目描述用的是json，所以这里把字符进行了base64加密，便于存储。
     public static String  handleImg(Long tid, String str) throws Exception{
-        String regex = "!\\[]\\((.+?)\\)";
+        String regex = "!\\[]\\((.+?)\\)";   //![](images/image026.png)  要找出来的是这种格式的字符串
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(str);
         StringBuffer sb = new StringBuffer();
@@ -183,7 +183,7 @@ public class FileUtil {
 //            if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
 //            imgPah =  "<div align=center><img src=" + "\"" + "https://49.232.207.151:8080" + imgPah + "\"" + " width = \"80%\"></div>";
             String imgPah = OSUtil.isLinux()? tid + "/" + imgName : tid + "\\" + imgName;
-            if (!OSUtil.isLinux())imgPah = imgPah.replace("\\", "\\\\");
+            if (!OSUtil.isLinux()) imgPah = imgPah.replace("\\", "\\\\");
             imgPah =  "<div align=center><img src=" + "\"" + "http://49.232.207.151:8080/" + imgPah + "\"" + " width = \"80%\"></div>";
             matcher.appendReplacement(sb, imgPah);
         }
@@ -564,6 +564,7 @@ public class FileUtil {
             BufferedOutputStream bos = new BufferedOutputStream(out);
             for (String file:pathList) {
                 File sourceFile = new File(file);
+                if (!sourceFile.exists()) continue;
                 //调用函数遍历文件夹内容
                 compress(out, bos, sourceFile, sourceFile.getName());
             }
@@ -628,6 +629,10 @@ public class FileUtil {
         String unzipPath=zipPath+destName+File.separator;  //压缩包解压文件夹
         File dirFile=new File(unzipPath);
         if (!dirFile.exists()) dirFile.mkdirs();  //若解压目录不存在则新建
+        else {
+            deleteDirectory(unzipPath);//若已存在则先删除，为了避免原文件目录中的残留文件导致问题产生
+            dirFile.mkdirs();
+        }
 
         String zipFilePath=zipPath+destName+".zip";  //压缩包的上传全路径
 

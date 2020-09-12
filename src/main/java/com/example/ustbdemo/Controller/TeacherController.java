@@ -1019,14 +1019,15 @@ public class TeacherController {
             Boolean flag=true;      //用来记录所有题目是否都成功导入
             for (int i=0;i<files.length;i++){
                 logger.info(files[i].getPath());
-                JsonNode taskJson=FileUtil.fetchTaskJson(files[i]);
                 Task task=new Task();
-                task.setCourseId(courseId);
-                task.setIsPublic(taskJson.get("isPublic").asInt());
-                task.setTtype(taskJson.get("tType").asLong());
-                task.setTname(taskJson.get("tName").asText());
-                taskService.saveTask(task);
                 try {
+                    JsonNode taskJson=FileUtil.fetchTaskJson(files[i]);
+                    task.setCourseId(courseId);
+                    task.setIsPublic(taskJson.get("isPublic").asInt());
+                    task.setTtype(taskJson.get("tType").asLong());
+                    task.setTname(taskJson.get("tName").asText());
+                    taskService.saveTask(task);
+
                     //创建gitlab需要用到的数据
                     String task_id = GitProcess.tidToTaskid(task.getTid());
                     TaskModel taskModel = new TaskModel(task_id);
@@ -1189,6 +1190,7 @@ public class TeacherController {
     }
 
     //这个接口使用的题目模板是最开始的Verilog题目的题目模板，用于导入之前的一版题库的
+    // 因为该题的原始格式是三个文件夹——files、example、images和一个文件content.md,图片是使用![](images/image222.png)
     @PostMapping(value = "/importQuestion")
     public ResponseEntity<Result> importQuestion(Long courseId,@RequestBody MultipartFile tasks){
         //        获取 gitProscess对象
@@ -1202,7 +1204,6 @@ public class TeacherController {
             Boolean flag=true;      //用来记录所有题目是否都成功导入
             for (int i=0;i<files.length;i++){
                 logger.info(files[i].getPath());
-//                JsonNode taskJson=FileUtil.fetchTaskJson(files[i]);
                 Task task=new Task();
                 task.setCourseId(courseId);
                 task.setIsPublic(1);
@@ -1255,6 +1256,79 @@ public class TeacherController {
             return ResultUtil.getResult(new Result(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+//    //这个接口使用的题目模板是最开始的Verilog题目的题目模板，用于导入之前的一版题库的
+//    // 因为该题的原始格式是三个文件夹——files、images和一个文件content.txt,图片是使用*#[image]#*
+//    @PostMapping(value = "/importQuestionOld")
+//    public ResponseEntity<Result> importQuestionOld(Long courseId,@RequestBody MultipartFile tasks){
+//        //        获取 gitProscess对象
+//        gitProcess = new GitProcess();
+//        try {
+//            String dirPath=FileUtil.zipFileUploadAndUnzip(tasks,"oldQuestions");
+//            if (courseId==null) return ResultUtil.getResult(new Result("未输入课程id"), HttpStatus.BAD_REQUEST);
+//            logger.info("文件接收并解压成功");
+//            File dirFile=new File(dirPath);
+//            File[] files=dirFile.listFiles();
+//            Boolean flag=true;      //用来记录所有题目是否都成功导入
+//            for (int i=0;i<files.length;i++){
+//                logger.info(files[i].getPath());
+//                Task task=new Task();
+//                task.setCourseId(courseId);
+//                task.setIsPublic(1);
+//                task.setTtype(0L);
+//                task.setTname(files[i].getName());  //每个题目的文件夹名就是题目名
+//                taskService.saveTask(task);
+//                logger.info(task.getTid().toString());
+//                try {
+//                    //创建gitlab需要用到的数据
+//                    String task_id = GitProcess.tidToTaskid(task.getTid());
+//                    TaskModel taskModel = new TaskModel(task_id);
+////                    该题肯定是verilog汇编题，照着创建题目时的格式再处理一边即可
+//                    //因为该题的原始格式是三个文件夹——files、images和一个文件content.txt,
+//                    //现在首先要打包成zip包，为了满足之前的格式要求，然后再按照之前的流程处理即可
+//                    //1 首先要将图片的格式进行修改以及content.txt的文件格式进行修改
+//
+//
+//                    String zipFilePath=files[i].getPath()+File.separator+"exampleTaskFile.zip";
+//                    List<String> zipFileList=new ArrayList<>();
+//                    zipFileList.add(files[i].getPath()+File.separator+"files");
+//                    zipFileList.add(files[i].getPath()+File.separator+"images");
+////                    zipFileList.add(files[i].getPath()+File.separator+"example");
+//                    zipFileList.add(files[i].getPath()+File.separator+"content.txt");
+//                    FileUtil.zipFile(zipFileList,zipFilePath);
+//                    String finalPath;
+//                    //接收verilog上传的文件
+//                    finalPath = FileUtil.copyAndUnzipFile(zipFilePath, task);
+//                    //            设置taskFile变量
+//                    FileUtil.setTaskModelFiles(taskModel.getTaskFiles(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "files");
+//                    //            设置exampleFile变量
+//                    FileUtil.setTaskModelFiles(taskModel.getExampleFiles(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "example");
+//                    //            获取content.md内容，并修改其中图片路径，
+//                    task.setTdis(FileUtil.setMdContent(task.getTid(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "content.md"));
+//                    logger.info("处理md文件");
+//                    //            把图片移动到静态文件中
+//                    FileUtil.moveTaskImg(task.getTid(), finalPath + (OSUtil.isLinux()? "/" : "\\") + "images");
+//                    FileUtil.deleteDirectory(finalPath);
+//                    logger.info("verilog题目文件解析成功");
+//                    gitProcess.gitcreateTask(taskModel);  //将得到的文件提交到gitlab上
+//                    logger.info("gitlab项目创建成功");
+//                    taskService.saveTask(task);  //保存新的题目信息
+//                }catch (Exception e){
+//                    e.printStackTrace();
+//                    taskService.deletTaskByTid(task.getTid());
+//                    flag=false;
+//                }
+//            }
+//            FileUtil.deleteDirectory(dirPath);
+//            Result result=new Result();
+//            result.setSuccess(true);
+//            result.setMessage(flag?"题目全部导入成功":"部分题目导入成功");
+//            return ResultUtil.getResult(result, HttpStatus.OK);
+//        }catch (Exception e){
+//            return ResultUtil.getResult(new Result(e.getMessage()), HttpStatus.BAD_REQUEST);
+//        }
+//    }
+
 
     /**TODO
      *  1.更新Verilog题目出题接口
