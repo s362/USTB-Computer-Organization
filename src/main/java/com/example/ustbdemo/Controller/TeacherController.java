@@ -20,9 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @RestController
@@ -1255,6 +1258,35 @@ public class TeacherController {
         }catch (Exception e){
             return ResultUtil.getResult(new Result(e.getMessage()), HttpStatus.BAD_REQUEST);
         }
+    }
+
+    @PostMapping(value = "/downloadVerilogExample")
+    public void downloadVerilogExample(HttpServletResponse response){
+        // 指定文件的保存类型。
+        try {
+            String filePath = OSUtil.isLinux()?FileUtil.STATIC_PATH_LINUX:FileUtil.STATIC_PATH_WIN;
+            String fileName="exampleTaskFile";
+
+            response.setContentType("application/zip;charset=utf-8");
+
+            response.setHeader("Content-disposition", "attachment; filename="+ new String( fileName.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8) +".zip");
+            ServletOutputStream oupstream = response.getOutputStream();
+            FileInputStream from = new FileInputStream(filePath+fileName+".zip");
+            byte[] buffer = new byte[1024];
+            int bytes_read;
+            while ((bytes_read = from.read(buffer)) != -1) {
+                oupstream.write(buffer, 0, bytes_read);
+            }
+
+            //关掉输入输出流之后把压缩文件从系统中彻底删除
+            //提示：如果输入输出流没关闭，那么文件会被占用无法删除
+            oupstream.flush();
+            oupstream.close();
+            from.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
 //    //这个接口使用的题目模板是最开始的Verilog题目的题目模板，用于导入之前的一版题库的
