@@ -184,7 +184,7 @@ public class FileUtil {
 //            imgPah =  "<div align=center><img src=" + "\"" + "https://49.232.207.151:8080" + imgPah + "\"" + " width = \"80%\"></div>";
             String imgPah = OSUtil.isLinux()? tid + "/" + imgName : tid + "\\" + imgName;
             if (!OSUtil.isLinux()) imgPah = imgPah.replace("\\", "\\\\");
-            imgPah =  "<div align=center><img src=" + "\"" + "http://49.232.207.151:8080/" + imgPah + "\"" + " width = \"80%\"></div>";
+            imgPah =  "<div align=center><img src=" + "\"" + "http://202.204.62.136:9500/image/" + imgPah + "\"" + " width = \"80%\"></div>";
             matcher.appendReplacement(sb, imgPah);
         }
         matcher.appendTail(sb);

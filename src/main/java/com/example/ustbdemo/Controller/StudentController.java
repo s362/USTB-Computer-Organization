@@ -246,6 +246,7 @@ public class StudentController {
                 map.put("correctIsOk", false);
                 map.put("error", wrongIndex);
                 result.setObject(map);
+                result.setNote(getGradeOfTask(user.getUid(),tid));      //将分数一块传入
                 return ResultUtil.getResult(result, HttpStatus.OK);
             }
         } catch (Exception e){
@@ -275,6 +276,7 @@ public class StudentController {
             resultValue.put("error", -1);
             Result result = new Result();
             result.setObject(resultValue);
+            result.setNote(getGradeOfTask(user.getUid(),tid));  //将分数一块传入
             return ResultUtil.getResult(result, HttpStatus.OK);
         } catch (Exception e){
             e.printStackTrace();
@@ -725,7 +727,7 @@ public class StudentController {
     //获取题目对应的分数
     private Long getGradeOfTask(Long uid,Long tid){
         Score score=scoreService.findScoreByUserandTid(uid,tid);
-        if (score==null) return 0L;
+        if (score==null) return null;
         return score.getTscore();
     }
 }

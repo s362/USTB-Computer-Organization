@@ -159,7 +159,7 @@ public class AdminController {
         String username= JwtUtil.getUsername(token);
         User user=userService.findByUserName(username);
         if (user==null) return true;
-        return user.getUtype() != 2;
+        return user.getUtype() == 0;
     }
 
     private boolean isAdminOrTeacher(HttpServletRequest httpServletRequest){      //判断该用户是否拥有管理员或者老师权限
@@ -167,6 +167,6 @@ public class AdminController {
         String username= JwtUtil.getUsername(token);
         User user=userService.findByUserName(username);
         if (user==null) return false;
-        return user.getUtype() == 1||user.getUtype()==2;
+        return user.getUtype() == 1||user.getUtype()==0;
     }
 }

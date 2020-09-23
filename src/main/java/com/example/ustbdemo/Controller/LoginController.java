@@ -174,35 +174,35 @@ public class LoginController {
         return sb.toString();
     }
 
-////    本地平台初始化，删除所有文件，删除gitlab中所有数据和数据库所有数据，调试用
-//    @PostMapping("/initial")
-//    public ResponseEntity<Result> initial() throws Exception{
-//        initialFile();
-//        taskService.initialRepository();
-//        try {
-//            deleteAllGitGroup();
-//        } catch (Exception e) {
-//            logger.info("删除所有工程失败" + e.toString());
-//        }
-//        User user1 = new User("test1", "123456", 2l);
-//        User user2 = new User("test2", "123456", 2l);
-//        User user3 = new User("test3", "123456", 2l);
-//        userService.addUser(user1);
-//        userService.addUser(user2);
-//        userService.addUser(user3);
-//        Simulation simulation = new Simulation("理想5级流水线cpu", 0l);
-//        Simulation simulation1 = new Simulation("数据重定向五级流水线cpu", 1L);
-//        Simulation simulation2 = new Simulation("重定向+暂停五级流水线cpu", 2L);
-//        Simulation simulation3 = new Simulation("其他", 3L);
-//        this.taskService.addSimulation(simulation);
-//        this.taskService.addSimulation(simulation1);
-//        this.taskService.addSimulation(simulation2);
-//        this.taskService.addSimulation(simulation3);
-//
-//        Instruction instruction = new Instruction("指令说明书V1.0", Instruction.EXAMPLE_INSTRUCTION_FILEPATH);
-//        this.taskService.addInstruction(instruction);
-//        return ResultUtil.getResult(new Result("初始化成功", true), HttpStatus.BAD_REQUEST);
-//    }
+//    本地平台初始化，删除所有文件，删除gitlab中所有数据和数据库所有数据，调试用
+    @PostMapping("/initial")
+    public ResponseEntity<Result> initial() throws Exception{
+        initialFile();
+        taskService.initialRepository();
+        try {
+            deleteAllGitGroup();
+        } catch (Exception e) {
+            logger.info("删除所有工程失败" + e.toString());
+        }
+        User user1 = new User("test1", "123456", 2l);
+        User user2 = new User("test2", "123456", 2l);
+        User user3 = new User("test3", "123456", 2l);
+        userService.addUser(user1);
+        userService.addUser(user2);
+        userService.addUser(user3);
+        Simulation simulation = new Simulation("理想5级流水线cpu", 0l);
+        Simulation simulation1 = new Simulation("数据重定向五级流水线cpu", 1L);
+        Simulation simulation2 = new Simulation("重定向+暂停五级流水线cpu", 2L);
+        Simulation simulation3 = new Simulation("其他", 3L);
+        this.taskService.addSimulation(simulation);
+        this.taskService.addSimulation(simulation1);
+        this.taskService.addSimulation(simulation2);
+        this.taskService.addSimulation(simulation3);
+
+        Instruction instruction = new Instruction("指令说明书V1.0", Instruction.EXAMPLE_INSTRUCTION_FILEPATH);
+        this.taskService.addInstruction(instruction);
+        return ResultUtil.getResult(new Result("初始化成功", true), HttpStatus.OK);
+    }
 
     private void deleteAllGitGroup() throws Exception{
         GitProcess gitProcess = new GitProcess();
