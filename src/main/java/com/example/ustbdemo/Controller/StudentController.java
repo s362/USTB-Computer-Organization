@@ -604,6 +604,17 @@ public class StudentController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
+    @PostMapping(value = "/initGrade")
+    public ResponseEntity<Result> initGrade(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        Task task=taskService.getTaskByTid(tid);
+        if (task==null) return ResultUtil.getResult(new Result("该题目不存在"),HttpStatus.BAD_REQUEST);
+        if (scoreService.deleteScore(user.getUid(),task.getTid(),task.getTtype()))
+            return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        else return ResultUtil.getResult(new Result("初始化出错"),HttpStatus.BAD_REQUEST);
+    }
+
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){

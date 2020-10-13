@@ -1,8 +1,10 @@
 package com.example.ustbdemo.Service;
 
+import com.example.ustbdemo.Model.DataModel.Assemble_Choose;
 import com.example.ustbdemo.Model.DataModel.Assemble_Choose_Score;
 import com.example.ustbdemo.Model.DataModel.Assemble_Code_Score;
 import com.example.ustbdemo.Model.DataModel.Score;
+import com.example.ustbdemo.Repository.AssembleChooseRepository;
 import com.example.ustbdemo.Repository.AssembleChooseScoreRepository;
 import com.example.ustbdemo.Repository.AssembleCodeScoreRepository;
 import com.example.ustbdemo.Repository.ScoreRepository;
@@ -13,22 +15,26 @@ import org.springframework.util.Assert;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Service("scoreService")
 public class ScoreService {
     private final ScoreRepository scoreRepository;
     private final AssembleChooseScoreRepository assembleChooseScoreRepository;
     private final AssembleCodeScoreRepository assembleCodeScoreRepository;
+    private final AssembleChooseRepository assembleChooseRepository;
 
     @Autowired
-    public ScoreService(ScoreRepository scoreRepository, AssembleChooseScoreRepository assembleChooseScoreRepository, AssembleCodeScoreRepository assembleCodeScoreRepository){
+    public ScoreService(ScoreRepository scoreRepository, AssembleChooseScoreRepository assembleChooseScoreRepository, AssembleCodeScoreRepository assembleCodeScoreRepository,AssembleChooseRepository assembleChooseRepository){
 
         Assert.notNull(scoreRepository, "scoreRepository must not be null!");
         Assert.notNull(assembleChooseScoreRepository, "assembleChooseScoreRepository must not be null!");
         Assert.notNull(assembleCodeScoreRepository, "assembleCodeScoreRepository must not be null!");
+        Assert.notNull(assembleChooseRepository,"assembleChooseRepository must not be null!");
         this.scoreRepository = scoreRepository;
         this.assembleChooseScoreRepository = assembleChooseScoreRepository;
         this.assembleCodeScoreRepository = assembleCodeScoreRepository;
+        this.assembleChooseRepository = assembleChooseRepository;
     }
 
     public List<Score> findScoreByUser(Long uid){
@@ -103,6 +109,61 @@ public class ScoreService {
             this.assembleCodeScoreRepository.save(assembleCodeScore);
         }catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+
+    //将某个题目的成绩完全删除，便于演示整个打分逻辑和过程
+    public boolean deleteScore(Long uid,Long tid,Long tType){
+        Score score=new Score();
+        score.setUid(uid);
+        score.setTid(tid);
+        Example<Score> scoreExample=Example.of(score);
+        try {
+            Optional<Score> scoreOptional = this.scoreRepository.findOne(scoreExample);
+            if (!scoreOptional.isPresent()) {
+                System.out.println("uid="+uid+"tid="+tid+": 此题没有成绩记录");
+                return true;
+            }
+            //verilog编程题  直接删除score库中的成绩即可
+            this.scoreRepository.delete(scoreOptional.get());
+
+            if (tType == 1L) { //汇编仿真题 需要在删除score库的同时删除Assemble_Choose_Score和Assemble_Code_Score的成绩
+
+                //汇编代码部分成绩删除
+                Assemble_Code_Score assembleCodeScore=new Assemble_Code_Score();
+                assembleCodeScore.setUid(uid);
+                assembleCodeScore.setTid(tid);
+                Example<Assemble_Code_Score> assembleCodeScoreExample=Example.of(assembleCodeScore);
+
+                Optional<Assemble_Code_Score> assembleCodeScoreOptional=this.assembleCodeScoreRepository.findOne(assembleCodeScoreExample);
+                if (assembleCodeScoreOptional.isPresent()){
+                    this.assembleCodeScoreRepository.delete(assembleCodeScoreOptional.get());
+                }
+
+                //选择题部分成绩删除
+                //查找选择题
+
+                Assemble_Choose assembleChoose=new Assemble_Choose();
+                assembleChoose.setTid(tid);
+                Example<Assemble_Choose> assembleChooseExample=Example.of(assembleChoose);
+                List<Assemble_Choose> assembleChooseList=this.assembleChooseRepository.findAll(assembleChooseExample);
+                //删除每一个选择题对应的成绩
+                for (Assemble_Choose item:assembleChooseList){
+                    Assemble_Choose_Score assembleChooseScore=new Assemble_Choose_Score();
+                    assembleChooseScore.setUid(uid);
+                    assembleChooseScore.setTcid(item.getTcid());
+                    Example<Assemble_Choose_Score> assembleChooseScoreExample=Example.of(assembleChooseScore);
+
+                    Optional<Assemble_Choose_Score> assembleChooseScoreOptional=this.assembleChooseScoreRepository.findOne(assembleChooseScoreExample);
+                    if (assembleChooseScoreOptional.isPresent()){
+                        this.assembleChooseScoreRepository.delete(assembleChooseScoreOptional.get());
+                    }
+                }
+            }
+            return true;
+        }catch (Exception e){
+            return false;
         }
     }
 }
