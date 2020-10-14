@@ -53,6 +53,7 @@ public class LoginController {
                     Result result = new Result();
                     result.setObject(token);
                     result.setNote(user1.getUtype());           //返回token的同时返回该用户的权限等级，方便前端判断
+                    result.setMessage(user1.getUsername());   //返回前端用户名，便于显示
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }
             } logger.info("无此用户");
@@ -89,12 +90,16 @@ public class LoginController {
 //            如果该用户在本地系统里没有，则在本地系统中添加该用户
             if(userService.findByUserName(root.path("un").asText())== null){
                 User user = new User();
+                user.setUtype(2L);   //新增学生权限设置
                 user.setUsername(root.path("un").asText());
                 userService.addUser(user);
             }
 //            进行签名，返回本地生成的token给前端
             String jwtToken = JwtUtil.sign(root.path("un").asText());
-            return ResultUtil.getResult(new Result(jwtToken,true), HttpStatus.OK);
+
+            Result result=new Result(jwtToken,true);
+            result.setMessage(root.path("un").asText());  //返回前端用户名，便于显示
+            return ResultUtil.getResult(result, HttpStatus.OK);
         } catch (Exception e) {
 //            e.printStackTrace();
             logger.info(e.toString());
@@ -128,13 +133,21 @@ public class LoginController {
 
 //            如果系统中没有该user，则在本地平台添加用户
             if(userService.findByUserName(username)== null){
+                user.setUtype(2L);//新增学生权限设置
                 userService.addUser(user);
             }
 //            进行签名，生成token
             String token = JwtUtil.sign(user.getUsername());
             logger.info(user.getUsername());
             logger.info("token: "+token);
-            return ResultUtil.getResult(new Result((Object)token), HttpStatus.OK);
+
+
+
+            Result result=new Result();
+            result.setObject((Object)token);
+            result.setMessage(user.getUsername());  //将用户名返回，便于前端显示
+            result.setSuccess(true);
+            return ResultUtil.getResult(result, HttpStatus.OK);
         } catch (Exception e){
             logger.info(e.toString());
             return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
