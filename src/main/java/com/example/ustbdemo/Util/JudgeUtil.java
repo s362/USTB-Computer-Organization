@@ -100,7 +100,7 @@ public class JudgeUtil {
     }
 
     static public Map simulationOut(String code, Long cpu1, Long cpu2) throws Exception{
-        String exep1 = "sudo docker run --rm mipssimulator:v12 /bin/bash /root/run.sh " + code + " " +cpu1+" "+cpu2;
+        String exep1 = "sudo docker run --rm mipssimulator:v13 /bin/bash /root/run.sh " + code + " " +cpu1+" "+cpu2;
         Process pro = null;
 
         pro = Runtime.getRuntime().exec(exep1);
