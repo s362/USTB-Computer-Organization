@@ -1,13 +1,7 @@
 package com.example.ustbdemo.Service;
 
-import com.example.ustbdemo.Model.DataModel.Assemble_Choose;
-import com.example.ustbdemo.Model.DataModel.Assemble_Choose_Score;
-import com.example.ustbdemo.Model.DataModel.Assemble_Code_Score;
-import com.example.ustbdemo.Model.DataModel.Score;
-import com.example.ustbdemo.Repository.AssembleChooseRepository;
-import com.example.ustbdemo.Repository.AssembleChooseScoreRepository;
-import com.example.ustbdemo.Repository.AssembleCodeScoreRepository;
-import com.example.ustbdemo.Repository.ScoreRepository;
+import com.example.ustbdemo.Model.DataModel.*;
+import com.example.ustbdemo.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
@@ -23,18 +17,22 @@ public class ScoreService {
     private final AssembleChooseScoreRepository assembleChooseScoreRepository;
     private final AssembleCodeScoreRepository assembleCodeScoreRepository;
     private final AssembleChooseRepository assembleChooseRepository;
-
+    private final VerilogRunTimesRepository verilogRunTimesRepository;
+    private final StageRepository stageRepository;
     @Autowired
-    public ScoreService(ScoreRepository scoreRepository, AssembleChooseScoreRepository assembleChooseScoreRepository, AssembleCodeScoreRepository assembleCodeScoreRepository,AssembleChooseRepository assembleChooseRepository){
-
+    public ScoreService(ScoreRepository scoreRepository, AssembleChooseScoreRepository assembleChooseScoreRepository, AssembleCodeScoreRepository assembleCodeScoreRepository, AssembleChooseRepository assembleChooseRepository, VerilogRunTimesRepository verilogRunTimesRepository, StageRepository stageRepository){
         Assert.notNull(scoreRepository, "scoreRepository must not be null!");
         Assert.notNull(assembleChooseScoreRepository, "assembleChooseScoreRepository must not be null!");
         Assert.notNull(assembleCodeScoreRepository, "assembleCodeScoreRepository must not be null!");
         Assert.notNull(assembleChooseRepository,"assembleChooseRepository must not be null!");
+        Assert.notNull(verilogRunTimesRepository,"verilogRunTimesRepository must not be null!");
+        Assert.notNull(stageRepository,"stageRepository must not be null!");
         this.scoreRepository = scoreRepository;
         this.assembleChooseScoreRepository = assembleChooseScoreRepository;
         this.assembleCodeScoreRepository = assembleCodeScoreRepository;
         this.assembleChooseRepository = assembleChooseRepository;
+        this.verilogRunTimesRepository = verilogRunTimesRepository;
+        this.stageRepository = stageRepository;
     }
 
     public List<Score> findScoreByUser(Long uid){
@@ -166,4 +164,66 @@ public class ScoreService {
             return false;
         }
     }
+
+
+    public VerilogRunTimes findVerilogRunTimesByTidAndUid(Long tid,Long uid){
+        VerilogRunTimes verilogRunTimes=new VerilogRunTimes();
+        verilogRunTimes.setTid(tid);
+        verilogRunTimes.setUid(uid);
+        Example<VerilogRunTimes> verilogRunTimesExample=Example.of(verilogRunTimes);
+        try {
+            return this.verilogRunTimesRepository.findOne(verilogRunTimesExample).get();
+        }catch (Exception e){
+            return null;
+        }
+    }
+
+    //将提交次数+1
+    public boolean addVerilogRunTimes(VerilogRunTimes verilogRunTimes){
+        verilogRunTimes.setTimes(verilogRunTimes.getTimes()+1);
+        verilogRunTimes.setUpdatedate(new Date());
+        try {
+            this.verilogRunTimesRepository.save(verilogRunTimes);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+    /**
+     * 删除汇编仿真题的暂存信息或者是verilog编程题的提交次数信息
+     * @param uid 用户id
+     * @param task 题目信息
+     * @return true/false
+     */
+    public boolean deleteStageAndVerilogRunTimes(Long uid,Task task){
+        try {
+            if (task.getTtype()==0L) {//删除提交次数
+                VerilogRunTimes verilogRunTimes=new VerilogRunTimes();
+                verilogRunTimes.setTid(task.getTid());
+                verilogRunTimes.setUid(uid);
+                Example<VerilogRunTimes> verilogRunTimesExample=Example.of(verilogRunTimes);
+                Optional<VerilogRunTimes> verilogRunTimesOptional=this.verilogRunTimesRepository.findOne(verilogRunTimesExample);
+                if (verilogRunTimesOptional.isPresent()) {
+                    this.verilogRunTimesRepository.delete(verilogRunTimesOptional.get());
+                    return true;
+                }
+            }else { //删除暂存信息
+                Stage stage=new Stage();
+                stage.setUid(uid);
+                stage.setTid(task.getTid());
+                Example<Stage> stageExample=Example.of(stage);
+                Optional<Stage> stageOptional=this.stageRepository.findOne(stageExample);
+                if (stageOptional.isPresent()) {
+                    this.stageRepository.delete(stageOptional.get());
+                    return true;
+                }
+            }
+            return false;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+
 }

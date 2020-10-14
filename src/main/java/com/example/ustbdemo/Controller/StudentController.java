@@ -85,8 +85,6 @@ public class StudentController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
-
-
 //    获取用户的所有题目和所有作业。
     @PostMapping("/getQuestionAndTasks")
     public ResponseEntity<Result> getQuestionAndTasks(HttpServletRequest httpServletRequest){
@@ -292,7 +290,18 @@ public class StudentController {
         String task_id = GitProcess.tidToTaskid(tid);
         logger.info(user_id + "   " + task_id + "   开始评测");
 
+        //提交次数+1
+        VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(tid,user.getUid());
+        if (verilogRunTimes==null){
+            verilogRunTimes=new VerilogRunTimes();
+            verilogRunTimes.setTimes(0L);
+            verilogRunTimes.setUid(user.getUid());
+            verilogRunTimes.setTid(tid);
+        }
+        scoreService.addVerilogRunTimes(verilogRunTimes);
+
         Score score = new Score();
+
 
         score.setUid(user.getUid());
         score.setTid(GitProcess.taskIdtoTid(task_id));
@@ -604,15 +613,50 @@ public class StudentController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
+
+    //初始化某个题目类型的接口，调用后会将该题的相关分数信息和暂存信息或者是提交次数都删除掉，恢复到最开始还没开始做的样子。
     @PostMapping(value = "/initGrade")
     public ResponseEntity<Result> initGrade(Long tid,HttpServletRequest httpServletRequest){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         User user=userService.findByUserName(user_id);
         Task task=taskService.getTaskByTid(tid);
         if (task==null) return ResultUtil.getResult(new Result("该题目不存在"),HttpStatus.BAD_REQUEST);
+
+        boolean flag=scoreService.deleteStageAndVerilogRunTimes(user.getUid(),task);
+        logger.info("删除题目暂存信息或提交次数"+(flag?"成功":"失败"));
+
         if (scoreService.deleteScore(user.getUid(),task.getTid(),task.getTtype()))
             return ResultUtil.getResult(new Result(),HttpStatus.OK);
         else return ResultUtil.getResult(new Result("初始化出错"),HttpStatus.BAD_REQUEST);
+    }
+
+
+    //获取汇编仿真题的进度，总共一共7步（见Stage类），若未开始则返回0，已开始则返回相应的步骤
+    @PostMapping(value = "/getSimulateTaskStep")
+    public ResponseEntity<Result> getSimulateTaskStep(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        Stage stage=taskService.findTemporaryData(user.getUid(),tid);
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setNote("一共7步，0表示没开始做");
+        if (stage==null) result.setObject(0L);
+        else result.setObject(stage.getStep());
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+    //获取verilog编程题的提交次数
+    @PostMapping(value = "/getVerilogTaskTimes")
+    public ResponseEntity<Result> getVerilogTaskTimes(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(tid,user.getUid());
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setNote("0表示没提交过");
+        if (verilogRunTimes==null) result.setObject(0L);
+        else result.setObject(verilogRunTimes.getTimes());
+        return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
     //    获取选择题分数
@@ -645,8 +689,6 @@ public class StudentController {
         }
         return taskScores;
     }
-
-
 
     private int findFirstWrongCode(String answer, String ref_answer){
         String answers[] = answer.split("\n");
