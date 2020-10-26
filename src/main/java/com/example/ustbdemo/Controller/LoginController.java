@@ -98,7 +98,9 @@ public class LoginController {
             String jwtToken = JwtUtil.sign(root.path("un").asText());
 
             Result result=new Result(jwtToken,true);
-            result.setMessage(root.path("un").asText());  //返回前端用户名，便于显示
+//            result.setMessage(root.path("un").asText());  //返回前端用户名，便于显示
+            result.setMessage(jwtToken);
+            result.setObject(root.path("un").asText());  //返回前端用户名，便于显示
             return ResultUtil.getResult(result, HttpStatus.OK);
         } catch (Exception e) {
 //            e.printStackTrace();
