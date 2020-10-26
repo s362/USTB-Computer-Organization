@@ -186,7 +186,8 @@ public class FileUtil {
             if (!OSUtil.isLinux()) imgPah = imgPah.replace("\\", "\\\\");
 
             //这个是本地CG服务器的配置
-//            imgPah =  "<div align=center><img src=" + "\"" + "http://202.204.62.136:9500/image/" + imgPah + "\"" + " width = \"80%\"></div>";
+//         imgPah =  "<div align=center><img src=" + "\"" + "http://192.168.100.104:9500/image/" + imgPah + "\"" + " width = \"80%\"></div>";
+
             //这个是腾讯云服务器的配置
             imgPah =  "<div align=center><img src=" + "\"" + "http://49.232.207.151:8080/" + imgPah + "\"" + " width = \"80%\"></div>";
             matcher.appendReplacement(sb, imgPah);

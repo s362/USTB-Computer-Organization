@@ -22,7 +22,7 @@ public class GitProcess {
 //    String privateToken = "m89F6zsGaXtxFwsD2AMy"; //202.204.62.155 ustbdemo ustbdemo
     String hostURL =OSUtil.isLinux()?"http://127.0.0.1:8099/":"http://192.168.17.130:8099/";
     String privateToken =OSUtil.isLinux()?"qGsB2feqzx3J_-t-uoDT":"fVBagapg2jRDeJzRALv6";  //腾讯云系统密钥
-//    String privateToken =OSUtil.isLinux()?"s3txBpf9sGr8hTCFxxm3":"fVBagapg2jRDeJzRALv6";   //cg新系统gitlab秘钥  root ustbdemo
+//   String privateToken =OSUtil.isLinux()?"s3txBpf9sGr8hTCFxxm3":"fVBagapg2jRDeJzRALv6";   //cg新系统gitlab秘钥  root ustbdemo
 
 
 
