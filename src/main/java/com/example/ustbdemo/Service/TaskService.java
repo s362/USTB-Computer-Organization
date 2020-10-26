@@ -384,4 +384,8 @@ public class TaskService {
             return null;
         }
     }
+
+    public List<Task> findAllTask(){
+        return this.taskRepository.findAll();
+    }
 }

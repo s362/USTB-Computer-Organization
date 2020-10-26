@@ -624,7 +624,15 @@ public class StudentController {
 
         boolean flag=scoreService.deleteStageAndVerilogRunTimes(user.getUid(),task);
         logger.info("删除题目暂存信息或提交次数"+(flag?"成功":"失败"));
-
+        if (task.getTtype()==0L){//是verilog编程题，将以前的存档一起删掉
+            GitProcess gitProcess=new GitProcess();
+            try {
+                gitProcess.deleteProject(GitProcess.tidToTaskid(tid),user.getUsername());
+                logger.info("删除学生进度成功");
+            }catch (Exception e){
+                logger.info("无学生做题记录，无需删除");
+            }
+        }
         if (scoreService.deleteScore(user.getUid(),task.getTid(),task.getTtype()))
             return ResultUtil.getResult(new Result(),HttpStatus.OK);
         else return ResultUtil.getResult(new Result("初始化出错"),HttpStatus.BAD_REQUEST);
@@ -743,9 +751,12 @@ public class StudentController {
             if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
             chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
         }
+        logger.info("choose number="+number);
+        logger.info("all chooseGrade="+chooseGrade);
+
         if(number==0) chooseGrade=0L;
         else chooseGrade=chooseGrade/number;
-
+        logger.info("codeGrade  chooseGrade="+codeGrade+" -- "+chooseGrade);
         grade=(codeGrade+chooseGrade*2)/3;//代码和选择的占分比例是1：2
 
         Score score = new Score();
@@ -759,6 +770,8 @@ public class StudentController {
         }
         task_score.setTscore(grade);
         task_score.setUpdatedate(new Date());
+
+        logger.info(task_score.toString());
         scoreService.saveScore(task_score);
     }
 
