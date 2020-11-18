@@ -171,6 +171,22 @@ public class LoginController {
         }
     }
 
+    @PostMapping("/about")
+    public ResponseEntity<Result> about(){
+
+        String path=OSUtil.isLinux()?FileUtil.STATIC_PATH_LINUX:FileUtil.STATIC_PATH_WIN+File.separator+"systemAbout.md";
+        try {
+            String about=FileUtil.getContent(path);
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setObject(about);
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResultUtil.getResult(new Result("file not exist"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
 //    错误返回
     @PostMapping("/401")
     public ResponseEntity<Result> error(){
