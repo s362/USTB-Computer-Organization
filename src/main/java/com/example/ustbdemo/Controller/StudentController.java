@@ -766,7 +766,8 @@ public class StudentController {
         Assemble_Code_Score assembleCodeScore=scoreService.findAssembleCodeScoreByUidAndTid(uid,tid);
         Long codeGrade=0L;
         if (assembleCodeScore!=null&&assembleCodeScore.getAssembleCodeScore()==100L){
-            codeGrade=max(100-10*(assembleCodeScore.getTimes()-1),0L);
+//            codeGrade=max(100-10*(assembleCodeScore.getTimes()-1),0L);  //根据提交次数来计算得分
+            codeGrade=assembleCodeScore.getAssembleCodeScore();         //忽略汇编代码的提交次数
         }
 
         Long chooseGrade=0L;
