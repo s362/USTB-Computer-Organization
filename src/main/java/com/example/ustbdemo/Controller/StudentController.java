@@ -46,6 +46,30 @@ public class StudentController {
     GitProcess gitProcess;
 
 
+    //给学生提供的修改密码的接口
+    @PostMapping("/changePwd")
+    public ResponseEntity<Result> changePwd(String oldPwd,String newPwd,HttpServletRequest httpServletRequest){
+        String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        logger.info("username: "+username+" oldPwd: "+oldPwd+" to newPwd:"+newPwd);
+        int res=userService.changePwd(username,oldPwd,newPwd);
+        Result result=new Result();
+        if (res==0) result.setSuccess(true);
+        else if (res==-1) {
+            result.setSuccess(false);
+            result.setMessage("用户不存在");
+        }
+        else if (res==-2){
+            result.setSuccess(false);
+            result.setMessage("原密码不正确");
+        }
+        else {  //res==-3
+            result.setSuccess(false);
+            result.setMessage("保存失败");
+        }
+        return ResultUtil.getResult(result,result.isSuccess()?HttpStatus.OK:HttpStatus.BAD_REQUEST);
+    }
+
+
     //对学生的工程信息进行暂时的一个保存
     @PostMapping("/temporarilySave")
     public ResponseEntity<Result> temporarilySave(@RequestBody Stage stage,HttpServletRequest httpServletRequest){

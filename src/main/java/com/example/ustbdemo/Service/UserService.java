@@ -105,4 +105,17 @@ public class UserService {
             return false;
         }
     }
+
+    public int changePwd(String username,String oldPwd,String newPwd){
+        User user=findByUserName(username);
+        if (user==null) return -1;
+        if (!user.getPasswd().equals(oldPwd)) return -2;
+        user.setPasswd(newPwd);
+        try {
+            this.userRepository.save(user);
+            return 0;
+        }catch (Exception e){
+            return -3;
+        }
+    }
 }
