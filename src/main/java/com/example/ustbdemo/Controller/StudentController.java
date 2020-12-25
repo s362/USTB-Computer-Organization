@@ -211,6 +211,29 @@ public class StudentController {
         }
     }
 
+    @PostMapping("/getAssembleCode")
+    public ResponseEntity<Result> getAssembleCode(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        gitProcess = new GitProcess();
+        try {
+            //        从老师的工程中获取正确answer
+            Integer project_id;
+            project_id = gitProcess.getProjectId(GitProcess.tidToTaskid(tid), user_id);
+            RepositoryFile refFile = gitProcess.getGitLabApi().getRepositoryFileApi().getFile(project_id, "code.asm", "master");
+            String rf_answer = Base64Convert.baseConvertStr(refFile.getContent());
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setObject(rf_answer);
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        } catch (Exception e){
+            System.out.println(e.getMessage());
+            Result result=new Result();
+            result.setSuccess(false);
+            result.setObject("获取相关gitlab工程文件失败");
+            return ResultUtil.getResult(result,HttpStatus.BAD_REQUEST);
+        }
+    }
+
     @PostMapping("/runSimulation")
     public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest, @RequestBody JsonNode answerNode){
 //        防止answer被截断，将answer放进了body中
@@ -795,7 +818,6 @@ public class StudentController {
         }
         task_score.setTscore(grade);
         task_score.setUpdatedate(new Date());
-
         logger.info(task_score.toString());
         scoreService.saveScore(task_score);
     }
