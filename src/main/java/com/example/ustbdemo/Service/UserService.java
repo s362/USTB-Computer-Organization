@@ -19,9 +19,9 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-//    public List<User> findAll(){
-//        return userRepository.findAll();
-//    }
+    public List<User> findAll(){
+        return userRepository.findAll();
+    }
 
 
     public User getByUsernameAndPwd(String username, String passwd){

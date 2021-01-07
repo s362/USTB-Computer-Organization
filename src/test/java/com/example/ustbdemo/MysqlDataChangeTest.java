@@ -1,25 +1,27 @@
 package com.example.ustbdemo;
 
 
+import com.example.ustbdemo.Model.DataModel.Score;
 import com.example.ustbdemo.Model.DataModel.Task;
 import com.example.ustbdemo.Model.DataModel.User;
+import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
 //import com.sun.xml.internal.fastinfoset.tools.FI_DOM_Or_XML_DOM_SAX_SAXEvent;
+import com.example.ustbdemo.Util.FileUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-//@RunWith(SpringRunner.class)
-//@SpringBootTest(classes = GitlabdemoApplication.class)
+@RunWith(SpringRunner.class)
+@SpringBootTest(classes = GitlabdemoApplication.class)
 public class MysqlDataChangeTest {
 
 //    @Autowired
@@ -94,4 +96,87 @@ public class MysqlDataChangeTest {
 //
 //
 //    }
+
+
+//    //将学生的实验成绩导出
+//    @Autowired
+//    ScoreService scoreService;
+//
+//    @Autowired
+//    UserService userService;
+//
+//    @Test
+//    public void exportScore() {
+//        List<User> userList=userService.findAll();
+//
+//        Map<String,Integer> mapUserScore552=new HashMap<>();  //汇编仿真一
+//        Map<String,Integer> mapUserScore863=new HashMap<>();  //汇编仿真二
+//        Map<String,Integer> mapUserScore871=new HashMap<>();  //verilog代码一
+//        Map<String,Integer> mapUserScore872=new HashMap<>();  //verilog代码二
+//
+//        if (userList!=null){
+//            for ( User user: userList) {
+//                Score score;
+//                score=scoreService.findScoreByUserandTid(user.getUid(),552L);
+//                mapUserScore552.put(user.getUsername(),score==null?null:score.getTscore().intValue());
+//                score=scoreService.findScoreByUserandTid(user.getUid(),863L);
+//                mapUserScore863.put(user.getUsername(),score==null?null:score.getTscore().intValue());
+//                score=scoreService.findScoreByUserandTid(user.getUid(),871L);
+//                mapUserScore871.put(user.getUsername(),score==null?null:score.getTscore().intValue());
+//                score=scoreService.findScoreByUserandTid(user.getUid(),872L);
+//                mapUserScore872.put(user.getUsername(),score==null?null:score.getTscore().intValue());
+//            }
+//        }
+//
+//        File file=new File("F:\\D_disk\\ustbdemo\\grade.csv");
+//
+//        FileOutputStream fos = null;
+//        OutputStreamWriter osw = null;
+//
+//        try {
+//            if (!file.exists()) {
+//                boolean hasFile = file.createNewFile();
+//                if(hasFile){
+//                    System.out.println("file not exists, create new file");
+//                }
+//                fos = new FileOutputStream(file);
+//            } else {
+//                System.out.println("file exists");
+//                fos = new FileOutputStream(file, false);  //不要追加
+//            }
+//
+//            osw = new OutputStreamWriter(fos, "GBK");
+//            String content = "学号,实验一原理学习,实验一工程实现,实验二原理学习,实验二工程实现,";
+//            osw.write(content); //写入内容
+//            osw.write("\r\n");  //换行
+//            for(User user: userList) {
+//                content = user.getUsername()    + ',' + mapUserScore552.get(user.getUsername())
+//                                                + ','+mapUserScore871.get(user.getUsername())
+//                                                +','+mapUserScore863.get(user.getUsername())
+//                                                +','+mapUserScore872.get(user.getUsername())+',';
+//                osw.write(content); //写入内容
+//                osw.write("\r\n");  //换行
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }finally {   //关闭流
+//            try {
+//                if (osw != null) {
+//                    osw.close();
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            try {
+//                if (fos != null) {
+//                    fos.close();
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//    }
+//
+
 }
