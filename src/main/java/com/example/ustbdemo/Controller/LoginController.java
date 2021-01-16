@@ -258,6 +258,13 @@ public class LoginController {
         if(!task_file.getParentFile().exists()) task_file.getParentFile().mkdir();
         task_file.mkdir();
 
+        File report_file = new File(OSUtil.isLinux() ? FileUtil.REPORT_PATH_LINUX : FileUtil.REPORT_PATH_WIN);
+        if(report_file.exists()){
+            FileUtil.deleteDirectory(report_file.getPath());
+        }
+        if(!report_file.getParentFile().exists()) report_file.getParentFile().mkdir();
+        report_file.mkdir();
+
         String initialNames[] = {"exampleSimulationPic.png", "exampleSimuResult.json", "exampleInstructionFile.doc", "exampleTaskFile.zip"};
 
         for(int i = 0; i < 4; i++){
