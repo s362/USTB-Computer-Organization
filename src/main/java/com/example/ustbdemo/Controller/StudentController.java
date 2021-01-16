@@ -21,8 +21,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 //@CrossOrigin(origins = "*", maxAge = 3600)
@@ -714,6 +720,116 @@ public class StudentController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
+    /**
+     * 获取对应题目的提交次数和成绩
+     * @param tid 题目id
+     * @param httpServletRequest 用户token信息
+     * @return 提交次数和成绩（若没有提交过则都为0）
+     */
+    @PostMapping(value = "/getTaskScoreAndTimes")
+    public ResponseEntity<Result> getTaskScoreAndTimes(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        logger.info("uid,tid:"+user.getUid()+" "+tid);
+        Long grade=getGradeOfTask(user.getUid(),tid);
+        if (grade==null) grade=0L;
+        Long times=getTimesOfTask(user.getUid(),tid);
+        if (times==null) times=0L;
+        Map<String,Long> map=new HashMap<>();
+        map.put("grade",grade);
+        map.put("times",times);
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(map);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+
+    /**
+     * 获取选择题的提交次数和分数
+     * @param tid 选择题所在的题目id
+     * @param httpServletRequest 个人信息
+     * @return 该题目对应的所有选择题的提交次数和分数
+     */
+    @PostMapping(value = "/getChooseScoreAndTimes")
+    public ResponseEntity<Result> getChooseScoreAndTimes(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        Task task=taskService.getTaskByTid(tid);
+        if (task==null) return ResultUtil.getResult(new Result("tid不存在"),HttpStatus.BAD_REQUEST);
+        if (task.getTtype()==0L) return ResultUtil.getResult(new Result("该题目是verilog编程题，无选择题"),HttpStatus.BAD_REQUEST);
+        Map<String,Map<String,Long>> map=getAssembleChooseScoreAndTimesByUidAndTid(user.getUid(),tid);
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(map);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+    /**
+     * 接收前端生成的报告，保存到本地
+     * @param httpServletRequest token
+     * @param reportFile 回传的报告
+     * @return 接收是否成功
+     */
+    @PostMapping(value = "/submitReport")
+    public ResponseEntity<Result> saveReport(HttpServletRequest httpServletRequest, @RequestBody MultipartFile reportFile){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        String filePath;
+//            接收verilog上传的文件
+        try {
+            String fileType=reportFile.getOriginalFilename().substring(reportFile.getOriginalFilename().lastIndexOf('.'));
+            String destFilePath=OSUtil.isLinux() ? FileUtil.REPORT_PATH_LINUX : FileUtil.REPORT_PATH_WIN;
+            String path=destFilePath+"实验报告_"+user.getUsername()+fileType;
+            File testFile=new File(path);
+
+            if (testFile.exists()) {
+                logger.info("文档已存在——开始更新");
+                testFile.delete();
+            } else logger.info("文档未存在——开始保存");
+
+            filePath = FileUtil.saveFileToLocal(reportFile,destFilePath, "实验报告_"+user.getUsername());
+        }catch (Exception e){
+            return ResultUtil.getResult(new Result("保存失败"),HttpStatus.BAD_REQUEST);
+        }
+        logger.info("保存路径为"+filePath);
+        return ResultUtil.getResult(new Result("保存成功",true),HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/downloadReport")
+    public void downloadReport(HttpServletRequest httpServletRequest, HttpServletResponse resp){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        String filePath;
+//            接收verilog上传的文件
+        try {
+            String destFilePath=OSUtil.isLinux() ? FileUtil.REPORT_PATH_LINUX : FileUtil.REPORT_PATH_WIN;
+            String path=destFilePath+"实验报告_"+user.getUsername()+".pdf";  //这里默认是pdf格式的，可以之后再调,下面文件传输部分的格式也要调整
+            String fileName="实验报告_"+user.getUsername();
+
+            File file=new File(path);
+            if (!file.exists()) throw new Exception("实验报告不存在");
+            // 指定文件的保存类型。
+            resp.setContentType("application/pdf;charset=utf-8");
+
+            resp.setHeader("Content-disposition", "attachment; filename="+ "report_"+user.getUsername()+".pdf");
+            ServletOutputStream oupstream = resp.getOutputStream();
+            FileInputStream from = new FileInputStream(path);
+            byte[] buffer = new byte[1024];
+            int bytes_read;
+            while ((bytes_read = from.read(buffer)) != -1) {
+                oupstream.write(buffer, 0, bytes_read);
+            }
+
+            //关掉输入输出流之后把压缩文件从系统中彻底删除
+            //提示：如果输入输出流没关闭，那么文件会被占用无法删除
+            oupstream.flush();
+            oupstream.close();
+            from.close();
+        }catch (Exception e){
+            logger.info(e.getMessage());
+        }
+    }
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){
@@ -842,5 +958,57 @@ public class StudentController {
         Score score=scoreService.findScoreByUserandTid(uid,tid);
         if (score==null) return null;
         return score.getTscore();
+    }
+
+    /**
+     * 获取对应题目的提交次数（若是汇编题，则返回汇编代码提交次数）和成绩
+     * @param uid 用户id
+     * @param tid 题目id
+     * @return 返回次数
+     */
+    private Long getTimesOfTask(Long uid,Long tid){
+        Task task=taskService.getTaskByTid(tid);
+        Long times;
+        if (task==null) {
+            times=0L;
+            return times;
+        }
+        if (task.getTtype()==0L) {  //verilog编程题
+            VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(tid,uid);
+            if (verilogRunTimes==null) times=0L;
+            else times=verilogRunTimes.getTimes();
+        }else{ //汇编仿真题
+            Assemble_Code_Score assembleCodeScore=scoreService.findAssembleCodeScoreByUidAndTid(uid,tid);
+            if (assembleCodeScore==null) times=0L;
+            else times=assembleCodeScore.getTimes();
+        }
+        return times;
+    }
+
+
+    /**
+     * 获取选择题的提交次数和分数
+     * @param uid 用户id
+     * @param tid 题目id
+     * @return 返回一个map，每一项分别是一个题目的分数和次数
+     */
+    public Map<String,Map<String,Long>> getAssembleChooseScoreAndTimesByUidAndTid(Long uid,Long tid){
+        List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(tid);
+        if (assembleChooseList==null) return null;
+        Map<String,Map<String,Long>> answerMap=new HashMap<>();
+        for (Assemble_Choose item : assembleChooseList){
+            Map<String,Long> map=new HashMap<>();
+            Long grade=0L;
+            Long times=0L;
+            Assemble_Choose_Score assembleChooseScore=scoreService.findAssembleChooseScoreByUidandTid(uid,item.getTcid());
+            if (assembleChooseScore!=null) {
+                grade=assembleChooseScore.getAcscore();
+                times=assembleChooseScore.getTimes();
+            }
+            map.put("grade",grade);
+            map.put("times",times);
+            answerMap.put(item.getTcid().toString(),map);
+        }
+        return answerMap;
     }
 }
