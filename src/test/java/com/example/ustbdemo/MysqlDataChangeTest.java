@@ -20,8 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = GitlabdemoApplication.class)
+//@RunWith(SpringRunner.class)
+//@SpringBootTest(classes = GitlabdemoApplication.class)
 public class MysqlDataChangeTest {
 
 //    @Autowired
