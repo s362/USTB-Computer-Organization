@@ -27,12 +27,14 @@ public class FileUtil {
     public static final String FILE_PATH_LINUX = "/home/ustbDemo/taskFiles/";
     public static final String STATIC_PATH_LINUX = "/home/ustbDemo/static/";
     public static final String INITIAL_PATH_LINUX = "/home/ustbDemo/initialFiles/";
+    public static final String REPORT_PATH_LINUX = "/home/ustbDemo/reportFiles/";
 //    public static final String FILE_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\taskFiles\\";
 //    public static final String STATIC_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\staticFiles\\";
 //    public static final String INITIAL_PATH_WIN = "C:\\Users\\bearking\\Desktop\\USTB_DEMO\\initialFiles\\";
     public static final String FILE_PATH_WIN = "F:\\D_disk\\ustbdemo\\taskFiles\\";
     public static final String STATIC_PATH_WIN = "F:\\D_disk\\ustbdemo\\staticFiles\\";
     public static final String INITIAL_PATH_WIN = "F:\\D_disk\\ustbdemo\\initialFiles\\";
+    public static final String REPORT_PATH_WIN = "F:\\D_disk\\ustbdemo\\reportFiles\\";
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id
@@ -691,5 +693,41 @@ public class FileUtil {
         copyFile(srcFilePath,destFilePath);
         if (type==1) task.setSimuPicPath1(destFilePath);
         else task.setSimuPicPath2(destFilePath);
+    }
+
+
+    /**
+     * 将上传的文件保存到指定的位置，文件名不变
+     * @param file 用户上传的文件
+     * @param destFilePath 目标路径
+     * @param newName 如果要改名的话，新的名称，不改则是null
+     * @return 最后保存的文件路径
+     */
+    public static String saveFileToLocal(MultipartFile file,String destFilePath,String newName) throws Exception {
+        //        如果文件是空的
+        if (file == null || file.isEmpty()) {
+            System.out.println("未上传" + "文件");
+            return null;
+        }
+
+        String fileType=file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.'));
+        String filePath=destFilePath+(newName==null?file.getOriginalFilename():(newName+fileType));
+
+        System.out.println(file.getOriginalFilename());
+        System.out.println(file.getName());
+        System.out.println(file.getContentType());
+
+        File dirFile=new File(destFilePath);
+        if (!dirFile.exists()) dirFile.mkdirs();  //若保存目录不存在则新建
+        try {
+            File realFile=new File(filePath);
+            if (realFile.exists()) throw new Exception("目标文件已存在");
+
+            file.transferTo(new File(filePath));
+        }catch (Exception e){
+            throw new Exception("文件上传失败");
+        }
+//        file.getName();
+        return filePath;
     }
 }
