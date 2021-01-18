@@ -376,6 +376,14 @@ public class StudentController {
             return ResultUtil.getResult(new Result("error"), HttpStatus.BAD_REQUEST);
         }
 
+        try {
+            verilogRunTimes.setResultSvg(jsonObject.findValue("detail").asText());  //将波形存储一下
+            scoreService.saveVerilogRunTimes(verilogRunTimes);
+            logger.info("波形存储成功");
+        }catch (Exception e){
+            logger.info("波形存储失败"+e.getMessage());
+        }
+
         task_score.setTscore(jsonObject.findValue("score").asLong());
 //        更新分数
         scoreService.saveScore(task_score);
@@ -654,7 +662,6 @@ public class StudentController {
         }
     }
 
-
     //获取成绩信息
     @PostMapping(value = "/getGrade")
     public ResponseEntity<Result> getGrade(Long tid,HttpServletRequest httpServletRequest){
@@ -744,7 +751,6 @@ public class StudentController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
-
     /**
      * 获取选择题的提交次数和分数
      * @param tid 选择题所在的题目id
@@ -759,9 +765,14 @@ public class StudentController {
         if (task==null) return ResultUtil.getResult(new Result("tid不存在"),HttpStatus.BAD_REQUEST);
         if (task.getTtype()==0L) return ResultUtil.getResult(new Result("该题目是verilog编程题，无选择题"),HttpStatus.BAD_REQUEST);
         Map<String,Map<String,Long>> map=getAssembleChooseScoreAndTimesByUidAndTid(user.getUid(),tid);
+        Long chooseGrade=getAllAssembleChooseScore(user.getUid(),tid);
+        Map<String,Object> lastMap=new HashMap<>();
+        lastMap.put("allChooseScore",chooseGrade);
+        lastMap.put("scoreAndTimes",map);
+
         Result result=new Result();
         result.setSuccess(true);
-        result.setObject(map);
+        result.setObject(lastMap);
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
@@ -796,6 +807,11 @@ public class StudentController {
         return ResultUtil.getResult(new Result("保存成功",true),HttpStatus.OK);
     }
 
+    /**
+     * 下载学生的某一个实验报告
+     * @param httpServletRequest token信息
+     * @param resp 返回文件传输流
+     */
     @PostMapping(value = "/downloadReport")
     public void downloadReport(HttpServletRequest httpServletRequest, HttpServletResponse resp){
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
@@ -830,6 +846,43 @@ public class StudentController {
             logger.info(e.getMessage());
         }
     }
+
+    /**
+     * 获取某个verilog实验的结果波形
+     * @param tid 题目id
+     * @param httpServletRequest token信息
+     * @return 字符串-svg字符串通过base64编码
+     */
+    @PostMapping(value = "/getWavePhoto")
+    public ResponseEntity<Result> getWavePhoto(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+
+        VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(tid,user.getUid());
+        if (verilogRunTimes==null) return ResultUtil.getResult(new Result("该题目尚无波形"),HttpStatus.BAD_REQUEST);
+        String svgString;
+        if (verilogRunTimes.getResultSvg()==null){
+            String task_id = GitProcess.tidToTaskid(tid);  //将题目id转换成gitlab上对应的组id
+            //如果波形没有保存过，重新运行一遍代码获取波形，这一遍不计成绩和提交次数
+            JsonNode jsonObject = JudgeUtil.shell(task_id, user_id);
+            if(jsonObject == null) return ResultUtil.getResult(new Result("获取波形有误"), HttpStatus.BAD_REQUEST);
+            try {
+                svgString=jsonObject.findValue("detail").asText();
+            }catch (Exception e){  //防止没有波形信息报错
+                svgString=null;
+                return ResultUtil.getResult(new Result("获取波形有误"), HttpStatus.BAD_REQUEST);
+            }
+            verilogRunTimes.setResultSvg(svgString);
+            scoreService.saveVerilogRunTimes(verilogRunTimes);
+
+        }else svgString=verilogRunTimes.getResultSvg();
+
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(Base64Convert.strConvertBase(svgString));  //使用base64传输
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){
@@ -987,7 +1040,7 @@ public class StudentController {
 
 
     /**
-     * 获取选择题的提交次数和分数
+     * 获取每个选择题的提交次数和分数
      * @param uid 用户id
      * @param tid 题目id
      * @return 返回一个map，每一项分别是一个题目的分数和次数
@@ -1010,5 +1063,31 @@ public class StudentController {
             answerMap.put(item.getTcid().toString(),map);
         }
         return answerMap;
+    }
+
+    /**
+     * 获取所有选择题总的分数 满分100
+     * @param uid 用户id
+     * @param tid 题目id
+     * @return 返回一个map，每一项分别是一个题目的分数和次数
+     */
+    public Long getAllAssembleChooseScore(Long uid,Long tid){
+
+        List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(tid);
+        if (assembleChooseList==null) return 0L;
+        int number=assembleChooseList.size();
+        Long chooseGrade=0L;
+        for (Assemble_Choose assembleChoose: assembleChooseList){
+            Assemble_Choose_Score assembleChooseScore = scoreService.findAssembleChooseScoreByUidandTid(uid,assembleChoose.getTcid());
+            if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
+            chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
+        }
+        logger.info("choose number="+number);
+        logger.info("all chooseGrade="+chooseGrade);
+
+        if(number==0) chooseGrade=0L;
+        else chooseGrade=chooseGrade/number;
+
+        return chooseGrade;
     }
 }
