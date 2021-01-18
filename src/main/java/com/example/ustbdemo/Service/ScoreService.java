@@ -190,6 +190,17 @@ public class ScoreService {
         }
     }
 
+    public boolean saveVerilogRunTimes(VerilogRunTimes verilogRunTimes){
+        verilogRunTimes.setUpdatedate(new Date());
+        try {
+            this.verilogRunTimesRepository.save(verilogRunTimes);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+
     /**
      * 删除汇编仿真题的暂存信息或者是verilog编程题的提交次数信息
      * @param uid 用户id
