@@ -29,6 +29,9 @@ public class VerilogRunTimes {
     @Column(name = "update_at")
     private Date updatedate;
 
+    @Column(name = "result_svg")  //存放提交之后的波形图片，使用svg字符串的格式存储
+    private String resultSvg;
+
     public Long getTimesId() {
         return timesId;
     }
@@ -67,5 +70,13 @@ public class VerilogRunTimes {
 
     public void setUpdatedate(Date updatedate) {
         this.updatedate = updatedate;
+    }
+
+    public String getResultSvg() {
+        return resultSvg;
+    }
+
+    public void setResultSvg(String resultSvg) {
+        this.resultSvg = resultSvg;
     }
 }
