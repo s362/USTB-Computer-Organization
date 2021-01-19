@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.Example;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -17,13 +14,24 @@ public class JudgeUtil {
 //    接受用户id和待评测的题目id，调用docker，然后把返回结果保存为JsonNode格式。
     static public JsonNode shell(String task_id, String user_id) {
         //将network模式改为host，加快clone速度
-        String command = "sudo docker run --network=host --rm ustb/merge:v1 /home/docker/ide/gitrun " + task_id + " " + user_id;
-        
+        String command = "sudo docker run --network=host --rm ustb/merge:v2 /home/docker/ide/gitrun " + task_id + " " + user_id;
+
         System.out.println(command);
 
         try {
             Process p = Runtime.getRuntime().exec(command);
             InputStream is = p.getInputStream();
+
+            //第26-33行之间添加的原因是因为原来的逻辑无法接收到docker的输出导致一直卡死在那个地方，具体原因未知
+            System.out.println("开始打印输出");
+            LineNumberReader input = new LineNumberReader (new InputStreamReader(is));      //创建IO管道，准备输出命令执行后的显示内容
+            String result="";
+            String line;
+            while ((line = input.readLine ()) != null){     //按行打印输出内容
+//                System.out.println(line);
+                result=result+line;
+            }
+
             p.waitFor();
 
             if (p.exitValue() != 0) {
@@ -43,9 +51,11 @@ public class JudgeUtil {
                 }
                 return null;
             }
+
+            System.out.println("运行完毕,开始解析");
             JsonNode jsonStr;
 
-            jsonStr = dealOutput(is, "UTF-8");
+            jsonStr = dealOutput(is, "UTF-8",result);
 //                jsonStr = dealOutput(is, "ISO-8859-1");
 //            }
             if(jsonStr == null){
@@ -60,15 +70,18 @@ public class JudgeUtil {
         }
     }
 
-    static public JsonNode dealOutput(InputStream is, String charset){
+    static public JsonNode dealOutput(InputStream is, String charset,String result){
         try {
             String s = null;
             ObjectMapper mapper = new ObjectMapper();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, charset));
+            if (result==null||result.equals("")) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is, charset));
 
-            s = reader.readLine();
+                s = reader.readLine();
+            }else s=result;
             s= s.replace("\"", "\\\"").replace("'","\"").replace("\\x", "");
 
+            System.out.println("docker的输出信息："+s);
             JsonNode root = mapper.readTree(s);
             String detailStr = root.findValue("detail").asText();
             System.out.println(root.findValue("detail").asText());
@@ -80,10 +93,12 @@ public class JudgeUtil {
                 }
                 else {
                     m1.put("detail", detailStr);
+                    m1.put("wavedrom",root.findValue("wavedrom").asText());
                 }
 
             } catch (Exception e){
                 m1.put("detail", root.findValue("detail").toString());
+                m1.put("wavedrom",root.findValue("wavedrom").toString());
             }
 
             m1.put("verdict", root.findValue("verdict"));

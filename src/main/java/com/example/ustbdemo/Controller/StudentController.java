@@ -377,7 +377,7 @@ public class StudentController {
         }
 
         try {
-            verilogRunTimes.setResultSvg(jsonObject.findValue("detail").asText());  //将波形存储一下
+            verilogRunTimes.setResultSvg(jsonObject.findValue("wavedrom").asText());  //将波形存储一下
             scoreService.saveVerilogRunTimes(verilogRunTimes);
             logger.info("波形存储成功");
         }catch (Exception e){
@@ -739,7 +739,7 @@ public class StudentController {
         User user=userService.findByUserName(user_id);
         logger.info("uid,tid:"+user.getUid()+" "+tid);
         Long grade=getGradeOfTask(user.getUid(),tid);
-        if (grade==null) grade=0L;
+        if (grade==null||grade==0L) grade=0L; else grade=100L;   //这里的成绩是指汇编代码的成绩，不是全部的成绩。
         Long times=getTimesOfTask(user.getUid(),tid);
         if (times==null) times=0L;
         Map<String,Long> map=new HashMap<>();
@@ -867,7 +867,8 @@ public class StudentController {
             JsonNode jsonObject = JudgeUtil.shell(task_id, user_id);
             if(jsonObject == null) return ResultUtil.getResult(new Result("获取波形有误"), HttpStatus.BAD_REQUEST);
             try {
-                svgString=jsonObject.findValue("detail").asText();
+                logger.info(jsonObject.toString());
+                svgString=jsonObject.findValue("wavedrom").asText();
             }catch (Exception e){  //防止没有波形信息报错
                 svgString=null;
                 return ResultUtil.getResult(new Result("获取波形有误"), HttpStatus.BAD_REQUEST);
