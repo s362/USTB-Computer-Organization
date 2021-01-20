@@ -884,6 +884,59 @@ public class StudentController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
+    /**
+     * 获取学生编写的verilog代码部分
+     * @param tid  题目id
+     * @param httpServletRequest  token信息
+     * @return 返回json  分别是文件名：学生编写内容
+     */
+    @PostMapping(value = "/getVerilogCodeByStudent")
+    public ResponseEntity<Result> getVerilogCodeByStudent(Long tid,HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        try{
+            String task_id = GitProcess.tidToTaskid(tid);
+            logger.info(user_id + "   " + task_id);
+            gitProcess = new GitProcess();
+            Integer project_id;
+            project_id = gitProcess.getProjectId(task_id, user_id);
+            Integer teacher_id;
+            teacher_id = gitProcess.getProjectId(task_id, "teacher");
+            if (project_id==null||teacher_id==null) return ResultUtil.getResult(new Result("无gitlab项目"),HttpStatus.BAD_REQUEST);
+            List<GitFile> userFileList=gitProcess.getRepositoryFiles(project_id);
+            List<GitFile> teacherFileList=gitProcess.getRepositoryFiles(teacher_id,"taskFile");
+            if (userFileList==null||userFileList.isEmpty()) return ResultUtil.getResult(new Result("学生文件为空"),HttpStatus.BAD_REQUEST);
+            if (teacherFileList==null||teacherFileList.isEmpty()) return ResultUtil.getResult(new Result("老师文件为空"),HttpStatus.BAD_REQUEST);
+
+            Map<String,String> codes=new HashMap<>();
+            for (GitFile item:userFileList){
+
+                GitFile teacher=null;
+
+                //获取老师代码中和此学生文件同名的文件
+                for (GitFile it:teacherFileList) {
+                    if (item.getTitle().equals(it.getTitle())) {
+                        teacher=it;
+                        break;
+                    }
+                }
+                String res=(teacher!=null)?FileUtil.findDifference(item.getCode(),teacher.getCode()):item.getCode();
+                if (res!=null&&!res.equals("")){
+                    codes.put(item.getTitle(),res);  //放入map中保存
+                    logger.info(item.getTitle()+"\n  --  \n"+res);
+                }
+            }
+//            logger.info(codes.toString());
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setObject(codes);
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        }catch (Exception e){
+            logger.info(e.getMessage());
+            return ResultUtil.getResult(new Result("获取学生编写代码有误"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){
