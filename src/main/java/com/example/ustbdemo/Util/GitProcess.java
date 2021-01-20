@@ -159,6 +159,30 @@ public class GitProcess {
         }
     }
 
+    public List<GitFile> getRepositoryFiles(Integer projectId,String path){
+        RepositoryApi repositoryApi = this.gitLabApi.getRepositoryApi();
+        RepositoryFileApi repositoryFileApi = this.gitLabApi.getRepositoryFileApi();
+        List<GitFile> gitFiles = new LinkedList<GitFile>();
+        try {
+            List<TreeItem> treeItems = repositoryApi.getTree(projectId,path,"master");
+            for (TreeItem treeItem : treeItems) {
+                RepositoryFile repositoryFile = repositoryFileApi.getFile(projectId, treeItem.getPath(), "master");
+                GitFile gitFile = new GitFile(Base64Convert.strConvertBase(repositoryFile.getFilePath()), Base64Convert.baseConvertStr(repositoryFile.getContent()));
+                gitFile.setId(Base64Convert.strConvertBase(repositoryFile.getFilePath()));
+                gitFile.setIs_binary(false);
+                gitFile.setDirectory_shortid(null);
+                gitFile.setSourceId(repositoryFile.getCommitId());
+                gitFile.setTitle(repositoryFile.getFileName());
+                gitFiles.add(gitFile);
+            }
+            return gitFiles;
+        }
+        catch (GitLabApiException e){
+            System.out.println(e.toString() + "  无学生文件");
+            return gitFiles;
+        }
+    }
+
     public boolean isFileExist(Integer projectId, GitFile gitFile) {
         RepositoryApi repositoryApi = this.gitLabApi.getRepositoryApi();
         List<TreeItem> treeItems;
