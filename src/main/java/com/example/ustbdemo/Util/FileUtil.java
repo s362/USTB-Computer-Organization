@@ -730,4 +730,30 @@ public class FileUtil {
 //        file.getName();
         return filePath;
     }
+
+
+    /**
+     * 比较第一个文件相对于第二个文件多出来的内容
+     * @param one 第一个文件的内容
+     * @param two 第二个文件的内容
+     * @return 多出来的内容
+     */
+    public static String findDifference(String one,String two){
+        try {
+            Set<String> res=new HashSet<>();
+            if (two!=null) {
+                String[] teacherCode = two.split("\n");   //按行分割，放入集合中
+                Collections.addAll(res, teacherCode);
+            }
+            StringBuilder studentCode= new StringBuilder();
+            String[] userCode=one.split("\n");  //按行分割
+            for (String s : userCode) {
+                //若该行在集合中不存在则记录起来
+                if (!res.contains(s)) studentCode.append(s).append("\n");
+            }
+            return studentCode.toString();
+        }catch (Exception e){
+            return null;
+        }
+    }
 }
