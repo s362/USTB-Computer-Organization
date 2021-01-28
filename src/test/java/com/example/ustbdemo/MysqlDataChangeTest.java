@@ -1,9 +1,7 @@
 package com.example.ustbdemo;
 
 
-import com.example.ustbdemo.Model.DataModel.Score;
-import com.example.ustbdemo.Model.DataModel.Task;
-import com.example.ustbdemo.Model.DataModel.User;
+import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
@@ -16,12 +14,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-//@RunWith(SpringRunner.class)
-//@SpringBootTest(classes = GitlabdemoApplication.class)
+@RunWith(SpringRunner.class)
+@SpringBootTest(classes = GitlabdemoApplication.class)
 public class MysqlDataChangeTest {
 
 //    @Autowired
@@ -178,5 +177,145 @@ public class MysqlDataChangeTest {
 //
 //    }
 //
+
+    /*
+    //将学生的详细实验成绩导出，包括每个选择题题目的分数和提交次数等
+    @Autowired
+    ScoreService scoreService;
+    @Autowired
+    UserService userService;
+    @Autowired
+    TaskService taskService;
+    @Test
+    public void exportDetailScore() {
+        List<User> userList=userService.findAll();
+
+        List<Long> simulateTaskList=new ArrayList<>();  //汇编仿真题的题号
+        simulateTaskList.add(552L);
+        simulateTaskList.add(863L);
+
+        List<Long> verilogTaskList=new ArrayList<>();  //汇编仿真题的题号
+        verilogTaskList.add(871L);
+        verilogTaskList.add(872L);
+
+        Map<String,Map<String,Map<String,Integer>>> userGrades=new HashMap<>();  //<姓名，<题号，<times/grades,次数/分数>>>
+        Map<String,List<Assemble_Choose>> chooses=new HashMap<>();//<题号，选择题信息列表>
+        for (Long it:simulateTaskList) {
+            List<Assemble_Choose> assembleChooseList=taskService.getAssebleChoosesByTid(it);
+            chooses.put(it.toString(),assembleChooseList);
+        }
+
+
+        if (userList!=null){
+            for ( User user: userList) {
+                System.out.println(user.toString()+"开始处理");
+                Map<String,Map<String,Integer>> grades=new HashMap<>();
+
+                //汇编题
+                for (Long simulateTask:simulateTaskList){
+                    List<Assemble_Choose> assembleChooseList=chooses.get(simulateTask.toString());
+                    for (Assemble_Choose assembleChoose:assembleChooseList){   //其中的每个选择题
+                        Assemble_Choose_Score assembleChooseScore=scoreService.findAssembleChooseScoreByUidandTid(user.getUid(),assembleChoose.getTcid());
+                        Map<String,Integer> map=new HashMap<>();
+                        map.put("times",assembleChooseScore==null?0:assembleChooseScore.getTimes().intValue());
+                        map.put("grades",assembleChooseScore==null?0:assembleChooseScore.getAcscore().intValue());
+                        grades.put(assembleChoose.getTcid().toString(),map);
+//                        assert assembleChooseScore != null;
+//                        System.out.println(assembleChooseScore.toString());
+                    }
+                    Assemble_Code_Score assembleCodeScore=scoreService.findAssembleCodeScoreByUidAndTid(user.getUid(),simulateTask);  //汇编代码
+                    Map<String,Integer> map=new HashMap<>();
+                    map.put("times",assembleCodeScore==null?0:assembleCodeScore.getTimes().intValue());
+                    map.put("grades",assembleCodeScore==null?0:assembleCodeScore.getAssembleCodeScore().intValue());
+                    grades.put(simulateTask.toString(),map);
+//                    System.out.println(assembleCodeScore.toString());
+                }
+                System.out.println("汇编题处理完毕");
+                //verilog题
+                for (Long verilogTask:verilogTaskList){
+                    Score score=scoreService.findScoreByUserandTid(user.getUid(),verilogTask);
+                    VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(verilogTask,user.getUid());
+                    Map<String,Integer> map=new HashMap<>();
+                    map.put("times",verilogRunTimes==null?0:verilogRunTimes.getTimes().intValue());
+                    map.put("grades",score==null?0:score.getTscore().intValue());
+                    grades.put(verilogTask.toString(),map);
+//                    System.out.println(map);
+                }
+                System.out.println("verilog题处理完毕");
+                userGrades.put(user.getUsername(),grades);
+            }
+        }
+
+        System.out.println("开始写入文件");
+        File file=new File("F:\\D_disk\\ustbdemo\\grade_detail.csv");
+
+        FileOutputStream fos = null;
+        OutputStreamWriter osw = null;
+
+        try {
+            if (!file.exists()) {
+                boolean hasFile = file.createNewFile();
+                if(hasFile){
+                    System.out.println("file not exists, create new file");
+                }
+                fos = new FileOutputStream(file);
+            } else {
+                System.out.println("file exists");
+                fos = new FileOutputStream(file, false);  //不要追加
+            }
+
+            osw = new OutputStreamWriter(fos, "GBK");
+
+            String content ="学号,";
+            for (Long it:simulateTaskList) {
+                content+=it.toString()+"提交次数,"+it.toString()+"成绩,";
+                List<Assemble_Choose>  assembleChooseList=chooses.get(it.toString());
+                for (Assemble_Choose assembleChoose:assembleChooseList) content+=assembleChoose.getTcid()+"提交次数,"+assembleChoose.getTcid()+"成绩,";
+            }
+            for (Long it:verilogTaskList) content+=it.toString()+"提交次数,"+it.toString()+"成绩,";
+            osw.write(content); //写入内容
+            osw.write("\r\n");  //换行
+
+            for(User user: userList) {
+                content = user.getUsername()+",";
+                Map<String,Map<String,Integer>> oneUser=userGrades.get(user.getUsername());
+                for (Long it:simulateTaskList) {
+                    Map<String,Integer> timesAndGrades=oneUser.get(it.toString());
+                    content+=timesAndGrades.get("times")+","+timesAndGrades.get("grades")+",";
+                    List<Assemble_Choose>  assembleChooseList=chooses.get(it.toString());
+                    for (Assemble_Choose assembleChoose:assembleChooseList) {
+                        timesAndGrades=oneUser.get(assembleChoose.getTcid().toString());
+                        content+=timesAndGrades.get("times")+","+timesAndGrades.get("grades")+",";
+                    }
+                }
+                for (Long it:verilogTaskList) {
+                    Map<String,Integer> timesAndGrades=oneUser.get(it.toString());
+                    content+=timesAndGrades.get("times")+","+timesAndGrades.get("grades")+",";
+                }
+                osw.write(content); //写入内容
+                osw.write("\r\n");  //换行xv
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {   //关闭流
+            try {
+                if (osw != null) {
+                    osw.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            try {
+                if (fos != null) {
+                    fos.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("写入结束");
+        }
+
+    }
+    */
 
 }
