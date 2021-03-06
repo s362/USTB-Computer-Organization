@@ -30,6 +30,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 //@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -558,6 +560,7 @@ public class StudentController {
         gitProject.setId(GitProcess.taskIdtoTid(task_id).toString());
 //        gitProject = gitProcess.setTeacherInfo(gitProject, teacher_id);
         gitProject.setDescription(task.getTdis());
+        gitProject.setImgURL(getImageSrc(task.getTdis()));
         gitProject.setAlias(task.getTname());
         gitProject.setTitle(task.getTname());
         try {
@@ -1143,5 +1146,20 @@ public class StudentController {
         else chooseGrade=chooseGrade/number;
 
         return chooseGrade;
+    }
+
+    //获取描述中图片的URL
+    public List<String> getImageSrc(String htmlCode) {
+        List<String> imageSrcList = new ArrayList<String>();
+        Pattern p = Pattern.compile("<img\\b[^>]*\\bsrc\\b\\s*=\\s*('|\")?([^'\"\n\r\f>]+(\\.jpg|\\.bmp|\\.eps|\\.gif|\\.mif|\\.miff|\\.png|\\.tif|\\.tiff|\\.svg|\\.wmf|\\.jpe|\\.jpeg|\\.dib|\\.ico|\\.tga|\\.cut|\\.pic)\\b)[^>]*>", Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(htmlCode);
+        String quote = null;
+        String src = null;
+        while (m.find()) {
+            quote = m.group(1);
+            src = (quote == null || quote.trim().length() == 0) ? m.group(2).split("\\s+")[0] : m.group(2);
+            imageSrcList.add(src);
+        }
+        return(imageSrcList);
     }
 }

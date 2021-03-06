@@ -13,6 +13,7 @@ public class GitProject {
     private String sourceId;
     private List<String> tags;
     private String description; // 描述
+    private List<String> imgURL;
     private List<GitFolder> directories;
     private String id;
     private String title;
@@ -63,6 +64,14 @@ public class GitProject {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public List<String> getImgURL() {
+        return imgURL;
+    }
+
+    public void setImgURL(List<String> imgURL) {
+        this.imgURL = imgURL;
     }
 
     public List<GitFolder> getDirectories() {
