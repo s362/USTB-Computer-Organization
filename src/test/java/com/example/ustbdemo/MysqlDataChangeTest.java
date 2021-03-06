@@ -179,6 +179,7 @@ public class MysqlDataChangeTest {
 //
 
     /*
+
     //将学生的详细实验成绩导出，包括每个选择题题目的分数和提交次数等
     @Autowired
     ScoreService scoreService;
@@ -247,7 +248,7 @@ public class MysqlDataChangeTest {
         }
 
         System.out.println("开始写入文件");
-        File file=new File("F:\\D_disk\\ustbdemo\\grade_detail.csv");
+        File file=new File("F:\\D_disk\\ustbdemo\\grade_detail_20210301.csv");
 
         FileOutputStream fos = null;
         OutputStreamWriter osw = null;
@@ -316,6 +317,6 @@ public class MysqlDataChangeTest {
         }
 
     }
-    */
 
+    */
 }
