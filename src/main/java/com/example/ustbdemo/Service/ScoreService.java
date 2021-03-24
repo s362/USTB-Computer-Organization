@@ -66,7 +66,12 @@ public class ScoreService {
         score.setTid(tid);
         Example<Score> example = Example.of(score);
         try {
-            Score result = this.scoreRepository.findOne(example).get();
+            List<Score> scores = this.scoreRepository.findAll(example);
+            Score result = scores.get(0);
+            for(int i=1;i<scores.size();i++){
+                if(result.getTscore()<scores.get(i).getTscore())
+                    result = scores.get(i);
+            }
             return result;
         } catch (Exception e){
             return null;
