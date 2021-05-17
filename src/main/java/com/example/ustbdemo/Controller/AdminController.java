@@ -153,6 +153,44 @@ public class AdminController {
         else return ResultUtil.getResult(new Result("删除老师失败"),HttpStatus.BAD_REQUEST);
     }
 
+    //新增学生
+    @PostMapping(value = "addStudent")
+    public ResponseEntity<Result> addStudent(User student, HttpServletRequest httpServletRequest){
+        if (!IsAdmin(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        User user=userService.findByUserName(student.getUsername());
+        if (user!=null){
+            logger.info("用户名已存在");
+            return ResultUtil.getResult(new Result("用户名已存在"),HttpStatus.BAD_REQUEST);
+        }
+        if (userService.addStudent(student)) return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        else return ResultUtil.getResult(new Result("新增用户失败"),HttpStatus.BAD_REQUEST);
+    }
+
+    //删除学生
+    @PostMapping(value = "deleteStudent")
+    public ResponseEntity<Result> deleteStudent(Long StudentId,HttpServletRequest httpServletRequest){
+        if (!IsAdmin(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        if (userService.deleteStudentIdByStudentId(StudentId)) return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        else return ResultUtil.getResult(new Result("删除学生失败"),HttpStatus.BAD_REQUEST);
+    }
+
+    //获取所有的学生的信息，包括密码
+    @PostMapping(value = "/getStudent")
+    public ResponseEntity<Result> getStudent(HttpServletRequest httpServletRequest){
+        if (!IsAdmin(httpServletRequest)){
+            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+        }
+        List<User> userList=userService.getStudent();
+        Result result=new Result();
+        result.setObject(userList);
+        result.setSuccess(true);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
 
     private boolean IsAdmin(HttpServletRequest httpServletRequest){      //判断该用户是否拥有管理员权限
         String token=httpServletRequest.getHeader("Authorization");

@@ -106,6 +106,53 @@ public class UserService {
         }
     }
 
+    /**
+     * 新建学生，
+     * @param student  学生个人信息
+     * @return  新建是否成功
+     */
+    public boolean addStudent(User student){
+        student.setUtype(2L);
+        try {
+            this.userRepository.save(student);
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 得到所有的学生的信息，包括密码，只有管理员有权访问
+     * @return 学生的信息列表
+     */
+    public List<User> getStudent(){
+        User user=new User();
+        user.setUtype(2L);
+        Example<User> userExample=Example.of(user);
+        try {
+            return this.userRepository.findAll(userExample);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * 删除学生
+     * @param studentId 学生id
+     * @return 删除是否成功
+     */
+    public boolean deleteStudentIdByStudentId(Long studentId){
+        try {
+            this.userRepository.deleteById(studentId);
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public int changePwd(String username,String oldPwd,String newPwd){
         User user=findByUserName(username);
         if (user==null) return -1;
