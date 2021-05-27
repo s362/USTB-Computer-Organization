@@ -191,6 +191,17 @@ public class AdminController {
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
 
+//    //修改所有的学生的信息，密码加密
+//    @PostMapping(value = "/changeStudentPassword")
+//    public ResponseEntity<Result> changeStudentPassword(HttpServletRequest httpServletRequest){
+//        if (!IsAdmin(httpServletRequest)){
+//            return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
+//        }
+//
+//        if (userService.changeStudentPassword()) return ResultUtil.getResult(new Result(),HttpStatus.OK);
+//        else return ResultUtil.getResult(new Result("修改密码失败"),HttpStatus.BAD_REQUEST);
+//    }
+
 
     private boolean IsAdmin(HttpServletRequest httpServletRequest){      //判断该用户是否拥有管理员权限
         String token=httpServletRequest.getHeader("Authorization");

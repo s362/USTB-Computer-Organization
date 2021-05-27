@@ -9,6 +9,9 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 
+import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
+import static com.example.ustbdemo.Util.Base64Convert.strConvertBase;
+
 @Service("userService")
 public class UserService {
     private final UserRepository userRepository;
@@ -27,7 +30,7 @@ public class UserService {
     public User getByUsernameAndPwd(String username, String passwd){
         User user = new User();
         user.setUsername(username);
-        user.setPasswd(passwd);
+        user.setPasswd(strConvertBase(passwd));
         Example<User> example = Example.of(user);
         try{
             User result = this.userRepository.findOne(example).get();
@@ -51,6 +54,7 @@ public class UserService {
 
     public Boolean addUser(User user){
         try{
+            user.setPasswd(strConvertBase(user.getPasswd()));
             this.userRepository.save(user);
             return true;
         } catch (Exception e){
@@ -68,7 +72,11 @@ public class UserService {
         user.setUtype(1L);
         Example<User> userExample=Example.of(user);
         try {
-            return this.userRepository.findAll(userExample);
+            List<User> userList = this.userRepository.findAll(userExample);
+            for(User u:userList){
+                u.setPasswd(baseConvertStr(u.getPasswd()));
+            }
+            return userList;
         }catch (Exception e){
             e.printStackTrace();
             return null;
@@ -83,6 +91,7 @@ public class UserService {
     public boolean addTeacher(User teacher){
         teacher.setUtype(1L);
         try {
+            teacher.setPasswd(strConvertBase(teacher.getPasswd()));
             this.userRepository.save(teacher);
             return true;
         }catch (Exception e){
@@ -114,6 +123,7 @@ public class UserService {
     public boolean addStudent(User student){
         student.setUtype(2L);
         try {
+            student.setPasswd(strConvertBase(student.getPasswd()));
             this.userRepository.save(student);
             return true;
         }catch (Exception e){
@@ -131,10 +141,35 @@ public class UserService {
         user.setUtype(2L);
         Example<User> userExample=Example.of(user);
         try {
-            return this.userRepository.findAll(userExample);
+            List<User> userList = this.userRepository.findAll(userExample);
+            for(User u:userList){
+                u.setPasswd(baseConvertStr(u.getPasswd()));
+            }
+            return userList;
         }catch (Exception e){
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * 修改数据库中学生用户的密码存储，只有管理员有权访问
+     * @return 学生的信息列表
+     */
+    public boolean changeStudentPassword(){
+        User user=new User();
+        user.setUtype(0L);
+        Example<User> userExample=Example.of(user);
+        try {
+            List<User> userList = this.userRepository.findAll(userExample);
+            for(User u:userList){
+                u.setPasswd(strConvertBase(u.getPasswd()));
+                this.userRepository.save(u);
+            }
+            return true;
+        }catch (Exception e){
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -156,8 +191,8 @@ public class UserService {
     public int changePwd(String username,String oldPwd,String newPwd){
         User user=findByUserName(username);
         if (user==null) return -1;
-        if (!user.getPasswd().equals(oldPwd)) return -2;
-        user.setPasswd(newPwd);
+        if (!baseConvertStr(user.getPasswd()).equals(oldPwd)) return -2;
+        user.setPasswd(strConvertBase(newPwd));
         try {
             this.userRepository.save(user);
             return 0;
