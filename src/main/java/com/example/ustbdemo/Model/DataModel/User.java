@@ -5,6 +5,9 @@ import lombok.ToString;
 import org.springframework.web.bind.annotation.PutMapping;
 
 import javax.persistence.*;
+import java.util.Date;
+
+import static org.apache.http.client.utils.DateUtils.parseDate;
 
 @Entity
 @Table(name = "user")
@@ -27,12 +30,30 @@ public class User {
     @Column(name = "udis", length = 255)
     private String udis;
 
+    @Column(name = "update_at")
+    private Date update_at; // 修改密码时间
+
+    @Column(name = "lock_at")
+    private Date lock_at ; // 账户被锁时间
+
+    @Column(name = "lock_times")
+    private Long lock_times; // 密码错误次数
+
+
+
     public User(){}
 
     public User(String username, String upasswd, Long utype){
         this.username = username;
         this.upasswd = upasswd;
         this.utype = utype;
+    }
+
+    public User(String username, String upasswd, String udis, Long lock_times) {
+        this.username = username;
+        this.upasswd = upasswd;
+        this.udis = udis;
+        this.lock_times = lock_times;
     }
 
     public String getUpasswd() {
@@ -81,5 +102,29 @@ public class User {
 
     public void setPasswd(String passwd) {
         this.upasswd = passwd;
+    }
+
+    public Date getUpdate_at() {
+        return update_at;
+    }
+
+    public void setUpdate_at(Date update_at) {
+        this.update_at = update_at;
+    }
+
+    public Date getLock_at() {
+        return lock_at;
+    }
+
+    public void setLock_at(Date lock_at) {
+        this.lock_at = lock_at;
+    }
+
+    public Long getLock_times() {
+        return lock_times;
+    }
+
+    public void setLock_times(Long lock_times) {
+        this.lock_times = lock_times;
     }
 }

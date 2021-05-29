@@ -7,6 +7,7 @@ import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Date;
 import java.util.List;
 
 import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
@@ -30,6 +31,7 @@ public class UserService {
     public User getByUsernameAndPwd(String username, String passwd){
         User user = new User();
         user.setUsername(username);
+//        user.setPasswd(passwd);
         user.setPasswd(strConvertBase(passwd));
         Example<User> example = Example.of(user);
         try{
@@ -55,6 +57,8 @@ public class UserService {
     public Boolean addUser(User user){
         try{
             user.setPasswd(strConvertBase(user.getPasswd()));
+            user.setUpdate_at(new Date());
+            user.setLock_times(0l);
             this.userRepository.save(user);
             return true;
         } catch (Exception e){
@@ -92,6 +96,8 @@ public class UserService {
         teacher.setUtype(1L);
         try {
             teacher.setPasswd(strConvertBase(teacher.getPasswd()));
+            teacher.setUpdate_at(new Date());
+            teacher.setLock_times(0l);
             this.userRepository.save(teacher);
             return true;
         }catch (Exception e){
@@ -124,6 +130,8 @@ public class UserService {
         student.setUtype(2L);
         try {
             student.setPasswd(strConvertBase(student.getPasswd()));
+            student.setUpdate_at(new Date());
+            student.setLock_times(0l);
             this.userRepository.save(student);
             return true;
         }catch (Exception e){
@@ -152,26 +160,26 @@ public class UserService {
         }
     }
 
-    /**
-     * 修改数据库中学生用户的密码存储，只有管理员有权访问
-     * @return 学生的信息列表
-     */
-    public boolean changeStudentPassword(){
-        User user=new User();
-        user.setUtype(0L);
-        Example<User> userExample=Example.of(user);
-        try {
-            List<User> userList = this.userRepository.findAll(userExample);
-            for(User u:userList){
-                u.setPasswd(strConvertBase(u.getPasswd()));
-                this.userRepository.save(u);
-            }
-            return true;
-        }catch (Exception e){
-            e.printStackTrace();
-            return false;
-        }
-    }
+//    /**
+//     * 修改数据库中学生用户的密码存储，只有管理员有权访问
+//     * @return 学生的信息列表
+//     */
+//    public boolean changeStudentPassword(){
+//        User user=new User();
+//        user.setUtype(1L);
+//        Example<User> userExample=Example.of(user);
+//        try {
+//            List<User> userList = this.userRepository.findAll(userExample);
+//            for(User u:userList){
+//                u.setPasswd(strConvertBase(u.getPasswd()));
+//                this.userRepository.save(u);
+//            }
+//            return true;
+//        }catch (Exception e){
+//            e.printStackTrace();
+//            return false;
+//        }
+//    }
 
     /**
      * 删除学生
@@ -193,11 +201,22 @@ public class UserService {
         if (user==null) return -1;
         if (!baseConvertStr(user.getPasswd()).equals(oldPwd)) return -2;
         user.setPasswd(strConvertBase(newPwd));
+        user.setUpdate_at(new Date());
         try {
             this.userRepository.save(user);
             return 0;
         }catch (Exception e){
             return -3;
+        }
+    }
+
+    public boolean updateUsr(User user1){
+        if (user1==null) return false;
+        try {
+            this.userRepository.save(user1);
+            return true;
+        }catch (Exception e){
+            return false;
         }
     }
 }

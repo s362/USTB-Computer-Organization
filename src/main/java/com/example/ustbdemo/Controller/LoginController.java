@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 
@@ -45,8 +46,39 @@ public class LoginController {
     public ResponseEntity<Result> login(@RequestBody User user){
         logger.info(user.toString());
         try{
+//      检查用户名是否存在
+            User user0=userService.findByUserName(user.getUsername());
+            if(user0 == null){
+                return ResultUtil.getResult(new Result("用户名不存在"), HttpStatus.BAD_REQUEST);
+            } else{
+//      用户名存在，但是密码错误次数过多
+                if(user0.getLock_times() == 5) {
+                    long elapsedtime = (new Date().getTime() - user0.getLock_at().getTime()) / (60 * 1000);
+                    if (elapsedtime >= 10) {
+                        user0.setLock_times(user0.getLock_times() - 1);
+                        userService.updateUsr(user0);
+                    } else {
+                        String t = Long.toString(10l - elapsedtime);
+                        return ResultUtil.getResult(new Result("请" + t + "分钟后重试"), HttpStatus.BAD_REQUEST);
+                    }
+                }
+            }
             User user1=userService.getByUsernameAndPwd(user.getUsername(), user.getPasswd());
-            if ( user1 != null){
+
+            if ( user1 != null ){
+//      登录成功清空密码错误次数，若密码错误次数等于5，禁止登录
+                if(user1.getLock_times()<5) {
+                    user1.setLock_times(0l);
+                    userService.updateUsr(user1);
+                } else{
+                    return ResultUtil.getResult(new Result("密码错误次数过多，请稍后再试"), HttpStatus.BAD_REQUEST);
+                }
+//      检查密码是否超过90天未修改
+                long timeslot = 0L;
+                timeslot = new Date().getTime() - user1.getUpdate_at().getTime();
+                if( timeslot/(24*60*60*1000)>=90 ){
+                    return ResultUtil.getResult(new Result("密码超过90天未修改，请修改密码"), HttpStatus.BAD_REQUEST);
+                }
 //                签名，生成jwt
                 String token = JwtUtil.sign(user.getUsername());
                 if(token != null){
@@ -58,10 +90,19 @@ public class LoginController {
                 }
             } logger.info("无此用户");
 
-            return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
+
+            if(user0.getLock_times()<5){
+                long locktimes = user0.getLock_times()+1l;
+                user0.setLock_times(locktimes);
+                user0.setLock_at(new Date());
+                userService.updateUsr(user0);
+                return ResultUtil.getResult(new Result("密码错误"), HttpStatus.BAD_REQUEST);
+            }else{
+                return ResultUtil.getResult(new Result("密码错误次数过多，请10分钟后再试"), HttpStatus.BAD_REQUEST);
+            }
         } catch (Exception e){
             logger.info(e.toString());
-            return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
+            return ResultUtil.getResult(new Result("密码错误了"), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -315,4 +356,6 @@ public class LoginController {
         }
         return stringBuffer.toString();
     }
+
+
 }
