@@ -59,7 +59,9 @@ public class LoginController {
                         userService.updateUsr(user0);
                     } else {
                         String t = Long.toString(10l - elapsedtime);
-                        return ResultUtil.getResult(new Result("请" + t + "分钟后重试"), HttpStatus.BAD_REQUEST);
+                        Result result = new Result("请" + t + "分钟后重试");
+                        result.setSuccess(false);
+                        return ResultUtil.getResult(result, HttpStatus.OK);
                     }
                 }
             }
@@ -71,16 +73,23 @@ public class LoginController {
                     user1.setLock_times(0l);
                     userService.updateUsr(user1);
                 } else{
-                    return ResultUtil.getResult(new Result("密码错误次数过多，请稍后再试"), HttpStatus.BAD_REQUEST);
+                    Result result = new Result("密码错误次数过多，请稍后再试");
+                    result.setSuccess(false);
+                    return ResultUtil.getResult(result, HttpStatus.OK);
                 }
+//      签名，生成jwt
+                String token = JwtUtil.sign(user.getUsername());
 //      检查密码是否超过90天未修改
                 long timeslot = 0L;
                 timeslot = new Date().getTime() - user1.getUpdate_at().getTime();
                 if( timeslot/(24*60*60*1000)>=90 ){
-                    return ResultUtil.getResult(new Result("密码超过90天未修改，请修改密码"), HttpStatus.BAD_REQUEST);
+                    Result result = new Result();
+                    result.setObject(token);
+                    result.setNote(user1.getUtype());           //返回token的同时返回该用户的权限等级，方便前端判断
+                    result.setMessage("密码超过90天未修改，请修改密码");
+                    result.setSuccess(false);
+                    return ResultUtil.getResult(result, HttpStatus.OK);
                 }
-//                签名，生成jwt
-                String token = JwtUtil.sign(user.getUsername());
                 if(token != null){
                     Result result = new Result();
                     result.setObject(token);
@@ -98,7 +107,9 @@ public class LoginController {
                 userService.updateUsr(user0);
                 return ResultUtil.getResult(new Result("密码错误"), HttpStatus.BAD_REQUEST);
             }else{
-                return ResultUtil.getResult(new Result("密码错误次数过多，请10分钟后再试"), HttpStatus.BAD_REQUEST);
+                Result result = new Result("密码错误次数过多，请10分钟后再试");
+                result.setSuccess(false);
+                return ResultUtil.getResult(result, HttpStatus.OK);
             }
         } catch (Exception e){
             logger.info(e.toString());
