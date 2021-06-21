@@ -27,6 +27,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 
+import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
+
 
 @RestController
 @RequestMapping("/api/signin")
@@ -51,6 +53,7 @@ public class LoginController {
             if(user0 == null){
                 return ResultUtil.getResult(new Result("用户名不存在"), HttpStatus.BAD_REQUEST);
             } else{
+                user.setUpasswd(baseConvertStr(user.getPasswd()));
 //      用户名存在，但是密码错误次数过多
                 if(user0.getLock_times() == 5) {
                     long elapsedtime = (new Date().getTime() - user0.getLock_at().getTime()) / (60 * 1000);
@@ -121,6 +124,9 @@ public class LoginController {
     @PostMapping(value = "/jwtlogin", consumes = "application/json; charset=utf-8")
     public ResponseEntity<Result> jwtlogin(@RequestBody JsonNode tokenNode){
         String token = tokenNode.path("token").asText();
+        if(token.indexOf("&ticket") != -1){
+            token = token.substring(0,token.indexOf("&ticket"));
+        }
         logger.info(token);
         try {
 //            对token进行校验
