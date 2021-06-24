@@ -20,17 +20,23 @@ public class GitProcess {
     //    String privateToken = "Y3FS-iYhSGq4A5GwV6Fq"; // 202.204.62.155 root
 //    String hostURL = "http://123.56.0.67:3016/";
 //    String privateToken = "m89F6zsGaXtxFwsD2AMy"; //202.204.62.155 ustbdemo ustbdemo
+
+
+
 //    String hostURL ="http://49.232.207.151:8099/";  //测试用
 //    String privateToken ="qGsB2feqzx3J_-t-uoDT";
+//String hostURL ="http://115.25.60.82:8099/";      //测试用
+//    String privateToken = "Jsxi9xTr-ZKMLccjx92u";
 
 
-    String hostURL =OSUtil.isLinux()?"http://127.0.0.1:8099/":"http://192.168.17.130:8099/";
-    String privateToken =OSUtil.isLinux()?"qGsB2feqzx3J_-t-uoDT":"fVBagapg2jRDeJzRALv6";  //腾讯云系统密钥
+//    String hostURL =OSUtil.isLinux()?"http://127.0.0.1:8099/":"http://192.168.17.130:8099/";
+//    String privateToken =OSUtil.isLinux()?"qGsB2feqzx3J_-t-uoDT":"fVBagapg2jRDeJzRALv6";  //腾讯云系统密钥
 
 
 //    校内服务器gitlab
-//    String hostURL ="http://127.0.0.1:8099/";
-//    String privateToken = "xzzjrr9NK9oYc_wqCqxC";
+
+    String hostURL ="http://127.0.0.1:8099/";
+    String privateToken = "Jsxi9xTr-ZKMLccjx92u";
 
 //   String privateToken =OSUtil.isLinux()?"s3txBpf9sGr8hTCFxxm3":"fVBagapg2jRDeJzRALv6";   //cg新系统gitlab秘钥  root ustbdemo
 

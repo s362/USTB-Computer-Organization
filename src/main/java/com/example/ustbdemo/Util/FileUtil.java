@@ -34,7 +34,7 @@ public class FileUtil {
     public static final String FILE_PATH_WIN = "F:\\D_disk\\ustbdemo\\taskFiles\\";
     public static final String STATIC_PATH_WIN = "F:\\D_disk\\ustbdemo\\staticFiles\\";
     public static final String INITIAL_PATH_WIN = "F:\\D_disk\\ustbdemo\\initialFiles\\";
-    public static final String REPORT_PATH_WIN = "F:\\D_disk\\ustbdemo\\reportFiles\\";
+    public static final String REPORT_PATH_WIN = "E:\\test\\";
     private static final int BUFFER_SIZE = 1024;
 
 //    接受上传的文件，文件夹名称为question_id

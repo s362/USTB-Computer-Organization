@@ -1,6 +1,7 @@
 package com.example.ustbdemo.Controller;
 import com.example.ustbdemo.Aspect.ControllerRequestAdvice;
 import com.example.ustbdemo.Model.DataModel.Instruction;
+import com.example.ustbdemo.Model.DataModel.Score;
 import com.example.ustbdemo.Model.DataModel.Simulation;
 import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Model.DataModel.User;
@@ -13,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.gitlab4j.api.models.Group;
+import org.glassfish.jersey.internal.guava.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,9 @@ import org.springframework.web.bind.annotation.*;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Date;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
+import static com.example.ustbdemo.Shiro.JwtUtil.verify;
 import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
 
 
@@ -42,6 +43,8 @@ public class LoginController {
 
     final String loginUrl = "http://202.205.145.156:8017/sys/api/user/validate?";//??
 
+    //纪录现有的token
+    Map<String, String> tokenmap = new HashMap<String, String>();
 
 //    普通登录验证,正确就返回jwt，错误返回报错信息
     @PostMapping(value = "/", consumes = "application/json; charset=utf-8")
@@ -94,11 +97,20 @@ public class LoginController {
                     return ResultUtil.getResult(result, HttpStatus.OK);
                 }
                 if(token != null){
-                    Result result = new Result();
-                    result.setObject(token);
-                    result.setNote(user1.getUtype());           //返回token的同时返回该用户的权限等级，方便前端判断
-                    result.setMessage(user1.getUsername());   //返回前端用户名，便于显示
-                    return ResultUtil.getResult(result, HttpStatus.OK);
+                    // 将生成的token纪录下来
+                    tokenmap.put(user1.getUsername(),token);
+                    if(checkTokenList()>500l){
+                        String t = Long.toString(checkTokenList() - 500l);
+                        Result result = new Result("当前排队人数" + t + "人");
+                        result.setSuccess(false);
+                        return ResultUtil.getResult(result, HttpStatus.OK);
+                    } else {
+                        Result result = new Result();
+                        result.setObject(token);
+                        result.setNote(user1.getUtype());           //返回token的同时返回该用户的权限等级，方便前端判断
+                        result.setMessage(user1.getUsername());   //返回前端用户名，便于显示
+                        return ResultUtil.getResult(result, HttpStatus.OK);
+                    }
                 }
             } logger.info("无此用户");
 
@@ -374,5 +386,16 @@ public class LoginController {
         return stringBuffer.toString();
     }
 
+    private long checkTokenList(){
+        long count = 0L;
+        for (Map.Entry<String, String> entry : tokenmap.entrySet()) {
+                if(!verify(entry.getValue())){
+                    tokenmap.remove(entry.getKey());
+                } else {
+                    count++;
+                }
+        }
+        return count;
+    }
 
 }
