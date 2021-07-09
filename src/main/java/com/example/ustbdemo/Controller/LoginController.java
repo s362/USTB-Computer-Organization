@@ -29,6 +29,7 @@ import java.util.*;
 
 import static com.example.ustbdemo.Shiro.JwtUtil.verify;
 import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
+import static com.example.ustbdemo.Util.RsaUtil.decode;
 
 
 @RestController
@@ -56,7 +57,7 @@ public class LoginController {
             if(user0 == null){
                 return ResultUtil.getResult(new Result("用户名不存在"), HttpStatus.BAD_REQUEST);
             } else{
-                user.setUpasswd(baseConvertStr(user.getPasswd()));
+                user.setUpasswd(decode(user.getPasswd()));
 //      用户名存在，但是密码错误次数过多
                 if(user0.getLock_times() == 5) {
                     long elapsedtime = (new Date().getTime() - user0.getLock_at().getTime()) / (60 * 1000);

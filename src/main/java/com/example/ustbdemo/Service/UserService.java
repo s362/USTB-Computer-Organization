@@ -12,6 +12,7 @@ import java.util.List;
 
 import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
 import static com.example.ustbdemo.Util.Base64Convert.strConvertBase;
+import static com.example.ustbdemo.Util.RsaUtil.decode;
 
 @Service("userService")
 public class UserService {
@@ -199,8 +200,12 @@ public class UserService {
     public int changePwd(String username,String oldPwd,String newPwd){
         User user=findByUserName(username);
         if (user==null) return -1;
-        if (!baseConvertStr(user.getPasswd()).equals(oldPwd)) return -2;
-        user.setPasswd(strConvertBase(newPwd));
+        System.out.println("数据库里面的密码是"+baseConvertStr(user.getPasswd()));
+
+        System.out.println("传过来的密码是"+oldPwd);
+        if (!baseConvertStr(user.getPasswd()).equals(decode(oldPwd))) return -2;
+
+        user.setPasswd(strConvertBase(decode(newPwd)));
         user.setUpdate_at(new Date());
         try {
             this.userRepository.save(user);

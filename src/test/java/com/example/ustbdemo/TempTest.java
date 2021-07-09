@@ -1,5 +1,9 @@
 package com.example.ustbdemo;
 
+import com.example.ustbdemo.Util.RsaUtil;
+import org.junit.Test;
+
+import java.util.Map;
 //import redis.clients.jedis.Jedis;
 
 //@RunWith(SpringRunner.class)
@@ -160,4 +164,21 @@ public class TempTest {
 //        System.out.println(jedis.get("lala"));System.out.println(jedis.get("25"));
 //        System.out.println(jedis.ping());
 //    }
+
+
+
+    /**
+     * @author zhanghongkai
+     * @version 1.0
+     * @Classname Test5
+     * @Description Test5
+     * @Date 2020/12/25 10:24
+     */
+    @Test
+    public void main() {
+        String rsaKeys = RsaUtil.encode("123");
+        System.out.println("encode:"+ rsaKeys);
+        String Key = RsaUtil.decode(rsaKeys);
+        System.out.println("Key:"+ Key);
+    }
 }

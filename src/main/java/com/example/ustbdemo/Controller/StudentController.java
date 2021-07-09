@@ -3,6 +3,7 @@ package com.example.ustbdemo.Controller;
 import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Model.UtilModel.ChooseModel;
 import com.example.ustbdemo.Model.UtilModel.Result;
+import com.example.ustbdemo.Model.UtilModel.changePwdModel;
 import com.example.ustbdemo.Service.QuestionService;
 import com.example.ustbdemo.Service.ScoreService;
 import com.example.ustbdemo.Service.TaskService;
@@ -55,11 +56,11 @@ public class StudentController {
 
 
     //给学生提供的修改密码的接口
-    @PostMapping("/changePwd")
-    public ResponseEntity<Result> changePwd(String oldPwd,String newPwd,HttpServletRequest httpServletRequest){
+    @PostMapping(value = "/changePwd", consumes = "application/json; charset=utf-8")
+    public ResponseEntity<Result> changePwd(@RequestBody changePwdModel pwd, HttpServletRequest httpServletRequest){
         String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        logger.info("username: "+username+" oldPwd: "+oldPwd+" to newPwd:"+newPwd);
-        int res=userService.changePwd(username,oldPwd,newPwd);
+        logger.info("username: "+username+" oldPwd: "+pwd.getOldPwd()+" to newPwd:"+pwd.getNewPwd());
+        int res=userService.changePwd(username,pwd.getOldPwd(),pwd.getNewPwd());
         Result result=new Result();
         if (res==0) result.setSuccess(true);
         else if (res==-1) {
@@ -671,7 +672,8 @@ public class StudentController {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         User user=userService.findByUserName(user_id);
         Result result=new Result();
-        result.setObject(getGradeOfTask(user.getUid(),tid));
+
+        result.setObject(getGradeOfTask(user.getUid(),tid)/4);
         result.setSuccess(true);
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
@@ -742,7 +744,7 @@ public class StudentController {
         User user=userService.findByUserName(user_id);
         logger.info("uid,tid:"+user.getUid()+" "+tid);
         Long grade=getGradeOfTask(user.getUid(),tid);
-        if (grade==null||grade==0L) grade=0L; else grade=100L;   //这里的成绩是指汇编代码的成绩，不是全部的成绩。
+        if (grade==null||grade==0L) grade=0L; else grade=25L;   //这里的成绩是指汇编代码的成绩，不是全部的成绩。
         Long times=getTimesOfTask(user.getUid(),tid);
         if (times==null) times=0L;
         Map<String,Long> map=new HashMap<>();
@@ -940,6 +942,35 @@ public class StudentController {
         }
     }
 
+    /**
+     * 获取学生总成绩
+     * @param httpServletRequest  token信息
+     * @return 返回int
+     */
+    @PostMapping(value = "/getAllGrade")
+    public ResponseEntity<Result> getAllGrade(HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        User user=userService.findByUserName(user_id);
+        try{
+            long grade871=0l;
+            long grade872=0l;
+            long grade863=0l;
+            long grade552=0l;
+            //871+872+863+552的题目成绩
+            grade871 = getGradeOfTask(user.getUid(),871l);
+            grade872 = getGradeOfTask(user.getUid(),872l);
+            grade863 = getGradeOfTask(user.getUid(),863l);
+            grade552 = getGradeOfTask(user.getUid(),552l);
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setObject((grade871+grade872+grade863+grade552)/4);
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        }catch (Exception e){
+            logger.info(e.getMessage());
+            return ResultUtil.getResult(new Result("成绩获取失败"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){
@@ -1031,7 +1062,7 @@ public class StudentController {
         if(number==0) chooseGrade=0L;
         else chooseGrade=chooseGrade/number;
         logger.info("codeGrade  chooseGrade="+codeGrade+" -- "+chooseGrade);
-        grade=(codeGrade+chooseGrade*2)/3;//代码和选择的占分比例是1：2
+        grade=(codeGrade*2+chooseGrade*3)/5;//代码和选择的占分比例是1：2
 
         Score score = new Score();
         score.setUid(uid);
@@ -1066,7 +1097,7 @@ public class StudentController {
     //获取题目对应的分数
     private Long getGradeOfTask(Long uid,Long tid){
         Score score=scoreService.findScoreByUserandTid(uid,tid);
-        if (score==null) return null;
+        if (score==null) return 0l;
         return score.getTscore();
     }
 
