@@ -40,7 +40,6 @@ public class User {
     private Long lock_times; // 密码错误次数
 
 
-
     public User(){}
 
     public User(String username, String upasswd, Long utype){
@@ -127,4 +126,20 @@ public class User {
     public void setLock_times(Long lock_times) {
         this.lock_times = lock_times;
     }
+
+//    public String getAccess_token() {
+//        return access_token;
+//    }
+//
+//    public void setAccess_token(String access_token) {
+//        this.access_token = access_token;
+//    }
+//
+//    public long getCreate_time() {
+//        return create_time;
+//    }
+//
+//    public void setCreate_time(long create_time) {
+//        this.create_time = create_time;
+//    }
 }

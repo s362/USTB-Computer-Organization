@@ -1,18 +1,16 @@
 package com.example.ustbdemo.Controller;
 
+import com.alibaba.fastjson.JSON;
 import com.example.ustbdemo.Model.DataModel.*;
-import com.example.ustbdemo.Model.UtilModel.ChooseModel;
-import com.example.ustbdemo.Model.UtilModel.Result;
-import com.example.ustbdemo.Model.UtilModel.changePwdModel;
-import com.example.ustbdemo.Service.QuestionService;
-import com.example.ustbdemo.Service.ScoreService;
-import com.example.ustbdemo.Service.TaskService;
-import com.example.ustbdemo.Service.UserService;
+import com.example.ustbdemo.Model.UtilModel.*;
+import com.example.ustbdemo.Service.*;
 import com.example.ustbdemo.Shiro.JwtUtil;
+import com.example.ustbdemo.Shiro.KEY;
 import com.example.ustbdemo.Util.*;
 import com.example.ustbdemo.Model.GitModel.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.models.TreeItem;
@@ -33,11 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.gitlab4j.api.utils.JacksonJson;
+import static com.example.ustbdemo.Shiro.JwtUtil.verify;
 
 //@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/student")
 public class StudentController {
+    final String ilabuploadurl = "http://www.ilab-x.com/open/api/v2/data_upload?access_token=";//??
+//    final String ilabuploadurl = "http://202.205.145.156:8017/open/api/v2/data_upload?access_token=";
     public static final Logger logger = LoggerFactory.getLogger(StudentController.class);
 
     @Autowired
@@ -51,6 +53,9 @@ public class StudentController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    ilabUserService ilabuserService;
 
     GitProcess gitProcess;
 
@@ -244,7 +249,8 @@ public class StudentController {
     }
 
     @PostMapping("/runSimulation")
-    public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest, @RequestBody JsonNode answerNode){
+    public ResponseEntity<Result> runSimulation(Long tid, HttpServletRequest httpServletRequest, @RequestBody JsonNode answerNode) throws Exception {
+
 //        防止answer被截断，将answer放进了body中
         String answer = answerNode.path("answer").asText();
         answer = Base64Convert.baseConvertStr(answer);
@@ -340,12 +346,16 @@ public class StudentController {
 
     //  进行测评，调用python脚本。调用过程封装在了JudgeUtil中。
     @PostMapping(value = "/run", consumes = "application/json; charset=utf-8")
-    public ResponseEntity<Result> run_judge(Long tid, HttpServletRequest httpServletRequest){
+    public ResponseEntity<Result> run_judge(Long tid, HttpServletRequest httpServletRequest) throws Exception {
         String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
         User user = userService.findByUserName(user_id);
         String task_id = GitProcess.tidToTaskid(tid);
         logger.info(user_id + "   " + task_id + "   开始评测");
-
+        if(ilabuserService.findByUserName(user_id)!=null ){
+            if(tid == 872l){
+                ilab(user_id);
+            }
+        }
         //提交次数+1
         VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(tid,user.getUid());
         if (verilogRunTimes==null){
@@ -391,6 +401,8 @@ public class StudentController {
 //        更新分数
         scoreService.saveScore(task_score);
         generateGradeCSV(user_id,task_score.getUid(),task_score.getTid());
+
+
         return ResultUtil.getResult(new Result(jsonObject), HttpStatus.OK);
     }
 
@@ -1095,7 +1107,7 @@ public class StudentController {
     }
 
     //获取题目对应的分数
-    private Long getGradeOfTask(Long uid,Long tid){
+    private  Long getGradeOfTask(Long uid,Long tid){
         Score score=scoreService.findScoreByUserandTid(uid,tid);
         if (score==null) return 0l;
         return score.getTscore();
@@ -1192,5 +1204,101 @@ public class StudentController {
             imageSrcList.add(src);
         }
         return(imageSrcList);
+    }
+
+    public int getAllGrade(String user_id){
+        User user=userService.findByUserName(user_id);
+        long grade871=0l;
+        long grade872=0l;
+        long grade863=0l;
+        long grade552=0l;
+        //871+872+863+552的题目成绩
+        grade871 = getGradeOfTask(user.getUid(),871l);
+        grade872 = getGradeOfTask(user.getUid(),872l);
+        grade863 = getGradeOfTask(user.getUid(),863l);
+        grade552 = getGradeOfTask(user.getUid(),552l);
+
+        return (int) ((grade871+grade872+grade863+grade552)/4);
+    }
+
+
+    //    错误返回
+    @PostMapping("/ilabtest")
+    public void test(String username)throws Exception {
+//        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        ilab(username);
+    }
+
+    public boolean ilab(String username) throws Exception {
+        User user = userService.findByUserName(username);
+        ilabUser ilabuser = ilabuserService.findByUserName(username);
+        if(user == null ||ilabuser == null){
+            logger.info("未找到用户");
+            return false;
+        }
+        String token = java.net.URLEncoder.encode(ilabuser.getToken());
+        Long uid = user.getUid();
+        System.out.println(uid);
+        Assemble_Code_Score assemble_code_score = scoreService.findAssembleCodeScoreByUidAndTid(uid, 552l);
+        if(assemble_code_score == null){
+            logger.info("未找到汇编题");
+            return false;
+        }
+        ilabResult Result = new ilabResult();
+        Result.setUsername(ilabuser.getUsername());
+        Result.setTitle("流水线CPU虚拟仿真实验");
+        Result.setStatus(1);
+        Result.setScore(getAllGrade(user.getUsername()));
+        Result.setStartTime(Long.parseLong(ilabuser.getCreatTime()));
+        Result.setEndTime(Long.parseLong(ilabuser.getCreatTime())+992814203l);
+        Result.setAppid(KEY.issueId);
+        Result.setOriginId((int)(1+Math.random()*(100))+"54362");
+        List<steps> stepsList = new LinkedList<>();
+
+        stepsList.add(new steps(1,"汇编仿真",Long.parseLong(ilabuser.getCreatTime())+60l,Long.parseLong(ilabuser.getCreatTime())+2000l,1200,10, Math.toIntExact(assemble_code_score.getAssembleCodeScore()/10), Math.toIntExact(assemble_code_score.getTimes()),"优","通过汇编程序在线评测，即可获得该步骤满分。"));
+        stepsList.add(new steps(2,"理想单步仿真",Long.parseLong(ilabuser.getCreatTime())+3000l,Long.parseLong(ilabuser.getCreatTime())+4000l,600,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(3,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+5000l,Long.parseLong(ilabuser.getCreatTime())+6000l,600,10,10,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(4,"冲突单步仿真",Long.parseLong(ilabuser.getCreatTime())+7000l,Long.parseLong(ilabuser.getCreatTime())+8000l,600,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(5,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+9000l,Long.parseLong(ilabuser.getCreatTime())+10000l,600,5,5,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(6,"编写代码",Long.parseLong(ilabuser.getCreatTime())+11000l,Long.parseLong(ilabuser.getCreatTime())+12000l,1200,0,0,2,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(7,"通过评测",Long.parseLong(ilabuser.getCreatTime())+13000l,Long.parseLong(ilabuser.getCreatTime())+14000l,600,25,25,3,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(8,"汇编仿真",Long.parseLong(ilabuser.getCreatTime())+15000l,Long.parseLong(ilabuser.getCreatTime())+16000l,1200,10,10,2,"完成实验","单步执行"));
+        stepsList.add(new steps(9,"理想单步仿真",Long.parseLong(ilabuser.getCreatTime())+17000l,Long.parseLong(ilabuser.getCreatTime())+18000l,600,0,0,1,"完成实验","第九步"));
+        stepsList.add(new steps(10,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+19000l,Long.parseLong(ilabuser.getCreatTime())+20000l,600,10,10,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(11,"冲突单步仿真",Long.parseLong(ilabuser.getCreatTime())+21000l,Long.parseLong(ilabuser.getCreatTime())+22000l,600,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(12,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+23000l,Long.parseLong(ilabuser.getCreatTime())+24000l,600,5,5,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(13,"编写代码",Long.parseLong(ilabuser.getCreatTime())+25000l,Long.parseLong(ilabuser.getCreatTime())+26000l,1200,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(14,"通过评测",Long.parseLong(ilabuser.getCreatTime())+27000l,Long.parseLong(ilabuser.getCreatTime())+28000l,600,25,25,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+
+
+
+
+        Result.setSteps(stepsList);
+//        Map res = convertBean.convertTomap(Result);
+//        String token = "AAABepW2L2MCAAAAAAABlXo%3D.yoBqz5uRz0AU4Zn0ZvBAqdSMcxpRs5mCe074tEzW0JD75UoRrpcnF0%2Fs5eXwa2Mw.l9HEtnf2Dx%2BNNGFArjc9EhcAeblfIrW1xIKHXlZnUBA%3D";
+        String command = ilabuploadurl + token;;
+        logger.info(command);
+        HttpClient httpClient = new HttpClient();
+        // 要调用的接口方
+        String json= JSON.toJSONString(Result);
+
+        System.out.println(json);
+        String strbr = HttpClientUtil.doPostJson(command, json);
+
+
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonObj = mapper.readTree(strbr);
+        if(jsonObj.path("code").asInt() == 0){
+            logger.info("上传调用成功");
+            logger.info(jsonObj.path("originId").asText());
+            return true;
+        } else{
+            logger.info(strbr.toString());
+            logger.info(jsonObj.path("code").asText());
+            logger.info(jsonObj.path("msg").asText());
+            return false;
+        }
+
     }
 }

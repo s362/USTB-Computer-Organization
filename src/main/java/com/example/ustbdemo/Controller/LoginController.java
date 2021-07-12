@@ -1,18 +1,18 @@
 package com.example.ustbdemo.Controller;
 import com.example.ustbdemo.Aspect.ControllerRequestAdvice;
-import com.example.ustbdemo.Model.DataModel.Instruction;
-import com.example.ustbdemo.Model.DataModel.Score;
-import com.example.ustbdemo.Model.DataModel.Simulation;
+import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Model.UtilModel.Result;
-import com.example.ustbdemo.Model.DataModel.User;
 import com.example.ustbdemo.Service.TaskService;
 import com.example.ustbdemo.Service.UserService;
+import com.example.ustbdemo.Service.ilabUserService;
 import com.example.ustbdemo.Shiro.JwtUtil;
+import com.example.ustbdemo.Shiro.KEY;
 import com.example.ustbdemo.Shiro.TestJWT;
 import com.example.ustbdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.tomcat.util.json.JSONParser;
 import org.gitlab4j.api.models.Group;
 import org.glassfish.jersey.internal.guava.Lists;
 import org.slf4j.Logger;
@@ -20,11 +20,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
+import sun.security.provider.MD5;
 
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.example.ustbdemo.Shiro.JwtUtil.verify;
@@ -39,11 +42,14 @@ public class LoginController {
     UserService userService;
     @Autowired
     TaskService taskService;
+    @Autowired
+    ilabUserService ilabuserService;
 
     public static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
     final String loginUrl = "http://202.205.145.156:8017/sys/api/user/validate?";//??
-
+//    final String ilabloginUrl = "http://202.205.145.156:8017/open/api/v2/token?";//??
+    final String ilabloginUrl = "http://www.ilab-x.com/open/api/v2/token?";//??
     //纪录现有的token
     Map<String, String> tokenmap = new HashMap<String, String>();
 
@@ -227,6 +233,118 @@ public class LoginController {
         }
     }
 
+
+    //    用国家平台用户名密码进行登录，用本地调用国家接口进行验证
+    @PostMapping(value = "/ilaburl", consumes = "application/json; charset=utf-8")
+    public ResponseEntity<Result> ilaburl(@RequestBody JsonNode ticket){
+        try{
+            String ticketStr;
+            System.out.println(ticket);
+            ticketStr = ticket.path("ticket").asText();
+            ticketStr = java.net.URLDecoder.decode(ticketStr);
+            String signature = DigestUtils.md5DigestAsHex((ticketStr+KEY.issueId+KEY.aeskey).getBytes()).toUpperCase();
+            ticketStr = java.net.URLEncoder.encode(ticketStr);
+//            String param = String.format("ticket=%s&appid=%s&signature=%s", ticketStr, KEY.issueId,signature );
+//            String command = String.format(ilabloginUrl + param);
+            String param = "ticket="+ ticketStr +"&appid=" +KEY.issueId + "&signature="+signature;
+            System.out.println(ticketStr+KEY.issueId+KEY.aeskey);
+            String command = ilabloginUrl + param;
+
+            Result result=new Result();
+            result.setMessage(command);
+//            result.setMessage();  //将用户名返回，便于前端显示
+            result.setSuccess(true);
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        } catch (Exception e){
+            logger.info(e.toString());
+            return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+
+
+    //    用国家平台用户名密码进行登录，用本地调用国家接口进行验证
+    @PostMapping(value = "/ilablogin", consumes = "application/json; charset=utf-8")
+    public ResponseEntity<Result> ilablogin(@RequestBody JsonNode ticket){
+        try{
+            String ticketStr;
+            System.out.println(ticket);
+            ticketStr = ticket.path("ticket").asText();
+            ticketStr = java.net.URLDecoder.decode(ticketStr);
+            String signature = DigestUtils.md5DigestAsHex((ticketStr+KEY.issueId+KEY.aeskey).getBytes()).toUpperCase();
+            ticketStr = java.net.URLEncoder.encode(ticketStr);
+//            String param = String.format("ticket=%s&appid=%s&signature=%s", ticketStr, KEY.issueId,signature );
+//            String command = String.format(ilabloginUrl + param);
+            String param = "ticket="+ ticketStr +"&appid=" +KEY.issueId + "&signature="+signature;
+            System.out.println(ticketStr+KEY.issueId+KEY.aeskey);
+            String command = ilabloginUrl + param;
+            logger.info(command);
+//            进行get请求
+            String strbr = HttpClient.doGet(command);
+//            JSONObject jsonObj = new JSONObject(strbr);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonObj = mapper.readTree(strbr);
+            if(jsonObj.path("code").asInt() == 0){
+                User user = new User();
+                user.setUtype(2l);
+                user.setUdis(jsonObj.path("ilab").asText());
+                user.setUsername(jsonObj.path("un").asText());
+                User userdemo=userService.findByUserName(user.getUsername());
+                if (userdemo!=null){
+                    logger.info("用户名已存在");
+                } else{
+                    userService.addUser(user);
+                }
+
+//                user.setAccess_token(jsonObj.path("access_token").asText());
+//                user.setCreate_time(jsonObj.path("create_time").asLong());
+
+                ilabUser ilabuesr = new ilabUser();
+                ilabuesr.setCreatTime(String.valueOf(jsonObj.path("create_time").asLong()));
+                ilabuesr.setToken(jsonObj.path("access_token").asText());
+                ilabuesr.setUsername(jsonObj.path("un").asText());
+//                ilabuesr.setEndTime(String.valueOf(jsonObj.path("end_time").asLong()));
+                ilabUser ilabuserdemo=ilabuserService.findByUserName(ilabuesr.getUsername());
+                if (ilabuserdemo!=null){
+                    logger.info("用户名已存在");
+                } else{
+                    ilabuserService.addilabUser(ilabuesr);
+                }
+
+
+                String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
+                Result result=new Result();
+                result.setObject((Object)jwtToken);
+                result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
+                result.setSuccess(true);
+                return ResultUtil.getResult(result, HttpStatus.OK);
+            } else if(jsonObj.path("code").asInt() == 1){
+                Result result=new Result();
+                result.setMessage("参数错误");
+                result.setSuccess(true);
+                return ResultUtil.getResult(result, HttpStatus.OK);
+            } else if(jsonObj.path("code").asInt() == 2){
+                Result result=new Result();
+                result.setMessage("密钥错误");
+                result.setSuccess(true);
+                return ResultUtil.getResult(result, HttpStatus.OK);
+            }
+            logger.info(strbr);
+            Result result=new Result();
+            result.setObject((Object)strbr);
+//            result.setMessage();  //将用户名返回，便于前端显示
+            result.setSuccess(true);
+            return ResultUtil.getResult(result, HttpStatus.OK);
+        } catch (Exception e){
+            logger.info(e.toString());
+            return ResultUtil.getResult(new Result("帐号或密码错误"), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+
+
 //    添加用户
     @PostMapping("/adduser")
     public ResponseEntity<Result> addUser(String username, String upassword){
@@ -263,6 +381,7 @@ public class LoginController {
     public ResponseEntity<Result> error(){
         return ResultUtil.getResult(new Result("登录失败", false), HttpStatus.BAD_REQUEST);
     }
+
 
 //    国家平台要求的，生成随机字符
     public String getRandomString(){

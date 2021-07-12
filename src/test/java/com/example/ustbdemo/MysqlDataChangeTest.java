@@ -97,16 +97,18 @@ public class MysqlDataChangeTest {
 //    }
 
 
-//    //将学生的实验成绩导出
-//    @Autowired
-//    ScoreService scoreService;
-//
-//    @Autowired
-//    UserService userService;
+    //将学生的实验成绩导出
+    @Autowired
+    ScoreService scoreService;
+
+    @Autowired
+    UserService userService;
 //
 //    @Test
 //    public void exportScore() {
-//        List<User> userList=userService.findAll();
+//        scoreService.findScoreByUser(98l);
+//        List<User> userList = userService.findAll();
+//    }
 //
 //        Map<String,Integer> mapUserScore552=new HashMap<>();  //汇编仿真一
 //        Map<String,Integer> mapUserScore863=new HashMap<>();  //汇编仿真二

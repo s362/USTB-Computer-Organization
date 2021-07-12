@@ -57,7 +57,9 @@ public class UserService {
 
     public Boolean addUser(User user){
         try{
-            user.setPasswd(strConvertBase(user.getPasswd()));
+            if(!user.getUdis().equals("ilab")){
+                user.setPasswd(strConvertBase(user.getPasswd()));
+            }
             user.setUpdate_at(new Date());
             user.setLock_times(0l);
             this.userRepository.save(user);
