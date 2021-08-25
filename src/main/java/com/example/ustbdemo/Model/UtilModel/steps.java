@@ -14,7 +14,7 @@ public class steps {
     private String scoringModel;
 
 
-    public steps(int seq, String title, long startTime, long endTime, int expectTime, int maxScore, int score, int repeatCount, String evaluation, String scoringModel) {
+    public steps(int seq, String title, long startTime, long endTime, int expectTime, int maxScore, int score, int repeatCount, String scoringModel) {
         this.seq = seq;
         this.title = title;
         this.startTime = startTime;
@@ -24,7 +24,20 @@ public class steps {
         this.maxScore = maxScore;
         this.score = score;
         this.repeatCount = repeatCount;
-        this.evaluation = evaluation;
+        if(maxScore == 0){
+            this.evaluation = "完成实验";
+        } else if((float)score/maxScore >= 0.9){
+            this.evaluation = "优";
+        } else if((float)score/maxScore >= 0.8){
+            this.evaluation = "良";
+        } else if((float)score/maxScore >= 0.7){
+            this.evaluation = "中";
+        } else if((float)score/maxScore >= 0.6){
+            this.evaluation = "及格";
+        } else {
+            this.evaluation = "不及格";
+        }
+
         this.scoringModel = scoringModel;
     }
 

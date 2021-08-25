@@ -189,7 +189,7 @@ public class UserService {
      * @param studentId 学生id
      * @return 删除是否成功
      */
-    public boolean deleteStudentIdByStudentId(Long studentId){
+    public boolean deleteStudentId(Long studentId){
         try {
             this.userRepository.deleteById(studentId);
             return true;

@@ -14,7 +14,7 @@ public class JudgeUtil {
 //    接受用户id和待评测的题目id，调用docker，然后把返回结果保存为JsonNode格式。
     static public JsonNode shell(String task_id, String user_id) {
         //将network模式改为host，加快clone速度
-        String command = "sudo docker run --network=host --rm ustb/merge:v2 /home/docker/ide/gitrun " + task_id + " " + user_id;
+        String command = "sudo docker run --network=host --rm ustb/merge:v3 /home/docker/ide/gitrun " + task_id + " " + user_id;
 
         System.out.println(command);
 

@@ -11,6 +11,7 @@ import com.example.ustbdemo.Model.GitModel.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.apache.catalina.filters.ExpiresFilter;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.models.RepositoryFile;
 import org.gitlab4j.api.models.TreeItem;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +42,9 @@ import static com.example.ustbdemo.Shiro.JwtUtil.verify;
 public class StudentController {
     final String ilabuploadurl = "http://www.ilab-x.com/open/api/v2/data_upload?access_token=";//??
 //    final String ilabuploadurl = "http://202.205.145.156:8017/open/api/v2/data_upload?access_token=";
+    final String ilabRefresh = "http://www.ilab-x.com/open/api/v2/token/refresh?";
+//    final String ilabRefresh = "http://202.205.145.156:8017/open/api/v2/token/refresh?";
+
     public static final Logger logger = LoggerFactory.getLogger(StudentController.class);
 
     @Autowired
@@ -56,6 +61,9 @@ public class StudentController {
 
     @Autowired
     ilabUserService ilabuserService;
+
+    @Autowired
+    ilabScoreService ilabscoreService;
 
     GitProcess gitProcess;
 
@@ -351,11 +359,7 @@ public class StudentController {
         User user = userService.findByUserName(user_id);
         String task_id = GitProcess.tidToTaskid(tid);
         logger.info(user_id + "   " + task_id + "   开始评测");
-        if(ilabuserService.findByUserName(user_id)!=null ){
-            if(tid == 872l){
-                ilab(user_id);
-            }
-        }
+
         //提交次数+1
         VerilogRunTimes verilogRunTimes=scoreService.findVerilogRunTimesByTidAndUid(tid,user.getUid());
         if (verilogRunTimes==null){
@@ -756,7 +760,7 @@ public class StudentController {
         User user=userService.findByUserName(user_id);
         logger.info("uid,tid:"+user.getUid()+" "+tid);
         Long grade=getGradeOfTask(user.getUid(),tid);
-        if (grade==null||grade==0L) grade=0L; else grade=25L;   //这里的成绩是指汇编代码的成绩，不是全部的成绩。
+        if (grade==null||grade==0L) grade=0L; else grade=10L;   //这里的成绩是指汇编代码的成绩，不是全部的成绩。
         Long times=getTimesOfTask(user.getUid(),tid);
         if (times==null) times=0L;
         Map<String,Long> map=new HashMap<>();
@@ -782,7 +786,7 @@ public class StudentController {
         if (task==null) return ResultUtil.getResult(new Result("tid不存在"),HttpStatus.BAD_REQUEST);
         if (task.getTtype()==0L) return ResultUtil.getResult(new Result("该题目是verilog编程题，无选择题"),HttpStatus.BAD_REQUEST);
         Map<String,Map<String,Long>> map=getAssembleChooseScoreAndTimesByUidAndTid(user.getUid(),tid);
-        Long chooseGrade=getAllAssembleChooseScore(user.getUid(),tid);
+        double chooseGrade=Math.floor(getAllAssembleChooseScore(user.getUid(),tid)*0.14);
         Map<String,Object> lastMap=new HashMap<>();
         lastMap.put("allChooseScore",chooseGrade);
         lastMap.put("scoreAndTimes",map);
@@ -792,6 +796,7 @@ public class StudentController {
         result.setObject(lastMap);
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
+
 
     /**
      * 接收前端生成的报告，保存到本地
@@ -863,6 +868,8 @@ public class StudentController {
             logger.info(e.getMessage());
         }
     }
+
+
 
     /**
      * 获取某个verilog实验的结果波形
@@ -980,6 +987,27 @@ public class StudentController {
         }catch (Exception e){
             logger.info(e.getMessage());
             return ResultUtil.getResult(new Result("成绩获取失败"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    /**
+     * 获取学生结束实验的时间
+     * @param httpServletRequest  token信息
+     * @return 返回int
+     */
+    @PostMapping(value = "/getEndtime")
+    public ResponseEntity<Result> getEndTime(HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        try{
+            ilabScore ialb_user = ilabscoreService.getIlabScoreByUsernameStep(user_id,14L);
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setMessage(ialb_user.getEndTime());
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        }catch (Exception e){
+            logger.info(e.getMessage());
+            return ResultUtil.getResult(new Result("获取失败"),HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -1169,7 +1197,7 @@ public class StudentController {
      * 获取所有选择题总的分数 满分100
      * @param uid 用户id
      * @param tid 题目id
-     * @return 返回一个map，每一项分别是一个题目的分数和次数
+     * @return 返回一个long，题目的分数
      */
     public Long getAllAssembleChooseScore(Long uid,Long tid){
 
@@ -1180,7 +1208,7 @@ public class StudentController {
         for (Assemble_Choose assembleChoose: assembleChooseList){
             Assemble_Choose_Score assembleChooseScore = scoreService.findAssembleChooseScoreByUidandTid(uid,assembleChoose.getTcid());
             if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
-            chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-25*(assembleChooseScore.getTimes()-1),0L);
+            chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-15*(assembleChooseScore.getTimes()-1),0L);
         }
         logger.info("choose number="+number);
         logger.info("all chooseGrade="+chooseGrade);
@@ -1189,6 +1217,53 @@ public class StudentController {
         else chooseGrade=chooseGrade/number;
 
         return chooseGrade;
+    }
+
+    /**
+     * 获取所有选择题部分的分数 满分100
+     * @param uid 用户id
+     * @param tid 题目id
+     * @return 返回一个long，题目的分数
+     */
+    public Long getPartAssembleChooseScore(Long uid,Long tid,int tpart){
+
+        List<Assemble_Choose> assembleChooseList=taskService.getAssembleChooseByTidAndPartId(tid,tpart);
+        if (assembleChooseList==null) return 0L;
+        int number=assembleChooseList.size();
+        Long chooseGrade=0L;
+        for (Assemble_Choose assembleChoose: assembleChooseList){
+            Assemble_Choose_Score assembleChooseScore = scoreService.findAssembleChooseScoreByUidandTid(uid,assembleChoose.getTcid());
+            if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
+            chooseGrade=chooseGrade+max(assembleChooseScore.getAcscore()-15*(assembleChooseScore.getTimes()-1),0L);
+        }
+        logger.info("choose number="+number);
+        logger.info("all chooseGrade="+chooseGrade);
+
+        if(number==0) chooseGrade=0L;
+        else chooseGrade=chooseGrade/number;
+
+        return chooseGrade;
+    }
+
+    /**
+     * 获取所有选择题的提交次数
+     * @param uid 用户id
+     * @param tid 题目id
+     * @return 返回一个map，每一项分别是一个题目的分数和次数
+     */
+    public Long getPartAssembleChooseTimes(Long uid,Long tid,int tpart){
+
+        List<Assemble_Choose> assembleChooseList=taskService.getAssembleChooseByTidAndPartId(tid, tpart);
+        if (assembleChooseList==null) return 0L;
+        int number=assembleChooseList.size();
+        Long times=0L;
+        for (Assemble_Choose assembleChoose: assembleChooseList){
+            Assemble_Choose_Score assembleChooseScore = scoreService.findAssembleChooseScoreByUidandTid(uid,assembleChoose.getTcid());
+            if (assembleChooseScore == null||assembleChooseScore.getAcscore()==0L) continue;
+            times=times+assembleChooseScore.getTimes();
+        }
+        if(number==0) times=0L;
+        return times;
     }
 
     //获取描述中图片的URL
@@ -1222,83 +1297,305 @@ public class StudentController {
     }
 
 
-    //    错误返回
+    //    测试1
     @PostMapping("/ilabtest")
-    public void test(String username)throws Exception {
-//        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
-        ilab(username);
-    }
-
-    public boolean ilab(String username) throws Exception {
+    public ResponseEntity<Result> test(String username)throws Exception {
         User user = userService.findByUserName(username);
         ilabUser ilabuser = ilabuserService.findByUserName(username);
         if(user == null ||ilabuser == null){
             logger.info("未找到用户");
-            return false;
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setMessage("未找到用户");
+            return ResultUtil.getResult(result,HttpStatus.OK);
         }
         String token = java.net.URLEncoder.encode(ilabuser.getToken());
         Long uid = user.getUid();
         System.out.println(uid);
         Assemble_Code_Score assemble_code_score = scoreService.findAssembleCodeScoreByUidAndTid(uid, 552l);
+        Assemble_Code_Score assemble_code_score2 = scoreService.findAssembleCodeScoreByUidAndTid(uid, 863l);
+        VerilogRunTimes Verilog_score1 = scoreService.findVerilogRunTimesByTidAndUid(871l, user.getUid());
+        VerilogRunTimes Verilog_score2 = scoreService.findVerilogRunTimesByTidAndUid(872l, user.getUid());
         if(assemble_code_score == null){
-            logger.info("未找到汇编题");
-            return false;
+            assemble_code_score = new Assemble_Code_Score();
+            assemble_code_score.setTimes(0l);
+            assemble_code_score.setAssembleCodeScore(0l);
         }
+        if(assemble_code_score2 == null){
+            assemble_code_score2 = new Assemble_Code_Score();
+            assemble_code_score2.setTimes(0l);
+            assemble_code_score2.setAssembleCodeScore(0l);
+        }
+        if(Verilog_score1 == null){
+            Verilog_score1 = new VerilogRunTimes();
+            Verilog_score1.setTimes(0L);
+        }
+        if(Verilog_score2 == null){
+            Verilog_score2 = new VerilogRunTimes();
+            Verilog_score2.setTimes(0L);
+        }
+
+        List<ilabScore> stepList = ilabscoreService.getIlabScoreByUsername(username);
+        Collections.sort(stepList);
+
+
         ilabResult Result = new ilabResult();
         Result.setUsername(ilabuser.getUsername());
         Result.setTitle("流水线CPU虚拟仿真实验");
         Result.setStatus(1);
         Result.setScore(getAllGrade(user.getUsername()));
         Result.setStartTime(Long.parseLong(ilabuser.getCreatTime()));
-        Result.setEndTime(Long.parseLong(ilabuser.getCreatTime())+992814203l);
+        Result.setEndTime(Long.parseLong(stepList.get(13).getEndTime()));
         Result.setAppid(KEY.issueId);
         Result.setOriginId((int)(1+Math.random()*(100))+"54362");
         List<steps> stepsList = new LinkedList<>();
-
-        stepsList.add(new steps(1,"汇编仿真",Long.parseLong(ilabuser.getCreatTime())+60l,Long.parseLong(ilabuser.getCreatTime())+2000l,1200,10, Math.toIntExact(assemble_code_score.getAssembleCodeScore()/10), Math.toIntExact(assemble_code_score.getTimes()),"优","通过汇编程序在线评测，即可获得该步骤满分。"));
-        stepsList.add(new steps(2,"理想单步仿真",Long.parseLong(ilabuser.getCreatTime())+3000l,Long.parseLong(ilabuser.getCreatTime())+4000l,600,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(3,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+5000l,Long.parseLong(ilabuser.getCreatTime())+6000l,600,10,10,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(4,"冲突单步仿真",Long.parseLong(ilabuser.getCreatTime())+7000l,Long.parseLong(ilabuser.getCreatTime())+8000l,600,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(5,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+9000l,Long.parseLong(ilabuser.getCreatTime())+10000l,600,5,5,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(6,"编写代码",Long.parseLong(ilabuser.getCreatTime())+11000l,Long.parseLong(ilabuser.getCreatTime())+12000l,1200,0,0,2,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(7,"通过评测",Long.parseLong(ilabuser.getCreatTime())+13000l,Long.parseLong(ilabuser.getCreatTime())+14000l,600,25,25,3,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(8,"汇编仿真",Long.parseLong(ilabuser.getCreatTime())+15000l,Long.parseLong(ilabuser.getCreatTime())+16000l,1200,10,10,2,"完成实验","单步执行"));
-        stepsList.add(new steps(9,"理想单步仿真",Long.parseLong(ilabuser.getCreatTime())+17000l,Long.parseLong(ilabuser.getCreatTime())+18000l,600,0,0,1,"完成实验","第九步"));
-        stepsList.add(new steps(10,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+19000l,Long.parseLong(ilabuser.getCreatTime())+20000l,600,10,10,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(11,"冲突单步仿真",Long.parseLong(ilabuser.getCreatTime())+21000l,Long.parseLong(ilabuser.getCreatTime())+22000l,600,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(12,"客观题评测",Long.parseLong(ilabuser.getCreatTime())+23000l,Long.parseLong(ilabuser.getCreatTime())+24000l,600,5,5,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(13,"编写代码",Long.parseLong(ilabuser.getCreatTime())+25000l,Long.parseLong(ilabuser.getCreatTime())+26000l,1200,0,0,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
-        stepsList.add(new steps(14,"通过评测",Long.parseLong(ilabuser.getCreatTime())+27000l,Long.parseLong(ilabuser.getCreatTime())+28000l,600,25,25,1,"完成实验","单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        System.out.println((int) (getGradeOfTask(user.getUid(),871l)/4));
+//        System.out.println(Math.toIntExact(scoreService.findVerilogRunTimesByTidAndUid(871l, user.getUid()).getTimes()));
 
 
+        stepsList.add(new steps(1,"具有寄存器数据冲突的汇编程序编写",Long.parseLong(stepList.get(0).getCreatTime()),Long.parseLong(stepList.get(0).getEndTime()),1200,10, Math.toIntExact(assemble_code_score.getAssembleCodeScore()/10), Math.toIntExact(assemble_code_score.getTimes()),"通过汇编程序在线评测，即可获得该步骤满分。"));
+        stepsList.add(new steps(2,"理想流水线执行过程仿真",Long.parseLong(stepList.get(1).getCreatTime()),Long.parseLong(stepList.get(1).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+        stepsList.add(new steps(3,"寄存器数据冲突现象冲关答题",Long.parseLong(stepList.get(2).getCreatTime()),Long.parseLong(stepList.get(2).getEndTime()),600,10, Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 552l,1))/10, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 552l,1)),"根据冲突现象冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+        stepsList.add(new steps(4,"解决寄存器数据冲突的流水线执行过程仿真",Long.parseLong(stepList.get(3).getCreatTime()),Long.parseLong(stepList.get(3).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤5测评题目的答题依据。与步骤5共占5分。"));
+        stepsList.add(new steps(5,"寄存器数据冲突解决冲关答题",Long.parseLong(stepList.get(4).getCreatTime()),Long.parseLong(stepList.get(4).getEndTime()),600,5,Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 552l,2))/20, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 552l,2)),"根据冲突解决冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+        stepsList.add(new steps(6,"寄存器数据冲突解决的工程实现",Long.parseLong(stepList.get(5).getCreatTime()),Long.parseLong(stepList.get(5).getEndTime()),1200,0,0,1,"根据题目说明进行技术实现相关代码编写，最后通过评测，与步骤7共占25分。系统会自动记录提交次数。"));
+        stepsList.add(new steps(7,"寄存器数据冲突解决工程实现在线评测",Long.parseLong(stepList.get(6).getCreatTime()),Long.parseLong(stepList.get(6).getEndTime()),600,25, (int) (getGradeOfTask(user.getUid(),871l)/4), Math.toIntExact(Verilog_score1.getTimes()),"根据评测结果修改代码，最后通过评测，即可得到数据前递工程实现实验满分25分。系统会自动记录提交次数。"));
+        stepsList.add(new steps(8,"具有访存数据冲突的汇编程序编写",Long.parseLong(stepList.get(7).getCreatTime()),Long.parseLong(stepList.get(7).getEndTime()),1200,10,Math.toIntExact(assemble_code_score2.getAssembleCodeScore()/10),Math.toIntExact(assemble_code_score2.getTimes()),"通过汇编程序在线评测，即可获得该步骤满分。"));
+        stepsList.add(new steps(9,"理想流水线执行过程单步仿真",Long.parseLong(stepList.get(8).getCreatTime()),Long.parseLong(stepList.get(8).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤10测评题目的答题依据。与步骤10共占10分。"));
+        stepsList.add(new steps(10,"访存数据冲突现象冲关答题",Long.parseLong(stepList.get(9).getCreatTime()),Long.parseLong(stepList.get(9).getEndTime()),600,10,Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 863l,1))/10, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 863l,1)),"根据冲突现象冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+        stepsList.add(new steps(11,"解决访存数据冲突的流水线执行过程仿真",Long.parseLong(stepList.get(10).getCreatTime()),Long.parseLong(stepList.get(10).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤12测评题目的答题依据。与步骤12共占5分。"));
+        stepsList.add(new steps(12,"访存数据冲突解决冲关答题",Long.parseLong(stepList.get(11).getCreatTime()),Long.parseLong(stepList.get(11).getEndTime()),600,5,Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 863l,2))/20, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 863l,2)),"根据冲突解决冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+        stepsList.add(new steps(13,"访存数据冲突解决的工程实现",Long.parseLong(stepList.get(12).getCreatTime()),Long.parseLong(stepList.get(12).getEndTime()),1200,0,0,1,"根据题目说明进行技术实现相关代码编写，最后通过评测，与步骤14共占25分。系统会自动记录提交次数。"));
+        stepsList.add(new steps(14,"访存数据冲突解决工程实现在线评测",Long.parseLong(stepList.get(13).getCreatTime()),Long.parseLong(stepList.get(13).getEndTime()),600,25,(int) (getGradeOfTask(user.getUid(),872l)/4), Math.toIntExact(Verilog_score2.getTimes()),"根据评测结果修改代码，最后通过评测，即可得到流水线暂停工程实现实验满分25分。系统会自动记录提交次数。"));
 
 
         Result.setSteps(stepsList);
-//        Map res = convertBean.convertTomap(Result);
-//        String token = "AAABepW2L2MCAAAAAAABlXo%3D.yoBqz5uRz0AU4Zn0ZvBAqdSMcxpRs5mCe074tEzW0JD75UoRrpcnF0%2Fs5eXwa2Mw.l9HEtnf2Dx%2BNNGFArjc9EhcAeblfIrW1xIKHXlZnUBA%3D";
-        String command = ilabuploadurl + token;;
-        logger.info(command);
-        HttpClient httpClient = new HttpClient();
-        // 要调用的接口方
-        String json= JSON.toJSONString(Result);
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(Result);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+    //    测试3
+    @PostMapping("/ilabtest2")
+    public ResponseEntity<Result> test2(String username)throws Exception {
+        List<ilabScore> stepList = ilabscoreService.getIlabScoreByUsername(username);
+        Collections.sort(stepList);
 
-        System.out.println(json);
-        String strbr = HttpClientUtil.doPostJson(command, json);
-
-
-
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonObj = mapper.readTree(strbr);
-        if(jsonObj.path("code").asInt() == 0){
-            logger.info("上传调用成功");
-            logger.info(jsonObj.path("originId").asText());
-            return true;
-        } else{
-            logger.info(strbr.toString());
-            logger.info(jsonObj.path("code").asText());
-            logger.info(jsonObj.path("msg").asText());
-            return false;
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(stepList);
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+    //   纪录用户开始步骤时间
+    @PostMapping("/ilabstep")
+    public ResponseEntity<Result> ilabstep(HttpServletRequest httpServletRequest,@RequestBody JsonNode step)throws Exception {
+        String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        long stepnum = step.path("step").asLong();
+        try{
+            if (stepnum != 1){
+                ilabScore ilabscore = ilabscoreService.getIlabScoreByUsernameStep(username,stepnum-1);
+                if(ilabscore.getEndTime()== null) {
+                    ilabscoreService.saveIalbEndtime(username, stepnum - 1);
+                }
+            }
+            ilabScore ilabscoreNext = ilabscoreService.getIlabScoreByUsernameStep(username,stepnum+1);
+            if(ilabscoreNext != null ){
+                Result result=new Result();
+                result.setSuccess(false);
+                result.setMessage("存储失败");
+                return ResultUtil.getResult(result,HttpStatus.OK);
+            }
+            ilabScore ilabscore = new ilabScore();
+            ilabscore.setStep(String.valueOf(stepnum));
+            ilabscore.setUsername(username);
+            ilabscoreService.saveIalbStep(ilabscore);
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setMessage(ilabscore.getStep());
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        } catch (Exception e){
+            logger.info(e.getMessage());
+            return ResultUtil.getResult(new Result("存储步骤失败"),HttpStatus.BAD_REQUEST);
         }
 
+    }
+
+
+    @PostMapping("/Getilabstep")
+    public ResponseEntity<Result> Getilabstep(HttpServletRequest httpServletRequest,@RequestBody JsonNode step)throws Exception {
+        String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        long stepnum = step.path("step").asLong();
+        ilabscoreService.getIlabScoreByUsernameStep(username,stepnum);
+        Result result=new Result();
+        result.setSuccess(true);
+        result.setObject(ilabscoreService.getIlabScoreByUsernameStep(username,stepnum));
+        return ResultUtil.getResult(result,HttpStatus.OK);
+    }
+
+    @PostMapping("/end")
+    public ResponseEntity<Result> end(HttpServletRequest httpServletRequest) throws Exception {
+        String username=JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        try{
+            if(ilabuserService.findByUserName(username)!=null ){
+                ilabscoreService.saveIalbEndtime(username, 14);
+                ilabResult Res = ilab(username);
+                if(Res!=null){
+                    Result result=new Result();
+                    result.setSuccess(true);
+                    result.setObject(Res);
+                    result.setMessage(username+"的成绩为"+getAllGrade(username));
+                    return ResultUtil.getResult(result,HttpStatus.OK);
+                } else{
+                    Result result=new Result();
+                    result.setSuccess(false);
+                    result.setObject(Res);
+                    result.setMessage("提交成绩失败，请完成所有实验后提交");
+                    return ResultUtil.getResult(result,HttpStatus.OK);
+                }
+            } else{
+                Result result=new Result();
+                result.setSuccess(false);
+                result.setMessage("非ilab用户无需提交成绩");
+                return ResultUtil.getResult(result,HttpStatus.OK);
+            }
+        }catch (Exception e){
+            logger.info(e.getMessage());
+            return ResultUtil.getResult(new Result("结束实验失败"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+
+
+
+    public ilabResult ilab(String username) throws Exception {
+        User user = userService.findByUserName(username);
+        ilabUser ilabuser = ilabuserService.findByUserName(username);
+        if(user == null ||ilabuser == null){
+            logger.info("未找到用户");
+            return null;
+        }
+        try{
+            String token = java.net.URLEncoder.encode(ilabuser.getToken());
+            Long uid = user.getUid();
+            System.out.println(uid);
+            Assemble_Code_Score assemble_code_score = scoreService.findAssembleCodeScoreByUidAndTid(uid, 552l);
+            Assemble_Code_Score assemble_code_score2 = scoreService.findAssembleCodeScoreByUidAndTid(uid, 863l);
+            VerilogRunTimes Verilog_score1 = scoreService.findVerilogRunTimesByTidAndUid(871l, user.getUid());
+            VerilogRunTimes Verilog_score2 = scoreService.findVerilogRunTimesByTidAndUid(872l, user.getUid());
+            if(assemble_code_score == null){
+                assemble_code_score = new Assemble_Code_Score();
+                assemble_code_score.setTimes(0l);
+                assemble_code_score.setAssembleCodeScore(0l);
+            }
+            if(assemble_code_score2 == null){
+                assemble_code_score2 = new Assemble_Code_Score();
+                assemble_code_score2.setTimes(0l);
+                assemble_code_score2.setAssembleCodeScore(0l);
+            }
+            if(Verilog_score1 == null){
+                Verilog_score1 = new VerilogRunTimes();
+                Verilog_score1.setTimes(0L);
+            }
+            if(Verilog_score2 == null){
+                Verilog_score2 = new VerilogRunTimes();
+                Verilog_score2.setTimes(0L);
+            }
+
+            List<ilabScore> stepList = ilabscoreService.getIlabScoreByUsername(username);
+            Collections.sort(stepList);
+
+
+            ilabResult Result = new ilabResult();
+            Result.setUsername(ilabuser.getUsername());
+            Result.setTitle("流水线CPU虚拟仿真实验");
+            Result.setStatus(1);
+            Result.setScore(getAllGrade(user.getUsername()));
+            Result.setStartTime(Long.parseLong(ilabuser.getCreatTime()));
+            Result.setEndTime(Long.parseLong(stepList.get(13).getEndTime())+1000L);
+            Result.setAppid(KEY.issueId);
+            Result.setOriginId((int)(1+Math.random()*(100))+"54362");
+            List<steps> stepsList = new LinkedList<>();
+            System.out.println((int) (getGradeOfTask(user.getUid(),871l)/4));
+//        System.out.println(Math.toIntExact(scoreService.findVerilogRunTimesByTidAndUid(871l, user.getUid()).getTimes()));
+
+
+            stepsList.add(new steps(1,"汇编仿真",Long.parseLong(stepList.get(0).getCreatTime()),Long.parseLong(stepList.get(0).getEndTime()),1200,10, Math.toIntExact(assemble_code_score.getAssembleCodeScore()/10), Math.toIntExact(assemble_code_score.getTimes()),"通过汇编程序在线评测，即可获得该步骤满分。"));
+            stepsList.add(new steps(2,"理想单步仿真",Long.parseLong(stepList.get(1).getCreatTime()),Long.parseLong(stepList.get(1).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤3测评题目的答题依据。与步骤3共占10分。"));
+            stepsList.add(new steps(3,"客观题评测",Long.parseLong(stepList.get(2).getCreatTime()),Long.parseLong(stepList.get(2).getEndTime()),600,10, Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 552l,1))/10, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 552l,1)),"根据冲突现象冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+            stepsList.add(new steps(4,"冲突单步仿真",Long.parseLong(stepList.get(3).getCreatTime()),Long.parseLong(stepList.get(3).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤5测评题目的答题依据。与步骤5共占5分。"));
+            stepsList.add(new steps(5,"客观题评测",Long.parseLong(stepList.get(4).getCreatTime()),Long.parseLong(stepList.get(4).getEndTime()),600,5,Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 552l,2))/20, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 552l,2)),"根据冲突解决冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+            stepsList.add(new steps(6,"编写代码",Long.parseLong(stepList.get(5).getCreatTime()),Long.parseLong(stepList.get(5).getEndTime()),1200,0,0,1,"根据题目说明进行技术实现相关代码编写，最后通过评测，与步骤7共占25分。系统会自动记录提交次数。"));
+            stepsList.add(new steps(7,"通过评测",Long.parseLong(stepList.get(6).getCreatTime()),Long.parseLong(stepList.get(6).getEndTime()),600,25, (int) (getGradeOfTask(user.getUid(),871l)/4), Math.toIntExact(Verilog_score1.getTimes()),"根据评测结果修改代码，最后通过评测，即可得到数据前递工程实现实验满分25分。系统会自动记录提交次数。"));
+            stepsList.add(new steps(8,"汇编仿真",Long.parseLong(stepList.get(7).getCreatTime()),Long.parseLong(stepList.get(7).getEndTime()),1200,10,Math.toIntExact(assemble_code_score2.getAssembleCodeScore()/10),Math.toIntExact(assemble_code_score2.getTimes()),"通过汇编程序在线评测，即可获得该步骤满分。"));
+            stepsList.add(new steps(9,"理想单步仿真",Long.parseLong(stepList.get(8).getCreatTime()),Long.parseLong(stepList.get(8).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤10测评题目的答题依据。与步骤10共占10分。"));
+            stepsList.add(new steps(10,"客观题评测",Long.parseLong(stepList.get(9).getCreatTime()),Long.parseLong(stepList.get(9).getEndTime()),600,10,Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 863l,1))/10, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 863l,1)),"根据冲突现象冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+            stepsList.add(new steps(11,"冲突单步仿真",Long.parseLong(stepList.get(10).getCreatTime()),Long.parseLong(stepList.get(10).getEndTime()),600,0,0,1,"单步执行，分别完成汇编程序在指令级视角和流水线级视角的仿真，观察分析寄存器堆中数据变化，作为步骤12测评题目的答题依据。与步骤12共占5分。"));
+            stepsList.add(new steps(12,"客观题评测",Long.parseLong(stepList.get(11).getCreatTime()),Long.parseLong(stepList.get(11).getEndTime()),600,5,Math.toIntExact(getPartAssembleChooseScore(user.getUid(), 863l,2))/20, Math.toIntExact(getPartAssembleChooseTimes(user.getUid(), 863l,2)),"根据冲突解决冲关答题的正确度给出成绩。每道题目答对前的提交次数与该部分的成绩相关。"));
+            stepsList.add(new steps(13,"编写代码",Long.parseLong(stepList.get(12).getCreatTime()),Long.parseLong(stepList.get(12).getEndTime()),1200,0,0,1,"根据题目说明进行技术实现相关代码编写，最后通过评测，与步骤14共占25分。系统会自动记录提交次数。"));
+            stepsList.add(new steps(14,"通过评测",Long.parseLong(stepList.get(13).getCreatTime()),Long.parseLong(stepList.get(13).getEndTime()),600,25,(int) (getGradeOfTask(user.getUid(),872l)/4), Math.toIntExact(Verilog_score2.getTimes()),"根据评测结果修改代码，最后通过评测，即可得到流水线暂停工程实现实验满分25分。系统会自动记录提交次数。"));
+
+
+            Result.setSteps(stepsList);
+//        Map res = convertBean.convertTomap(Result);
+//        String token = "AAABepW2L2MCAAAAAAABlXo%3D.yoBqz5uRz0AU4Zn0ZvBAqdSMcxpRs5mCe074tEzW0JD75UoRrpcnF0%2Fs5eXwa2Mw.l9HEtnf2Dx%2BNNGFArjc9EhcAeblfIrW1xIKHXlZnUBA%3D";
+            String command = ilabuploadurl + token;;
+            logger.info(command);
+            HttpClient httpClient = new HttpClient();
+            // 要调用的接口方
+            String json= JSON.toJSONString(Result);
+
+            System.out.println(json);
+            String strbr = HttpClientUtil.doPostJson(command, json);
+
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonObj = mapper.readTree(strbr);
+            if(jsonObj.path("code").asInt() == 0){
+                logger.info("上传调用成功");
+                logger.info(Result.getOriginId());
+                return Result;
+            } else if(jsonObj.path("code").asInt() == 2){
+                String signature = DigestUtils.md5DigestAsHex((token+KEY.issueId+KEY.aeskey).getBytes()).toUpperCase();
+                String param = "appid="+ KEY.issueId + "&signature="+ signature + "&access_token=" +token;
+
+                String refreshcommand = ilabRefresh + param;
+                logger.info(refreshcommand);
+//            进行get请求
+                String refreshres = HttpClient.doGet(refreshcommand);
+                ObjectMapper freshMap = new ObjectMapper();
+                JsonNode freshJson = freshMap.readTree(refreshres);
+                logger.info(freshJson.path("code").asText());
+                logger.info(freshJson.path("msg").asText());
+                token = freshJson.path("access_token").asText();
+                command = ilabuploadurl + token;;
+                logger.info(command);
+                httpClient = new HttpClient();
+                // 要调用的接口方
+                json= JSON.toJSONString(Result);
+                System.out.println(json);
+                strbr = HttpClientUtil.doPostJson(command, json);
+                mapper = new ObjectMapper();
+                jsonObj = mapper.readTree(strbr);
+                if(jsonObj.path("code").asInt() == 0){
+                    logger.info("上传调用成功");
+                    logger.info(jsonObj.path("originId").asText());
+                    return Result;
+                } else{
+                    logger.info("token过期后上传失败");
+                    logger.info(jsonObj.path("code").asText());
+                    logger.info(jsonObj.path("msg").asText());
+                    return null;
+                }
+            } else {
+                logger.info(strbr);
+                logger.info(jsonObj.path("code").asText());
+                logger.info(jsonObj.path("msg").asText());
+                return null;
+            }
+        } catch (Exception e){
+            logger.info(e.getMessage());
+            return null;
+        }
     }
 }

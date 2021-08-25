@@ -37,11 +37,12 @@ public class GitProcess {
 
     String hostURL ="http://127.0.0.1:8099/";
     //    校内服务器gitlab1
-//    String privateToken = "Jsxi9xTr-ZKMLccjx92u";
+    String privateToken = "Jsxi9xTr-ZKMLccjx92u";
     //    校内服务器gitlab2
 //    String privateToken = "9gMd8ZvTQQhFJS8KtZS5";
     //    腾讯云服务器gitlab
-    String privateToken = "qGsB2feqzx3J_-t-uoDT";
+//    String privateToken = "qGsB2feqzx3J_-t-uoDT";
+//    String privateToken = "Qz_FAYtGqtdpdp7RshCT";
 
 
 //   String privateToken =OSUtil.isLinux()?"s3txBpf9sGr8hTCFxxm3":"fVBagapg2jRDeJzRALv6";   //cg新系统gitlab秘钥  root ustbdemo

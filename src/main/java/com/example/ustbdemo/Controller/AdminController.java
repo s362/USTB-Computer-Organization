@@ -174,7 +174,7 @@ public class AdminController {
         if (!IsAdmin(httpServletRequest)){
             return ResultUtil.getResult(new Result("权限受限"), HttpStatus.BAD_REQUEST);
         }
-        if (userService.deleteStudentIdByStudentId(StudentId)) return ResultUtil.getResult(new Result(),HttpStatus.OK);
+        if (userService.deleteStudentId(StudentId)) return ResultUtil.getResult(new Result(),HttpStatus.OK);
         else return ResultUtil.getResult(new Result("删除学生失败"),HttpStatus.BAD_REQUEST);
     }
 

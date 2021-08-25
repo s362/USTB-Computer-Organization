@@ -1,27 +1,38 @@
+package com.example.ustbdemo;
+
+import org.junit.Test;
+
 //package com.example.ustbdemo;
-//
-//import com.alibaba.fastjson.JSON;
-//import com.example.ustbdemo.Model.DataModel.*;
-//import com.example.ustbdemo.Model.UtilModel.ilabResult;
-//import com.example.ustbdemo.Model.UtilModel.steps;
-//import com.example.ustbdemo.Service.*;
-//import com.example.ustbdemo.Shiro.JwtUtil;
-//import com.example.ustbdemo.Util.HttpClient;
-//import com.example.ustbdemo.Util.HttpClientUtil;
-//import com.example.ustbdemo.Util.RsaUtil;
-//import com.fasterxml.jackson.databind.JsonNode;
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import org.junit.Test;
-//import org.springframework.beans.factory.annotation.Autowired;
-//
-//import java.util.LinkedList;
-//import java.util.List;
-//import java.util.Map;
-////import redis.clients.jedis.Jedis;
+
+import com.alibaba.fastjson.JSON;
+import com.example.ustbdemo.Model.DataModel.*;
+import com.example.ustbdemo.Model.UtilModel.ilabResult;
+import com.example.ustbdemo.Model.UtilModel.steps;
+import com.example.ustbdemo.Service.*;
+import com.example.ustbdemo.Shiro.JwtUtil;
+import com.example.ustbdemo.Util.HttpClient;
+import com.example.ustbdemo.Util.HttpClientUtil;
+import com.example.ustbdemo.Util.RsaUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+//import redis.clients.jedis.Jedis;
 //
 ////@RunWith(SpringRunner.class)
 ////@SpringBootTest
-//public class TempTest {
+public class TempTest {
+    @Test
+    public void test(){
+        String url = "jdbc:mysql://127.0.0.1:3306/ustbdemo?autoReconnect=true&useSSL=false&characterEncoding=utf-8 ";
+        String newurl = url.substring(url.indexOf("3306"), url.indexOf("?")).replaceAll("/", "").replaceAll("3306", "");
+        System.out.println(newurl);
+    }
+}
 //    private static final int BUFFER_SIZE = 1024;
 ////    @Autowired
 ////    DataSource dataSource;
@@ -240,9 +251,7 @@
 //
 //    @Test
 //    public void serviceTest() throws Exception{
-//        User user = userService.findByUserName("test1");
-//        ilabUser ilabuser = ilabuserService.findByUserName("test1");
-//        System.out.println(ilabuser.getCreatTime());
+//        System.out.println(System.currentTimeMillis());
 //    }
 //
 //

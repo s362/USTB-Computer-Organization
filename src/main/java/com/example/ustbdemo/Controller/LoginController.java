@@ -1,5 +1,4 @@
 package com.example.ustbdemo.Controller;
-import com.example.ustbdemo.Aspect.ControllerRequestAdvice;
 import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Model.UtilModel.Result;
 import com.example.ustbdemo.Service.TaskService;
@@ -12,9 +11,7 @@ import com.example.ustbdemo.Util.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.tomcat.util.json.JSONParser;
 import org.gitlab4j.api.models.Group;
-import org.glassfish.jersey.internal.guava.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,16 +19,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
-import sun.security.provider.MD5;
 
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.example.ustbdemo.Shiro.JwtUtil.verify;
-import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
 import static com.example.ustbdemo.Util.RsaUtil.decode;
 
 
@@ -262,6 +256,28 @@ public class LoginController {
     }
 
 
+    @PostMapping(value = "/ilabtest", consumes = "application/json; charset=utf-8")
+    public void ilabtest(@RequestBody JsonNode ilabname) {
+        try {
+            String ilabnameStr;
+            System.out.println(ilabname);
+            ilabnameStr = ilabname.path("ilabname").asText();
+                ilabUser ilabuesr = new ilabUser();
+                ilabUser ilabuserdemo = ilabuserService.findByUserName(ilabnameStr);
+                if (ilabuserdemo != null) {
+                    logger.info("用户名已存在");
+                    ilabuserdemo.setToken(new Date().toString());
+                }
+                ilabuserService.addilabUser(ilabuserdemo);
+            } catch (Exception e) {
+                logger.info(e.toString());
+            }
+        }
+
+
+
+
+
 
 
     //    用国家平台用户名密码进行登录，用本地调用国家接口进行验证
@@ -286,39 +302,42 @@ public class LoginController {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonObj = mapper.readTree(strbr);
             if(jsonObj.path("code").asInt() == 0){
-                User user = new User();
-                user.setUtype(2l);
-                user.setUdis(jsonObj.path("ilab").asText());
-                user.setUsername(jsonObj.path("un").asText());
-                User userdemo=userService.findByUserName(user.getUsername());
+                User userdemo=userService.findByUserName(jsonObj.path("un").asText());
                 if (userdemo!=null){
                     logger.info("用户名已存在");
                 } else{
+                    User user = new User();
+                    user.setUtype(2l);
+                    user.setUdis(jsonObj.path("ilab").asText());
+                    user.setUsername(jsonObj.path("un").asText());
                     userService.addUser(user);
                 }
-
-//                user.setAccess_token(jsonObj.path("access_token").asText());
-//                user.setCreate_time(jsonObj.path("create_time").asLong());
-
-                ilabUser ilabuesr = new ilabUser();
-                ilabuesr.setCreatTime(String.valueOf(jsonObj.path("create_time").asLong()));
-                ilabuesr.setToken(jsonObj.path("access_token").asText());
-                ilabuesr.setUsername(jsonObj.path("un").asText());
-//                ilabuesr.setEndTime(String.valueOf(jsonObj.path("end_time").asLong()));
-                ilabUser ilabuserdemo=ilabuserService.findByUserName(ilabuesr.getUsername());
+                ilabUser ilabuserdemo=ilabuserService.findByUserName(jsonObj.path("un").asText());
                 if (ilabuserdemo!=null){
-                    logger.info("用户名已存在");
-                } else{
+                    //更新token
+                    ilabuserdemo.setToken(jsonObj.path("access_token").asText());
+                    ilabuserService.addilabUser(ilabuserdemo);
+                    String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
+                    Result result=new Result();
+                    result.setObject((Object)jwtToken);
+                    result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
+                    result.setSuccess(true);
+                    return ResultUtil.getResult(result, HttpStatus.OK);
+                } else {
+                    //第一次登录新建用户
+                    ilabUser ilabuesr = new ilabUser();
+                    ilabuesr.setCreatTime(String.valueOf(jsonObj.path("create_time").asLong()));
+                    ilabuesr.setToken(jsonObj.path("access_token").asText());
+                    ilabuesr.setUsername(jsonObj.path("un").asText());
+
                     ilabuserService.addilabUser(ilabuesr);
+                    String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
+                    Result result=new Result();
+                    result.setObject((Object)jwtToken);
+                    result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
+                    result.setSuccess(true);
+                    return ResultUtil.getResult(result, HttpStatus.OK);
                 }
-
-
-                String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
-                Result result=new Result();
-                result.setObject((Object)jwtToken);
-                result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
-                result.setSuccess(true);
-                return ResultUtil.getResult(result, HttpStatus.OK);
             } else if(jsonObj.path("code").asInt() == 1){
                 Result result=new Result();
                 result.setMessage("参数错误");
