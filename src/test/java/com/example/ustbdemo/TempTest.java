@@ -25,14 +25,14 @@ import java.util.Map;
 //
 ////@RunWith(SpringRunner.class)
 ////@SpringBootTest
-public class TempTest {
-    @Test
-    public void test(){
-        String url = "jdbc:mysql://127.0.0.1:3306/ustbdemo?autoReconnect=true&useSSL=false&characterEncoding=utf-8 ";
-        String newurl = url.substring(url.indexOf("3306"), url.indexOf("?")).replaceAll("/", "").replaceAll("3306", "");
-        System.out.println(newurl);
-    }
-}
+//public class TempTest {
+//    @Test
+//    public void test(){
+//        String url = "jdbc:mysql://127.0.0.1:3306/ustbdemo?autoReconnect=true&useSSL=false&characterEncoding=utf-8 ";
+//        String newurl = url.substring(url.indexOf("3306"), url.indexOf("?")).replaceAll("/", "").replaceAll("3306", "");
+//        System.out.println(newurl);
+//    }
+//}
 //    private static final int BUFFER_SIZE = 1024;
 ////    @Autowired
 ////    DataSource dataSource;

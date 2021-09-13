@@ -56,7 +56,38 @@ public class ilabUserService {
         user.setUsername(userName);
         Example<ilabUser> example = Example.of(user);
         try{
-            ilabUser result = this.ilabuserRepository.findOne(example).get();
+
+            List<ilabUser> ilabusers = this.ilabuserRepository.findAll(example);
+            if(!ilabusers.isEmpty()){
+                ilabUser result = ilabusers.get(0);
+                for (ilabUser item:ilabusers){
+                    if(Long.valueOf(result.getCreatTime()).longValue()<Long.valueOf(item.getCreatTime()).longValue()){
+                        result = item;
+                    }
+                }
+                for (ilabUser item:ilabusers){
+                    if(result.getCreatTime()!=item.getCreatTime()){
+                        this.ilabuserRepository.delete(item);
+                    }
+                }
+                return result;
+            }else{
+                return null;
+            }
+//            ilabUser result = this.ilabuserRepository.findOne(example).get();
+//            return result;
+        } catch (Exception e){
+            return null;
+        }
+    }
+
+
+    public List<ilabUser> findAllByUserName(String userName){
+        ilabUser user = new ilabUser();
+        user.setUsername(userName);
+        Example<ilabUser> example = Example.of(user);
+        try{
+            List<ilabUser> result = this.ilabuserRepository.findAll(example);
             return result;
         } catch (Exception e){
             return null;

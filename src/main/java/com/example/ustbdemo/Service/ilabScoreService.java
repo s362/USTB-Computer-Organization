@@ -11,6 +11,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import static com.example.ustbdemo.Util.Base64Convert.baseConvertStr;
+
 @Service("ilabscoreService")
 public class ilabScoreService {
     private final ilabScoreRepository ilabScoreRepository;
@@ -38,6 +40,20 @@ public class ilabScoreService {
         this.stageRepository = stageRepository;
     }
 
+    public boolean DeleteByName(String username){
+        ilabScore ilabscore = new ilabScore();
+        ilabscore.setUsername(username);
+        Example<ilabScore> example = Example.of(ilabscore);
+        try{
+            List<ilabScore> result = this.ilabScoreRepository.findAll(example);
+            for(ilabScore i:result){
+                ilabScoreRepository.delete(i);
+            }
+            return true;
+        } catch (Exception e){
+            return false;
+        }
+    }
     public void saveIalbStep(ilabScore ilabscore)  {
         Example<ilabScore> example = Example.of(ilabscore);
         try{
@@ -113,5 +129,28 @@ public class ilabScoreService {
         }
     }
 
+
+    public ilabScore getNowIlabScore(String username){
+        ilabScore ilabscore = new ilabScore();
+        ilabscore.setUsername(username);
+        Example<ilabScore> example = Example.of(ilabscore);
+        try{
+            List<ilabScore> ilabList = this.ilabScoreRepository.findAll(example);
+            if(!ilabList.isEmpty()){
+                ilabScore result = ilabList.get(0);
+                for (ilabScore item:ilabList){
+                    if(Long.parseLong(result.getStep())<Long.parseLong(item.getStep())){
+                        result = item;
+                    }
+                }
+                return result;
+            }else{
+                return null;
+            }
+
+        } catch (Exception e){
+            return null;
+        }
+    }
 
 }

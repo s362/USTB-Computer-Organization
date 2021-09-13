@@ -1011,6 +1011,26 @@ public class StudentController {
         }
     }
 
+    /**
+     * 获取学生是否提交工程实现
+     * @param httpServletRequest  token信息
+     * @return 返回int
+     */
+    @PostMapping(value = "/getNowIlabScore")
+    public ResponseEntity<Result> getNowIlabScore(HttpServletRequest httpServletRequest){
+        String user_id = JwtUtil.getUsername(httpServletRequest.getHeader("Authorization"));
+        try{
+            ilabScore ialb_user = ilabscoreService.getNowIlabScore(user_id);
+            Result result=new Result();
+            result.setSuccess(true);
+            result.setMessage(ialb_user.getStep());
+            return ResultUtil.getResult(result,HttpStatus.OK);
+        }catch (Exception e){
+            logger.info(e.getMessage());
+            return ResultUtil.getResult(new Result("获取失败"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
     //    获取选择题分数
     private  List<ChooseModel> getAssembleChooseScores(Long uid, List<ChooseModel> chooseModels){
         for(ChooseModel chooseModel : chooseModels){
@@ -1378,12 +1398,11 @@ public class StudentController {
     //    测试3
     @PostMapping("/ilabtest2")
     public ResponseEntity<Result> test2(String username)throws Exception {
-        List<ilabScore> stepList = ilabscoreService.getIlabScoreByUsername(username);
-        Collections.sort(stepList);
+        ilabUser step = ilabuserService.findByUserName(username);
 
         Result result=new Result();
         result.setSuccess(true);
-        result.setObject(stepList);
+        result.setObject(step);
         return ResultUtil.getResult(result,HttpStatus.OK);
     }
     //   纪录用户开始步骤时间
@@ -1396,6 +1415,11 @@ public class StudentController {
                 ilabScore ilabscore = ilabscoreService.getIlabScoreByUsernameStep(username,stepnum-1);
                 if(ilabscore.getEndTime()== null) {
                     ilabscoreService.saveIalbEndtime(username, stepnum - 1);
+                } else{
+                    Result result=new Result();
+                    result.setSuccess(false);
+                    result.setMessage("存储失败");
+                    return ResultUtil.getResult(result,HttpStatus.OK);
                 }
             }
             ilabScore ilabscoreNext = ilabscoreService.getIlabScoreByUsernameStep(username,stepnum+1);
@@ -1514,7 +1538,7 @@ public class StudentController {
             Result.setStartTime(Long.parseLong(ilabuser.getCreatTime()));
             Result.setEndTime(Long.parseLong(stepList.get(13).getEndTime())+1000L);
             Result.setAppid(KEY.issueId);
-            Result.setOriginId((int)(1+Math.random()*(100))+"54362");
+            Result.setOriginId((int)(1+Math.random()*(10000))+"362");
             List<steps> stepsList = new LinkedList<>();
             System.out.println((int) (getGradeOfTask(user.getUid(),871l)/4));
 //        System.out.println(Math.toIntExact(scoreService.findVerilogRunTimesByTidAndUid(871l, user.getUid()).getTimes()));

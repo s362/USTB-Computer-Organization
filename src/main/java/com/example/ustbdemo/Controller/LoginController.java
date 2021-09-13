@@ -1,9 +1,7 @@
 package com.example.ustbdemo.Controller;
 import com.example.ustbdemo.Model.DataModel.*;
 import com.example.ustbdemo.Model.UtilModel.Result;
-import com.example.ustbdemo.Service.TaskService;
-import com.example.ustbdemo.Service.UserService;
-import com.example.ustbdemo.Service.ilabUserService;
+import com.example.ustbdemo.Service.*;
 import com.example.ustbdemo.Shiro.JwtUtil;
 import com.example.ustbdemo.Shiro.KEY;
 import com.example.ustbdemo.Shiro.TestJWT;
@@ -38,6 +36,10 @@ public class LoginController {
     TaskService taskService;
     @Autowired
     ilabUserService ilabuserService;
+    @Autowired
+    ilabScoreService ilabscoreService;
+    @Autowired
+    ScoreService scoreService;
 
     public static final Logger logger = LoggerFactory.getLogger(LoginController.class);
 
@@ -255,24 +257,31 @@ public class LoginController {
         }
     }
 
-
-    @PostMapping(value = "/ilabtest", consumes = "application/json; charset=utf-8")
-    public void ilabtest(@RequestBody JsonNode ilabname) {
+    public boolean deleteUser(String ilabnameStr) {
         try {
-            String ilabnameStr;
-            System.out.println(ilabname);
-            ilabnameStr = ilabname.path("ilabname").asText();
-                ilabUser ilabuesr = new ilabUser();
-                ilabUser ilabuserdemo = ilabuserService.findByUserName(ilabnameStr);
-                if (ilabuserdemo != null) {
-                    logger.info("用户名已存在");
-                    ilabuserdemo.setToken(new Date().toString());
+            List<ilabUser> ilabuserdemo = ilabuserService.findAllByUserName(ilabnameStr);
+            if (ilabuserdemo != null && !ilabuserdemo.isEmpty()) {
+                for(ilabUser U :ilabuserdemo){
+                    ilabuserService.deleteById(U.getUid());
                 }
-                ilabuserService.addilabUser(ilabuserdemo);
-            } catch (Exception e) {
-                logger.info(e.toString());
+                ilabscoreService.DeleteByName(ilabnameStr);
             }
+
+            User userdemo = userService.findByUserName(ilabnameStr);
+            if (userdemo != null) {
+                //删除旧数据
+                userService.deleteStudentId(userdemo.getUid());
+                scoreService.deleteScore(userdemo.getUid(),552l,1l);
+                scoreService.deleteScore(userdemo.getUid(),863l,1l);
+                scoreService.deleteScore(userdemo.getUid(),871l,0l);
+                scoreService.deleteScore(userdemo.getUid(),872l,0l);
+            }
+            return true;
+        } catch (Exception e) {
+            logger.info(e.toString());
+            return false;
         }
+    }
 
 
 
@@ -305,39 +314,29 @@ public class LoginController {
                 User userdemo=userService.findByUserName(jsonObj.path("un").asText());
                 if (userdemo!=null){
                     logger.info("用户名已存在");
-                } else{
-                    User user = new User();
-                    user.setUtype(2l);
-                    user.setUdis(jsonObj.path("ilab").asText());
-                    user.setUsername(jsonObj.path("un").asText());
-                    userService.addUser(user);
+                    deleteUser(userdemo.getUsername());
                 }
-                ilabUser ilabuserdemo=ilabuserService.findByUserName(jsonObj.path("un").asText());
-                if (ilabuserdemo!=null){
-                    //更新token
-                    ilabuserdemo.setToken(jsonObj.path("access_token").asText());
-                    ilabuserService.addilabUser(ilabuserdemo);
-                    String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
-                    Result result=new Result();
-                    result.setObject((Object)jwtToken);
-                    result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
-                    result.setSuccess(true);
-                    return ResultUtil.getResult(result, HttpStatus.OK);
-                } else {
-                    //第一次登录新建用户
-                    ilabUser ilabuesr = new ilabUser();
-                    ilabuesr.setCreatTime(String.valueOf(jsonObj.path("create_time").asLong()));
-                    ilabuesr.setToken(jsonObj.path("access_token").asText());
-                    ilabuesr.setUsername(jsonObj.path("un").asText());
+                //user新增
+                User user = new User();
+                user.setUtype(2l);
+                user.setUdis("ilab");
+                user.setUsername(jsonObj.path("un").asText());
+                userService.addUser(user);
 
-                    ilabuserService.addilabUser(ilabuesr);
-                    String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
-                    Result result=new Result();
-                    result.setObject((Object)jwtToken);
-                    result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
-                    result.setSuccess(true);
-                    return ResultUtil.getResult(result, HttpStatus.OK);
-                }
+                //ilab新增用户
+                ilabUser ilabuesr = new ilabUser();
+                ilabuesr.setCreatTime(String.valueOf(jsonObj.path("create_time").asLong()));
+                ilabuesr.setToken(jsonObj.path("access_token").asText());
+                ilabuesr.setUsername(jsonObj.path("un").asText());
+
+                ilabuserService.addilabUser(ilabuesr);
+
+                String jwtToken = JwtUtil.sign(jsonObj.path("un").asText());
+                Result result=new Result();
+                result.setObject((Object)jwtToken);
+                result.setMessage(jsonObj.path("un").asText());  //将用户名返回，便于前端显示
+                result.setSuccess(true);
+                return ResultUtil.getResult(result, HttpStatus.OK);
             } else if(jsonObj.path("code").asInt() == 1){
                 Result result=new Result();
                 result.setMessage("参数错误");
@@ -536,5 +535,6 @@ public class LoginController {
         }
         return count;
     }
+
 
 }
